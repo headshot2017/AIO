@@ -1,0 +1,350 @@
+from PyQt4 import QtCore, QtGui
+from game_version import GAME_VERSION
+import os, socket, buttons
+
+class ConnectingStatus(QtGui.QWidget):
+	ao_app = None
+	def __init__(self, parent, _ao_app):
+		super(ConnectingStatus, self).__init__(parent)
+		self.ao_app = _ao_app
+		
+		self.resize(800, 480)
+		self.connectingmsg = QtGui.QLabel(self, text="Connecting...")
+		self.connectingmsg.resize(800, 320)
+		self.connectingmsg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter)
+		self.connectingmsg.setFont(QtGui.QFont("Arial", 12))
+		self.connectingmsg.setStyleSheet("color: white")
+		
+		self.ao_app.tcpthread.gotWelcome.connect(self.readWelcome)
+		self.ao_app.tcpthread.gotCharacters.connect(self.readCharacters)
+		self.ao_app.tcpthread.gotMusic.connect(self.readMusic)
+		self.ao_app.tcpthread.gotZones.connect(self.readZones)
+		self.ao_app.tcpthread.gotEvidence.connect(self.readEvidence)
+		self.ao_app.tcpthread.kicked.connect(self.kicked)
+		self.ao_app.tcpthread.serverWarning.connect(self.serverWarning)
+		self.ao_app.tcpthread.connectionError.connect(self.connectionError)
+		self.ao_app.tcpthread.disconnected.connect(self.disconnected)
+	
+	def readWelcome(self, welcome):
+		self.player_id = welcome[0]
+		self.maxchars = welcome[1]
+		self.defaultzone = welcome[2]
+		self.maxmusic = welcome[3]
+		self.maxzones = welcome[4]
+		self.motd = welcome[5]
+		
+		self.connectingmsg.setText("Retrieving character list... (%d)" % self.maxchars)
+	
+	def readCharacters(self, charlist):
+		self.charlist = charlist
+		self.connectingmsg.setText("Retrieving music list... (%d)" % self.maxmusic)
+	
+	def readMusic(self, musiclist):
+		self.musiclist = musiclist
+		self.connectingmsg.setText("Retrieving zone list... (%d)" % self.maxzones)
+	
+	def readZones(self, zonelist):
+		self.zonelist = zonelist
+		self.connectingmsg.setText("Getting evidence for zone \"%s\"..." % self.defaultzone)
+	
+	def readEvidence(self, evlist):
+		self.evidencelist = evlist
+		self.ao_app.startGame(self.player_id, self.defaultzone, self.motd, self.charlist, self.musiclist, self.zonelist, self.evidencelist)
+	
+	def showServers(self):
+		self.hide()
+		self.connectingmsg.setText("Connecting...")
+	
+	def connectionError(self, reason):
+		QtGui.QMessageBox.critical(self, "Connection error", reason)
+		self.disconnected()
+	
+	def disconnected(self):
+		self.showServers()
+		self.ao_app.stopGame()
+	
+	def kicked(self, reason):
+		QtGui.QMessageBox.critical(self, "Kicked", "You were kicked off the server.\nReason: %s" % reason)
+		self.showServers()
+		self.ao_app.stopGame()
+	
+	def serverWarning(self, reason):
+		QtGui.QMessageBox.warning(self, "Warning from server", reason)
+	
+	def paintEvent(self, event):
+		painter = QtGui.QPainter(self)
+		painter.fillRect(0, 0, 800, 480, QtGui.QColor(0, 0, 0, 128))
+
+class lobby(QtGui.QWidget):
+	ao_app = None
+	def __init__(self, _ao_app):
+		super(lobby, self).__init__()
+		self.ao_app = _ao_app
+		
+		self.font = QtGui.QFont("Arial", 12)
+		
+		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(GAME_VERSION))
+		self.text.setFont(self.font)
+		self.text.move(8, 8)
+		
+		self.serverlistwidget = QtGui.QListWidget(self)
+		self.serverlistwidget.setGeometry(64, 64, 512-64, 240)
+		self.serverlistwidget.itemClicked.connect(self.serverItemClicked)
+		
+		desc_x, desc_y, desc_w, desc_h = 640-64+8, 16, 256-48, 480-128
+		
+		self.connectingstatus = ConnectingStatus(self, _ao_app)
+		self.connectingstatus.hide()
+		
+		self.addtofav = buttons.AIOButton(self)
+		self.connectbtn = buttons.AIOButton(self)
+		self.refreshbtn = buttons.AIOButton(self)
+		self.allservers = buttons.AIOButton(self)
+		self.favoritesbtn = buttons.AIOButton(self)
+		self.joinipaddress = buttons.AIOButton(self)
+		
+		self.addtofav.setPixmap(QtGui.QPixmap("data\\misc\\add_to_favorites.png"))
+		self.addtofav.move(640-16, desc_y+desc_h+4)
+		self.connectbtn.setPixmap(QtGui.QPixmap("data\\misc\\connect_button.png"))
+		self.connectbtn.move(640-16, desc_y+desc_h+4+48)
+		self.refreshbtn.setPixmap(QtGui.QPixmap("data\\misc\\refresh.png"))
+		self.refreshbtn.move((self.serverlistwidget.x()+self.serverlistwidget.size().width())/2 - 32, self.serverlistwidget.y()+self.serverlistwidget.size().height()+16)
+		self.allservers.setPixmap(QtGui.QPixmap("data\\misc\\all_servers.png"))
+		self.allservers.move(self.refreshbtn.x() - 128 - 8, self.refreshbtn.y() + 64)
+		self.favoritesbtn.setPixmap(QtGui.QPixmap("data\\misc\\favorites.png"))
+		self.favoritesbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
+		self.joinipaddress.setPixmap(QtGui.QPixmap("data\\misc\\joinip_button.png"))
+		self.joinipaddress.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
+		
+		self.description = QtGui.QTextEdit(self)
+		self.description.setFont(self.font)
+		self.description.setGeometry(desc_x, desc_y, desc_w, desc_h)
+		self.description.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+		self.description.setFrameStyle(QtGui.QFrame.NoFrame)
+		self.description.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.description.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+		self.description.setReadOnly(True)
+		self.description.setStyleSheet("background-color: rgba(0, 0, 0, 0);"
+														"color: white")
+		
+		self.addtofav.clicked.connect(self.add_to_favorites)
+		self.connectbtn.clicked.connect(self.connectClicked)
+		self.refreshbtn.clicked.connect(self.refresh)
+		self.allservers.clicked.connect(self.on_public_servers)
+		self.favoritesbtn.clicked.connect(self.on_favorites_list)
+		self.joinipaddress.clicked.connect(self.join_ip_address)
+		self.addtofav.show()
+		self.connectbtn.show()
+		self.refreshbtn.show()
+		self.allservers.show()
+		self.favoritesbtn.show()
+		self.joinipaddress.show()
+		
+		self.connectingstatus.raise_()
+		
+		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
+		ip = a[0]
+		try:
+			port = int(a[1])
+		except:
+			port = 27010
+		
+		self.msthread = MasterServerThread(ip, port)
+		self.msthread.gotServers.connect(self.gotServerList)
+		self.msthread.start()
+		self.servers = []
+		try:
+			self.favorites = [line.rstrip("\n").split(":") for line in open("data\\serverlist.txt")]
+		except IOError:
+			self.favorites = [["localhost", "27010", "your server, port 27010 (serverlist.txt not found)", "to fix this, create an empty text file on the \"data\" folder named \"serverlist\"."]]
+		
+		for favorite in self.favorites:
+			if len(favorite) == 3:
+				favorite.append("")
+			favorite[1] = int(favorite[1])
+		
+		self.serverselected = -1
+		self.tab = 0
+		
+	def paintEvent(self, event):
+		painter = QtGui.QPainter(self)
+		painterpath = QtGui.QPainterPath()
+		
+		painterpath.addRoundRect(640-64, 0, 800-(640-64), 480, 25, 10)
+		
+		painter.fillRect(0, 0, 800, 480, QtGui.QColor(255, 255, 255))
+		painter.fillPath(painterpath, QtGui.QColor(64, 64, 64))
+	
+	def showServers(self):
+		self.connectingstatus.showServers()
+	
+	def gotServerList(self, servers):
+		self.servers = list(servers)
+		if self.tab == 0:
+			self.updateServerList(servers)
+	
+	def on_public_servers(self):
+		if self.tab == 0:
+			return
+		
+		self.tab = 0
+		self.updateServerList(self.servers)
+		self.refreshbtn.show()
+	
+	def on_favorites_list(self):
+		if self.tab == 1:
+			return
+		
+		self.tab = 1
+		self.updateServerList(self.favorites)
+		self.refreshbtn.hide()
+	
+	def add_to_favorites(self):
+		if self.tab == 1:
+			return self.description.setText("You can't do that.")
+		if self.serverselected == -1:
+			return self.description.setText("Select a server first you nobo")
+		
+		server = self.servers[self.serverselected]
+		
+		for fav in self.favorites:
+			if server[2] in fav and server[3] in fav:
+				return QtGui.QMessageBox.information(self, "uh", "That server already exists in your favorites, named \"%s\"" % fav[2])
+		
+		self.favorites.append([server[2], server[3], server[0], server[1]])
+		with open("serverlist.txt", "a") as file:
+			file.write(server[2]+":"+str(server[3])+":"+server[0]+":"+server[1]+"\n")
+	
+	def refresh(self):
+		self.msthread.sendRefresh()
+	
+	def join_ip_address(self):
+		addr, ok = QtGui.QInputDialog.getText(self, "Join IP address...", "Enter the IP address of the server you wish to join.\nIt must have the format \"ip:port\"\nExample: 127.0.0.1:27010")
+		
+		if ok and addr:
+			ip = addr.split(":")
+			if len(ip) == 1:
+				ip.append("27010")
+			else:
+				if not ip[1]:
+					ip[1] = "27010"
+			port = int(ip[1])
+			
+			self.connectingstatus.show()
+			self.ao_app.connect(ip[0], port)
+	
+	def connectClicked(self):
+		if self.serverselected == -1:
+			return self.description.setText("Lmao you need to pick a server from the list")
+		
+		if self.tab == 0:
+			server = self.servers[self.serverselected]
+			ip = server[2]
+			port = server[3]
+		else:
+			server = self.favorites[self.serverselected]
+			ip = server[0]
+			port = server[1]
+		
+		self.connectingstatus.show()
+		self.ao_app.connect(ip, port)
+
+	def updateServerList(self, servers):
+		self.serverlistwidget.clear()
+		self.serverselected = -1
+		self.description.setText("")
+		for server in servers:
+			if self.tab == 0:
+				item = QtGui.QListWidgetItem(server[0])
+			elif self.tab == 1:
+				item = QtGui.QListWidgetItem(server[2])
+			item.setFont(self.font)
+			self.serverlistwidget.addItem(item)
+	
+	def serverItemClicked(self, current):
+		for i in range(self.serverlistwidget.count()):
+			if self.serverlistwidget.item(i) == current:
+				if self.tab == 0:
+					self.description.setText(self.servers[i][1])
+				elif self.tab == 1:
+					self.description.setText(self.favorites[i][3])
+				self.serverselected = i
+
+class MasterServerThread(QtCore.QThread):
+	gotServers = QtCore.pyqtSignal(tuple)
+	def __init__(self, ip, port):
+		super(MasterServerThread, self).__init__()
+		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.ip = ip
+		self.port = port
+	
+	def __del__(self):
+		self.closeConnection()
+		self.wait()
+	
+	def closeConnection(self):
+		self.tcp.close()
+		self.terminate()
+	
+	def sendRefresh(self):
+		self.tcp.send("12#%\n")
+	
+	def run(self):
+		try:
+			self.tcp.connect((self.ip, self.port))
+		except socket.error as err:
+			self.gotServers.emit((("Error connecting to master server. Click for details", str(err.args), "127.0.0.1", 27010),))
+			self.closeConnection()
+		
+		self.tcp.settimeout(0.1)
+		tempdata = ""
+		
+		while True:
+			try:
+				data = self.tcp.recv(8192)
+				
+			except socket.timeout, err:
+				error = err.args[0]
+				if error == "timed out":
+					continue
+				else:
+					print err.args
+					self.closeConnection()
+			
+			except socket.error, err:
+				print err.args
+				self.closeConnection()
+			
+			if not data:
+				print "MS connection closed by server"
+				self.closeConnection()
+			
+			if not data.endswith("%"):
+				tempdata += data
+				continue
+			else:
+				if tempdata:
+					data = tempdata+data
+					tempdata = ""
+			
+			totals = data.split("%")
+			for moredata in totals:
+				network = moredata.split("#")
+				header = network.pop(0)
+				
+				if header == "1": #connected, contains client ID (not that useful anyway)
+					player_id = int(network[0])
+					self.sendRefresh() #request servers
+				
+				elif header == "12": #server list
+					total_servers = len(network) / 4
+					if total_servers <= 0:
+						print "warning: received server list packet, but total_servers is %d" % total_servers
+						continue
+					
+					servers = []
+					for i in range(0, total_servers*4, 4):
+						servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
+					
+					self.gotServers.emit(tuple(servers))
+					

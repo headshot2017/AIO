@@ -1,0 +1,1 @@
+GAME_VERSION = "0.3"

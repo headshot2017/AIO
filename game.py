@@ -51,7 +51,7 @@ def getColor(number):
 		return QtGui.QColor(255, 192, 203)
 	elif number == 8:
 		return QtGui.QColor(0, 255, 255)
-	elif textcolor == "_inline_grey":
+	elif number == "_inline_grey":
 		return QtGui.QColor(187, 187, 187)
 	return QtGui.QColor(0,0,0)
 

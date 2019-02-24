@@ -15,5 +15,6 @@ if not BASS_Init(-1, 44100, 0, 0, 0):
 	sys.exit(1)
 
 app = AIOApplication(sys.argv)
+app.setWindowIcon(QtGui.QIcon("icon.ico"))
 app.exec_()
 BASS_Free()

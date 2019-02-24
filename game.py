@@ -312,6 +312,8 @@ class Character(BaseCharacter):
 		if not self.isPlayer:
 			return
 		
+		self.emoting = 0
+		self.currentemote = -1
 		self.blip = self.ao_app.ini_read_string(inipath, "Options", "blip", "male")
 		
 		self.walkanims[0] = []
@@ -332,7 +334,7 @@ class Character(BaseCharacter):
 			self.emotes[3].append(self.ao_app.ini_read_string(inipath, "SoundN", str(i+1)).split("#"))
 			self.emotes[4].append(self.ao_app.ini_read_int(inipath, "SoundT", str(i+1)))
 		
-		self.sprite = self.ao_app.charlist[newcharid]+"\\spin.gif"
+		self.playSpin("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
 	
 	def keyPressEvent(self, event):
 		if self.isPlayer:
@@ -639,8 +641,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
 		
 		
-		self.aSound = ""
-		self.aSoundDelay = -1
+		self.aSound = ["", -1, 0] #filename, delay, zone
 		self.mychatcolor = 0
 		self.myrealization = 0
 		self.myevidence = -1
@@ -1300,8 +1301,7 @@ class GameWidget(QtGui.QWidget):
 	
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
-		self.aSound = "data\\sounds\\general\\"+filename+".wav"
-		self.aSoundDelay = delay
+		self.aSound = ["data\\sounds\\general\\"+filename+".wav", delay, zone]
 	
 	def onEmoteClicked(self, ind):
 		real_ind = ind + self.current_emote_page * self.max_emotes_on_page
@@ -1439,7 +1439,6 @@ class GameWidget(QtGui.QWidget):
 			char.vspeed = vspeed
 			char.sprite = sprite
 			char.emoting = emoting
-			char.dir_nr = dir_nr
 			
 			if self.player:
 				if char.zone != self.player.zone:
@@ -1454,7 +1453,8 @@ class GameWidget(QtGui.QWidget):
 					if not os.path.exists(fullpath):
 						fullpath = "data\\misc\\error.gif"
 
-					if oldpath != fullpath:
+					if oldpath != fullpath or char.dir_nr != dir_nr: # "The other player's game sometimes fails to show the right direction the character's looking at." fixed
+						char.dir_nr = dir_nr
 						if aSprite[1].lower() == "spin.gif":
 							char.playSpin(fullpath, dir_nr)
 						else:
@@ -1467,6 +1467,10 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.sendMusicChange(item.text().toUtf8())
 	
 	def setZone(self, ind):
+		if self.player.zone != ind:
+			if self.evidenceanim.isVisible():
+				self.evidenceanim.hideAnim()
+		
 		self.player.zone = ind
 		zone = "data\\zones\\"+self.ao_app.zonelist[ind][0]
 		self.gameview.setBackground(zone+".gif")
@@ -1575,10 +1579,10 @@ class GameWidget(QtGui.QWidget):
 			self.examiner.setPos(self.gameview.mapFromGlobal(QtGui.QCursor.pos()))
 			self.examiner.show()
 		
-		if self.aSoundDelay > -1:
-			if self.aSoundDelay == 0:
-				self.ao_app.playSound(self.aSound)
-			self.aSoundDelay -= 1
+		if self.aSound[1] > -1 and self.aSound[2] == self.player.zone: # "An SFX, that a player makes in any area, plays everywhere, in every other and its' own area." fixed
+			if self.aSound[1] == 0:
+				self.ao_app.playSound(self.aSound[0])
+			self.aSound[1] -= 1
 		
 		if self.examines:
 			for examine in self.examines:

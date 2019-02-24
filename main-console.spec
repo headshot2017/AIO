@@ -14,7 +14,7 @@ a = Analysis(['main.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
-			 icon="icon.ico")
+			 icon="icon-terminal.ico")
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
@@ -22,8 +22,8 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
-          name='aaio',
+          name='aaio-console',
           debug=False,
           strip=False,
           upx=True,
-          console=False)
+          console=True)

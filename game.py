@@ -1149,7 +1149,7 @@ class GameWidget(QtGui.QWidget):
 					del self.inline_color_stack[-1]
 					self.chattext.insertHtml("<font color=\"" + getColor("_inline_grey").name() + "\">" + f_character + "</font>")
 				else:
-					next_character_is_not_special = True
+					self.next_character_is_not_special = True
 					self.tick_pos -= 1
 			
 			elif f_character == "`" and not self.next_character_is_not_special: #green.
@@ -1165,7 +1165,7 @@ class GameWidget(QtGui.QWidget):
 					formatting_char = True
 			
 			else:
-				next_character_is_not_special = False
+				self.next_character_is_not_special = False
 				if self.inline_color_stack:
 					top_color = self.inline_color_stack[-1]
 					if top_color == INLINE_ORANGE:

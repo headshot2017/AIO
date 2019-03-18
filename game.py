@@ -538,16 +538,35 @@ class GamePort(QtGui.QWidget):
 		
 		self.zonebackground.setZValue(-10000)
 		self.characters = {}
+		
+		ao_app.installEventFilter(self)
 	
 	def mousePressEvent(self, event):
 		self.clearFocus()
 		super(GamePort, self).mousePressEvent(event)
 	
+	def eventFilter(self, source, event):
+		if self.characters.has_key(self.ao_app.player_id):
+			if source == self.gameview:
+				if event.type() == QtCore.QEvent.KeyPress:
+					try:
+						self.characters[self.ao_app.player_id].keyPressEvent(event)
+					except:
+						pass
+				elif event.type() == QtCore.QEvent.KeyRelease:
+					try:
+						self.characters[self.ao_app.player_id].keyReleaseEvent(event)
+					except:
+						pass
+		return super(GamePort, self).eventFilter(source, event)
+	
+	"""
 	def keyPressEvent(self, event):
 		self.characters[self.ao_app.player_id].keyPressEvent(event)
 	
 	def keyReleaseEvent(self, event):
 		self.characters[self.ao_app.player_id].keyReleaseEvent(event)
+	"""
 	
 	def initCharacter(self, ind):
 		self.characters[ind] = Character(ao_app=self.ao_app, scene=self.gamescene)

@@ -373,7 +373,7 @@ class Character(BaseCharacter):
 			self.run = QtCore.Qt.Key_Shift in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
 			
-			if (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
+			if QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
 				self.vspeed = (-3 - (self.run*3)) * 2
 				self.hspeed = (3 + (self.run*3)) * 2
 				self.emoting = 0

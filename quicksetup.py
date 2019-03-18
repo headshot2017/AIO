@@ -21,7 +21,9 @@ zip_ref.extractall()
 zip_ref.close()
 
 print "renaming pybass.py"
+os.remove('pybass/__init__.py')
 os.rename('pybass/pybass.py', 'pybass/__init__.py')
+
 
 print "downloading bass"
 filedata = urllib2.urlopen('http://us.un4seen.com/files/bass24.zip')  
@@ -46,5 +48,8 @@ with open('PyQt4-4.11.4-cp27-cp27m-win32.whl', 'wb') as f:
 
 print "installing pyqt4"
 pip_install('PyQt4-4.11.4-cp27-cp27m-win32.whl')
+
+print "installing pyinstaller"
+pip_install('pyinstaller')
 
 print "done"

@@ -2,17 +2,26 @@ import urllib2
 import zipfile
 import subprocess
 import sys
+import os
 
 def pip_install(package):
     subprocess.call([sys.executable, "-m", "pip", "install", package])
 
 print "downloading pybass"
-filedata = urllib2.urlopen('https://github.com/Wyliodrin/pybass/archive/master.zip')  
+filedata = urllib2.urlopen('https://datapacket.dl.sourceforge.net/project/pybass/pybass_055.zip')  
 datatowrite = filedata.read()
 
-with open('pybass.zip', 'wb') as f:  
+with open('pybass_055.zip', 'wb') as f:  
     f.write(datatowrite)
     f.close()
+
+print "extracting pybass"
+zip_ref = zipfile.ZipFile('pybass_055.zip', 'r')
+zip_ref.extractall()
+zip_ref.close()
+
+print "renaming pybass.py"
+os.rename('pybass/pybass.py', 'pybass/__init__.py')
 
 print "downloading bass"
 filedata = urllib2.urlopen('http://us.un4seen.com/files/bass24.zip')  

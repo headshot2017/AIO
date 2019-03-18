@@ -69,6 +69,7 @@ class Broadcast(QtGui.QGraphicsItem):
 		self.fadeTimer.timeout.connect(self.opacityTimer)
 		self.waitTimer = QtCore.QTimer()
 		self.waitTimer.timeout.connect(self.startFading)
+		self.setZValue(99999)
 	
 	def boundingRect(self):
 		return QtCore.QRectF(-self.pixmap.pixmap().size().width()/2, 0, self.pixmap.pixmap().size().width(), self.pixmap.pixmap().size().height())
@@ -372,7 +373,7 @@ class Character(BaseCharacter):
 			self.run = QtCore.Qt.Key_Shift in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
 			
-			if QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
+			if (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
 				self.vspeed = (-3 - (self.run*3)) * 2
 				self.hspeed = (3 + (self.run*3)) * 2
 				self.emoting = 0

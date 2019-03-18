@@ -373,7 +373,7 @@ class Character(BaseCharacter):
 			self.run = QtCore.Qt.Key_Shift in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
 			
-			if QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
+			if (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
 				self.vspeed = (-3 - (self.run*3)) * 2
 				self.hspeed = (3 + (self.run*3)) * 2
 				self.emoting = 0
@@ -387,7 +387,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys:
+			elif (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
 				self.vspeed = (-3 - (self.run*3)) * 2
 				self.hspeed = (-3 - (self.run*3)) * 2
 				self.emoting = 0
@@ -401,7 +401,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys:
+			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
 				self.vspeed = (3 + (self.run*3)) * 2
 				self.hspeed = (3 + (self.run*3)) * 2
 				self.emoting = 0
@@ -415,7 +415,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys:
+			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
 				self.vspeed = (+3 + (self.run*3)) * 2
 				self.hspeed = (-3 - (self.run*3)) * 2
 				self.emoting = 0
@@ -429,7 +429,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_W in self.pressed_keys:
+			elif QtCore.Qt.Key_W in self.pressed_keys or QtCore.Qt.Key_Up in self.pressed_keys:
 				self.vspeed = (-3 - (self.run*3)) * 2
 				self.hspeed = 0
 				self.emoting = 0
@@ -443,7 +443,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_S in self.pressed_keys:
+			elif QtCore.Qt.Key_S in self.pressed_keys or QtCore.Qt.Key_Down in self.pressed_keys:
 				self.vspeed = (+3 + (self.run*3)) * 2
 				self.hspeed = 0
 				self.emoting = 0
@@ -457,7 +457,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_A in self.pressed_keys:
+			elif QtCore.Qt.Key_A in self.pressed_keys or QtCore.Qt.Key_Left in self.pressed_keys:
 				self.vspeed = 0
 				self.hspeed = (-3 - (self.run*3)) * 2
 				self.emoting = 0
@@ -471,7 +471,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
-			elif QtCore.Qt.Key_D in self.pressed_keys:
+			elif QtCore.Qt.Key_D in self.pressed_keys or QtCore.Qt.Key_Right in self.pressed_keys:
 				self.vspeed = 0
 				self.hspeed = (3 + (self.run*3)) * 2
 				self.emoting = 0

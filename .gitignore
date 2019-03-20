@@ -1,0 +1,10 @@
+data/
+pybass/
+build/
+dist/
+*.exe
+bass.dll
+bass24.zip
+PyQt4-4.11.4-cp27-cp27m-win32.whl
+*.pyc
+pybass_055.zip

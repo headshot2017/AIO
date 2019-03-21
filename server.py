@@ -15,9 +15,10 @@ AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to 
 ################################
 
 ############CONSTANTS#############
-#######Do not modify any of these.#########
 ECONSTATE_CONNECTED = 0
 ECONSTATE_AUTHED = 1
+ECONCLIENT_CRLF = 0
+ECONCLIENT_LF = 1
 ################################
 
 def string_unpack(buf):
@@ -42,21 +43,25 @@ def buffer_read(format, buffer):
 	else:
 		return string_unpack(buffer)
 
-def recvall(sock):
-	BUFF_SIZE = 4096
-	data = b''
-	while True:
-		part = sock.recv(BUFF_SIZE)
-		data += part
-		if len(part) < BUFF_SIZE:
-			#either 0 or end of data
-			break
-	return data
+def versionToInt(ver):
+	v = ver.split(".")
+	major = v[0]
+	minor = v[1]
+	if len(v) > 2:
+		patch = v[2]
+	else:
+		patch = "0"
+	
+	try:
+		return int(minor+major+patch)
+	except:
+		return int(major+minor+"0")
 
 class AIOserver(object):
 	running = False
 	tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	readbuffer = ""
+	econTemp = ""
 	clients = {}
 	econ_clients = {}
 	musiclist = []
@@ -957,7 +962,7 @@ class AIOserver(object):
 							color = 4294967295 #set to exactly white
 						
 						self.sendChat(self.getCharName(self.clients[client].CharID), chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
-						print "[chat][IC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.getCharName(self.clients[client].CharID), chatmsg)
+						#print "[chat][IC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.getCharName(self.clients[client].CharID), chatmsg)
 					
 					elif header == AIOprotocol.OOC:
 						try:
@@ -986,7 +991,6 @@ class AIOserver(object):
 						else:
 							if chatmsg[0] != "/":
 								self.sendOOC(self.clients[client].OOCname, chatmsg, zone=self.clients[client].zone)
-								print "[chat][OOC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.clients[client].OOCname, chatmsg)
 							else: #commands.
 								cmdargs = chatmsg.split(" ")
 								cmd = cmdargs.pop(0).lower().replace("/", "", 1)
@@ -1549,7 +1553,7 @@ class AIOserver(object):
 			client.send("Enter password:\n> ")
 			for i in range(500):
 				if not self.econ_clients.has_key(i):
-					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, 0]
+					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF]
 					break
 		except:
 			pass
@@ -1579,6 +1583,14 @@ class AIOserver(object):
 				del self.econ_clients[i]
 				continue
 			
+			if not data.endswith("\n"): #windows telnet client identification. on enter key, it sends "\r\n".
+				self.econTemp += data
+				continue
+			elif data == "\r\n":
+				client[3] = ECONCLIENT_CRLF
+				data = self.econTemp
+				self.econTemp = ""
+			
 			if data.endswith("\n") or data.endswith("\r"):
 				data = data.rstrip()
 			
@@ -1586,7 +1598,7 @@ class AIOserver(object):
 			if state == ECONSTATE_CONNECTED: #need to type password.
 				if data == self.econ_password:
 					client[2] = ECONSTATE_AUTHED
-					client[0].send("Access to server console granted.\n")
+					client[0].send("Access to server console granted.%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 					print "[econ]", "%s is now logged in." % client[1]
 				
 				else:
@@ -1601,7 +1613,7 @@ class AIOserver(object):
 						continue
 					
 					else:
-						client[0].send("Wrong password %d/%d.\n> " % (client[3], MaxLoginFails))
+						client[0].send("Wrong password %d/%d.%s> " % (client[3], MaxLoginFails, "\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 			
 			elif state == ECONSTATE_AUTHED:
 				var = data.split(" ")[0]
@@ -1617,21 +1629,28 @@ class AIOserver(object):
 						self.parseOOCcommand(i+10000, cmd.replace("/", "", 1), cmdargs)
 					except Exception as e:
 						print "[econ]", "an error occurred while executing command %s from %s: %s" % (cmd, client[1], e.args)
-						client[0].send(str(e.args)+"\n")
+						client[0].send(str(e.args)+"%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 						continue
 				else:
 					try:
 						var = int(var)
 					except:
-						client[0].send("invalid zone ID or command. hit enter for help.\n")
+						client[0].send("invalid zone ID or command. hit enter for help.%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 						continue
 					
 					if var < 0 or var >= len(self.zonelist):
-						client[0].send("invalid zone ID. hit enter for help.\n")
+						client[0].send("invalid zone ID. hit enter for help.%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 						continue
 					
-					txt = data.replace(str(var)+" ", "")
-					print "[chat][IC] -1,%d,%s: %s" % (var, "ECON USER %d" % i, txt)
+					al = list(data)
+					for i in range(len(str(var))):
+						del al[0]
+					if len(al) > 0:
+						del al[0]
+					else:
+						al.append(" ")
+					txt ="".join(al)
+					#print "[chat][IC] -1,%d,%s: %s" % (var, "ECON USER %d" % i, txt)
 					self.sendChat("ECON USER %d" % i, txt, "male", var, 4294901760, 0, 0, 0)
 	
 	def econPrint(self, text, dest=-1):
@@ -1639,14 +1658,16 @@ class AIOserver(object):
 		if dest == -1:
 			for client in self.econ_clients.values():
 				if client[2] == ECONSTATE_AUTHED:
+					send = text+"\r\n" if client[3] == ECONCLIENT_CRLF else text+"\n"
 					try:
-						client[0].send(text+"\n")
+						client[0].send(send)
 					except:
 						pass
 		else:
 			if self.econ_clients.has_key(dest):
+				send = text+"\r\n" if self.econ_clients[dest][3] == ECONCLIENT_CRLF else text+"\n"
 				try:
-					self.econ_clients[dest][0].send(text+"\n")
+					self.econ_clients[dest][0].send(send)
 				except:
 					pass
 	
@@ -1678,7 +1699,7 @@ class AIOserver(object):
 					continue
 				
 				txt = txt.replace(str(var)+" ", "")
-				print "[chat][IC] -1,%d,%s: %s" % (var, ServerOOCName, txt)
+				#print "[chat][IC] -1,%d,%s: %s" % (var, ServerOOCName, txt)
 				self.sendChat(ServerOOCName, txt, "male", var, 4294901760, 0, 0, 0)
 			
 if __name__ == "__main__":

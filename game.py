@@ -504,15 +504,15 @@ class Character(BaseCharacter):
 			
 		if self.playFile[0]:
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
-			aWidth = aSize.width()
-			aHeight = aSize.height()
+			aWidth = aSize.width()*self.scale
+			aHeight = aSize.height()*self.scale
 			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
 			super(Character, self).play(self.playFile[0], self.playFile[1])
 			self.playFile[0] = ""
 		else:
 			aSize = self.pixmap().size()
-			aWidth = aSize.width()
-			aHeight = aSize.height()
+			aWidth = aSize.width()*self.scale
+			aHeight = aSize.height()*self.scale
 			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
 		
 		self.xprevious2 = self.xprevious
@@ -641,7 +641,7 @@ class GamePort(QtGui.QWidget):
 				char.yy = char.yprevious2
 			char.setZValue(char.yy  - (char.pixmap().size().height()*2) + (char.maxheight*0.75))
 			char.chatbubblepix.setZValue(char.zValue())
-			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*3))
+			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
 			if char.chatbubble:
 				char.chatbubblepix.show()
 			else:

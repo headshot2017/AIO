@@ -1,1 +1,1 @@
-GAME_VERSION = "0.3"
+GAME_VERSION = "0.3.1"

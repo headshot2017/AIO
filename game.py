@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from functools import partial
 from pybass import *
-import random, os, AIOprotocol, buttons
+import random, os, AIOprotocol, buttons, math
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -543,6 +543,33 @@ class GamePort(QtGui.QWidget):
 	
 	def mousePressEvent(self, event):
 		self.clearFocus()
+		if event.buttons() == QtCore.Qt.LeftButton and self.characters.has_key(self.ao_app.player_id): # click to look at that direction
+			if self.characters[self.ao_app.player_id].charid != -1:
+				clickpoint = event.pos()
+				x2, y2 = clickpoint.x(), clickpoint.y()
+				#x1, y1 = 256, 192
+				player = self.characters[self.ao_app.player_id]
+				x1 = player.x()+(player.maxwidth/2)
+				y1 = player.y()+(player.maxheight/4)
+				
+				if x2 > x1 and y2 > y1-64 and y2 < y1+64:
+					player.dir_nr = AIOprotocol.EAST
+				elif x2 > x1+64 and y2 > y1+64:
+					player.dir_nr = AIOprotocol.SOUTHEAST
+				elif x2 > x1+64 and y2 < y1-64:
+					player.dir_nr = AIOprotocol.NORTHEAST
+				elif x2 < x1 and y2 > y1-64 and y2 < y1+64:
+					player.dir_nr = AIOprotocol.WEST
+				elif x2 < x1-64 and y2 > y1+64:
+					player.dir_nr = AIOprotocol.SOUTHWEST
+				elif x2 < x1-64 and y2 < y1-64:
+					player.dir_nr = AIOprotocol.NORTHWEST
+				elif y2 > y1 and x2 > x1-64 and x2 < x1+64:
+					player.dir_nr = AIOprotocol.SOUTH
+				elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
+					player.dir_nr = AIOprotocol.NORTH
+				player.playSpin("data\\characters\\"+self.ao_app.charlist[player.charid]+"\\"+player.charprefix+"spin.gif", player.dir_nr)
+			
 		super(GamePort, self).mousePressEvent(event)
 	
 	def eventFilter(self, source, event):

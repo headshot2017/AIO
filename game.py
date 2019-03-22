@@ -1583,7 +1583,7 @@ class GameWidget(QtGui.QWidget):
 				self.player.chatbubble = 1
 	
 	def ic_return(self):
-		text = str(self.ic_input.text().toUtf8())
+		text = str(self.ic_input.text().toUtf8())[:256+64]
 		if self.mychatcolor != 6: #rainbow.
 			color = getColor(self.mychatcolor).rgb()
 		else:

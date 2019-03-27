@@ -3,10 +3,10 @@ import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
 ################################
-GameVersion = "0.3" # you can modify this so that it matches the version you want to make your server compatible with
+GameVersion = "0.3.1" # you can modify this so that it matches the version you want to make your server compatible with
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
-MaxLoginFails = 3 # this amount of consecutive fails on the /login command will kick the player
+MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
 EmoteSoundRateLimit = 1 #amount of ticks to wait before allowing to use emotes with sound again
 MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
@@ -19,6 +19,7 @@ ECONSTATE_CONNECTED = 0
 ECONSTATE_AUTHED = 1
 ECONCLIENT_CRLF = 0
 ECONCLIENT_LF = 1
+MASTER_WAITINGSUCCESS = 0
 ################################
 
 def string_unpack(buf):
@@ -71,6 +72,7 @@ class AIOserver(object):
 	banlist = []
 	defaultzone = 0
 	maxplayers = 1
+	MSstate = -1
 	def __init__(self):
 		global AllowBot
 		if AllowBot and not os.path.exists("data/characters"):
@@ -160,7 +162,10 @@ class AIOserver(object):
 				
 				if ipaddr[0].startswith("127."): #localhost
 					self.clients[i].is_authed = True
+				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 				return
+		
+		self.kick(client, "Server is full.")
 	
 	def sendBuffer(self, clientID, buffer):
 		try:
@@ -561,10 +566,14 @@ class AIOserver(object):
 		buffer += reason+"\0"
 		buff = struct.pack("I", len(buffer)+1)
 		buff += buffer
-		self.sendBuffer(ClientID, buffer)
-		print "[game]", "kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason)
-		self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
-		del self.clients[ClientID]
+		
+		if isinstance(ClientID, socket.socket):
+			self.ClientID.sendall(buffer+"\r")
+			self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
+		else:
+			self.sendBuffer(ClientID, buffer)
+			self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+			del self.clients[ClientID]
 		
 	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
 		if not self.running:
@@ -716,21 +725,28 @@ class AIOserver(object):
 			return False
 		
 		self.ms_tcp.setblocking(False)
-		self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+"#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+		self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+		self.MSstate = MASTER_WAITINGSUCCESS
 		return True
+	
+	def sendToMasterServer(self, msg):
+		try:
+			self.ms_tcp.send(msg+"\n")
+		except:
+			pass
 	
 	def masterServerTick(self):
 		try:
 			data = self.ms_tcp.recv(4096)
 		except (socket.error, socket.timeout) as e:
-			if e.args[0] == 10035 or e.args[0] == "timed out":
+			if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
 				return True
 			else:
 				print "[masterserver]", "connection to master server lost, retrying."
 				return False
 		
 		if not data:
-			print "[masterserver]", "connection to master server lost, retrying."
+			print "[masterserver]", "no data from master server, retrying."
 			return False
 		
 		t = data.split("%")
@@ -740,20 +756,22 @@ class AIOserver(object):
 			if header == "SUCCESS":
 				type = network[0]
 				if type == "13":
-					ip = self.ms_addr[0]
-					if ip.startswith("127.") or ip == "localhost":
-						try:
-							url = urllib.urlopen("http://ipv4bot.whatismyipaddress.com")
-						except:
-							print "[masterserver]", "failed to get own IP address. make sure you have internet access."
-							self.ms_tcp.close()
-							return False
-		
-						ip = url.read().rstrip()
-						self.ms_tcp.send("SET_IP#"+ip+"#%\n")
-					else:
-						print "[masterserver]", "server published."
-				
+					if self.MSstate == MASTER_WAITINGSUCCESS:
+						self.MSstate = -1
+						ip = self.ms_addr[0]
+						if ip.startswith("127.") or ip == "localhost":
+							try:
+								url = urllib.urlopen("http://ipv4bot.whatismyipaddress.com")
+							except:
+								print "[masterserver]", "failed to get own IP address. make sure you have internet access."
+								self.ms_tcp.close()
+								return False
+			
+							ip = url.read().rstrip()
+							self.ms_tcp.send("SET_IP#"+ip+"#%\n")
+						else:
+							print "[masterserver]", "server published."
+					
 				elif type == "SET_IP":
 					print "[masterserver]", "server published."
 		
@@ -826,6 +844,7 @@ class AIOserver(object):
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
 						self.clients[client].close = True
 						del self.clients[client]
 						break
@@ -835,6 +854,7 @@ class AIOserver(object):
 						self.sendDestroy(client)
 					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+					self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
 					self.clients[client].close = True
 					del self.clients[client]
 					break
@@ -852,6 +872,7 @@ class AIOserver(object):
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
 						self.clients[client].close = True
 						del self.clients[client]
 						break

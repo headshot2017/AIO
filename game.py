@@ -8,6 +8,9 @@ INLINE_GREEN = 1
 INLINE_ORANGE = 2
 INLINE_GRAY = 3
 
+def plural(text, value):
+	return text+"s" if value != 1 else text
+
 def getDirection(dir):
 	if dir == 0:
 		return "south"
@@ -696,6 +699,7 @@ class GameWidget(QtGui.QWidget):
 		self.playing = False
 		self.resize(512, 640)
 		self.gameview = GamePort(self, _ao_app)
+		self.gameview.move((self.size().width()/2) - (self.gameview.size().width()/2), 0)
 		
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
 		self.broadcastObj.setPos(256-(self.broadcastObj.pixmap.pixmap().size().width()/2), 64)
@@ -707,16 +711,22 @@ class GameWidget(QtGui.QWidget):
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
 		self.ic_input = QtGui.QLineEdit(self)
-		self.ic_input.setGeometry(0, 384, 512, 20)
+		self.ic_input.setGeometry(self.gameview.x(), 384+16, 512, 20)
 		self.ic_input.setPlaceholderText("Chat message...")
 		self.ic_input.returnPressed.connect(self.ic_return)
 		self.ic_input.textChanged.connect(self.ic_typing)
 		self.ic_input.hide()
+		self.areainfo = QtGui.QLabel(self)
+		self.areainfo.setAlignment(QtCore.Qt.AlignCenter)
+		self.areainfo.setGeometry(self.gameview.x(), 384, 512, 16)
+		self.areainfo.setStyleSheet("color: white;\nbackground-color: rgb(144, 144, 144)")
+		self.areainfo.setText("zone 0")
+		self.areainfo.hide()
 		
 		self.chatbox = QtGui.QLabel(self)
 		chatbox = QtGui.QPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
 		self.chatbox.setPixmap(chatbox)
-		self.chatbox.move(256-(chatbox.size().width()/2), 384-chatbox.size().height())
+		self.chatbox.move(self.gameview.x() + (self.gameview.size().width()/2) - (chatbox.size().width()/2), 384-chatbox.size().height())
 		
 		self.chatname = QtGui.QLabel(self.chatbox)
 		self.chatname.setStyleSheet("color: white")
@@ -736,15 +746,15 @@ class GameWidget(QtGui.QWidget):
 		emotebar = QtGui.QPixmap("data\\misc\\emote_bar.png")
 		self.emotebar = QtGui.QLabel(self)
 		self.emotebar.setPixmap(emotebar)
-		self.emotebar.move(0, 384+20)
+		self.emotebar.move(self.gameview.x(), 384+80)
 		
 		self.prevemotepage = buttons.AIOButton(self)
 		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_left.png").scaled(40, 40)))
-		self.prevemotepage.move(8, 384+emotebar.size().height())
+		self.prevemotepage.move(8, self.emotebar.y()-20+emotebar.size().height())
 		self.prevemotepage.clicked.connect(self.onPrevEmotePage)
 		self.nextemotepage = buttons.AIOButton(self)
 		self.nextemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_right.png").scaled(40, 40)))
-		self.nextemotepage.move(512-40-8, 384+emotebar.size().height())
+		self.nextemotepage.move(512-40-8, self.emotebar.y()-20+emotebar.size().height())
 		self.nextemotepage.clicked.connect(self.onNextEmotePage)
 		
 		movebtn = QtGui.QPixmap("data\\misc\\move_button.png")
@@ -756,15 +766,15 @@ class GameWidget(QtGui.QWidget):
 		self.movemenu = QtGui.QMenu()
 		self.movebtn = buttons.AIOButton(self)
 		self.movebtn.setPixmap(movebtn)
-		self.movebtn.move(256-(movebtn.size().width()/2), 384+emotebar.size().height()+8)
+		self.movebtn.move(256-(movebtn.size().width()/2), self.emotebar.y()-20+emotebar.size().height()+8)
 		self.movebtn.clicked.connect(self.onMoveButton)
 		self.switchbtn = buttons.AIOButton(self)
 		self.switchbtn.setPixmap(switchbtn)
-		self.switchbtn.move(256-(movebtn.size().width()/2) - switchbtn.size().width() - 16, 384+emotebar.size().height()+8)
+		self.switchbtn.move(256-(movebtn.size().width()/2) - switchbtn.size().width() - 16, self.emotebar.y()-20+emotebar.size().height()+8)
 		self.switchbtn.clicked.connect(self.onSwitchButton)
 		self.examinebtn = buttons.AIOButton(self)
 		self.examinebtn.setPixmap(examinebtn)
-		self.examinebtn.move(256-(movebtn.size().width()/2) + examinebtn.size().width() + 16, 384+emotebar.size().height()+8)
+		self.examinebtn.move(256-(movebtn.size().width()/2) + examinebtn.size().width() + 16, self.emotebar.y()-20+emotebar.size().height()+8)
 		self.examinebtn.clicked.connect(self.onExamineButton)
 		
 		self.textcolormenu = QtGui.QMenu()
@@ -773,7 +783,7 @@ class GameWidget(QtGui.QWidget):
 			self.textcolormenu.addAction(color)
 		self.textcolorbtn = buttons.AIOButton(self)
 		self.textcolorbtn.setPixmap(textcolorbtn)
-		self.textcolorbtn.move(8+64, 384+emotebar.size().height())
+		self.textcolorbtn.move(8+64, self.emotebar.y()-20+emotebar.size().height())
 		self.textcolorbtn.clicked.connect(self.onTextColorButton)
 		self.textcolorbtn.hide()
 		
@@ -783,7 +793,7 @@ class GameWidget(QtGui.QWidget):
 			self.realizationmenu.addAction(typ)
 		self.realizationbtn = buttons.AIOButton(self)
 		self.realizationbtn.setPixmap(self.realizationbtn_off)
-		self.realizationbtn.move(512-40-8-64, 384+emotebar.size().height())
+		self.realizationbtn.move(512-40-8-64, self.emotebar.y()-20+emotebar.size().height())
 		self.realizationbtn.clicked.connect(self.onRealizationButton)
 		self.realizationbtn.hide()
 		
@@ -906,7 +916,7 @@ class GameWidget(QtGui.QWidget):
 		self.logbtn = buttons.AIOButton(self)
 		logbtn = QtGui.QPixmap("data\\misc\\chatlog_button.png")
 		self.logbtn.setPixmap(logbtn)
-		self.logbtn.move(512-logbtn.size().width(), 384-logbtn.size().height())
+		self.logbtn.move(self.gameview.x() + self.gameview.size().width() - logbtn.size().width(), 384-logbtn.size().height())
 		self.logbtn.clicked.connect(self.onLogButton)
 		self.chatlog = QtGui.QTextEdit(self)
 		self.chatlog.setGeometry(96, 32, 512-192, 640-64)
@@ -1335,6 +1345,7 @@ class GameWidget(QtGui.QWidget):
 	def showCharSelect(self):
 		self.charselect.show()
 		self.ic_input.hide()
+		self.areainfo.hide()
 		self.emotebar.hide()
 		self.movebtn.hide()
 		self.switchbtn.hide()
@@ -1561,6 +1572,7 @@ class GameWidget(QtGui.QWidget):
 		
 	def hideCharSelect(self):
 		self.ic_input.show()
+		self.areainfo.show()
 		self.movebtn.show()
 		self.switchbtn.show()
 		self.examinebtn.show()
@@ -1622,9 +1634,16 @@ class GameWidget(QtGui.QWidget):
 	
 	def updateGame(self):
 		viewX, viewY = self.gameview.getViewCoords()
+		zoneamount = [0 for i in self.ao_app.zonelist]
 		for char in self.gameview.characters.values():
+			if char.zone >= 0 and char.zone < len(zoneamount):
+				zoneamount[char.zone] += 1
+			
 			char.update(viewX, viewY)
 		self.gameview.moveView(viewX, viewY)
+		self.areainfo.setText("Zone %d: %s (%d %s)" % (self.player.zone, self.ao_app.zonelist[self.player.zone][1], zoneamount[self.player.zone], plural("player", zoneamount[self.player.zone])))
+		for i in range(len(self.movemenuActions)):
+			self.movemenuActions[i].setText(str(i)+": "+self.ao_app.zonelist[i][1]+" ("+plural("%d player" % (zoneamount[i]), zoneamount[i])+")")
 		
 		if self.examining:
 			self.examiner.setPos(self.gameview.mapFromGlobal(QtGui.QCursor.pos()))
@@ -1708,6 +1727,7 @@ class GameWidget(QtGui.QWidget):
 		self.oocbtn.hide()
 		self.evidencebtn.hide()
 		self.ic_input.hide()
+		self.areainfo.hide()
 		self.emotebar.hide()
 		self.movebtn.hide()
 		self.switchbtn.hide()

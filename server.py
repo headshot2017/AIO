@@ -73,6 +73,7 @@ class AIOserver(object):
 	defaultzone = 0
 	maxplayers = 1
 	MSstate = -1
+	ic_finished = True
 	def __init__(self):
 		global AllowBot
 		if AllowBot and not os.path.exists("data/characters"):
@@ -198,6 +199,7 @@ class AIOserver(object):
 			return
 		
 		self.econPrint("[chat][IC] %d,%d,%s: %s" % (clientid,zone,name, chatmsg))
+		thread.start_new_thread(self.ic_tick_thread, (chatmsg,))
 		
 		buffer = ""
 		buffer += struct.pack("B", AIOprotocol.MSCHAT)
@@ -777,6 +779,17 @@ class AIOserver(object):
 		
 		return True
 	
+	def ic_tick_thread(self, msg):
+		self.ic_finished = False
+		pos = 0
+		progress = ""
+		while msg != progress:
+			sys.stdout.write(msg[pos])
+			progress += msg[pos]
+			pos += 1
+			time.sleep(1./30)
+		self.ic_finished = True
+	
 	def run(self): #main loop
 		if self.running:
 			print "[warning]", "tried to run server when it is already running"
@@ -976,8 +989,10 @@ class AIOserver(object):
 						except struct.error:
 							continue
 						
-						if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2:
+						if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or not self.ic_finished:
 							continue
+						
+						self.ic_finished = False
 						
 						if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
 							color = 4294967295 #set to exactly white

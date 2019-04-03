@@ -58,6 +58,23 @@ def getColor(number):
 		return QtGui.QColor(187, 187, 187)
 	return QtGui.QColor(0,0,0)
 
+class ICLineEdit(QtGui.QLineEdit):
+	enter_pressed = False
+	def __init__(self, window, ao_app):
+		super(ICLineEdit, self).__init__(window)
+		self.window = window
+		self.ao_app = ao_app
+	
+	def keyPressEvent(self, event):
+		if event.key() == QtCore.Qt.Key_Return and not event.isAutoRepeat():
+			self.enter_pressed = True
+		super(ICLineEdit, self).keyPressEvent(event)
+	
+	def keyReleaseEvent(self, event):
+		if event.key() == QtCore.Qt.Key_Return and not event.isAutoRepeat():
+			self.enter_pressed = False
+		super(ICLineEdit, self).keyReleaseEvent(event)
+
 class Broadcast(QtGui.QGraphicsItem):
 	fadeType = 0
 	def __init__(self, scene):
@@ -672,6 +689,8 @@ class GameWidget(QtGui.QWidget):
 	blip_rate = 1
 	blip = None
 	finished_chat = True
+	ic_delay = 0
+	pressed_enter = False
 	def __init__(self, _ao_app):
 		super(GameWidget, self).__init__()
 		self.ao_app = _ao_app
@@ -710,10 +729,9 @@ class GameWidget(QtGui.QWidget):
 		self.chatbubbletimer = QtCore.QTimer()
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
-		self.ic_input = QtGui.QLineEdit(self)
+		self.ic_input = ICLineEdit(self, _ao_app)
 		self.ic_input.setGeometry(self.gameview.x(), 384+16, 512, 20)
 		self.ic_input.setPlaceholderText("Chat message...")
-		self.ic_input.returnPressed.connect(self.ic_return)
 		self.ic_input.textChanged.connect(self.ic_typing)
 		self.ic_input.hide()
 		self.areainfo = QtGui.QLabel(self)
@@ -1091,6 +1109,16 @@ class GameWidget(QtGui.QWidget):
 		
 		if self.gameview.characters.has_key(clientid):
 			self.gameview.characters[clientid].chatbubble = 0
+		
+		if clientid == self.ao_app.player_id: # your message arrived.
+			self.ic_input.clear()
+			if self.chatbubbletimer.isActive():
+				self.chatbubbletimer.stop()
+			if self.myrealization != 0:
+				self.myrealization = 0
+				self.realizationbtn.setPixmap(self.realizationbtn_off)
+			if self.myevidence >= 0:
+				self.myevidence = -1
 		
 		evidence -= 1
 		self.m_chatmsg = chatmsg.decode("utf-8")
@@ -1600,17 +1628,10 @@ class GameWidget(QtGui.QWidget):
 			color = getColor(self.mychatcolor).rgb()
 		else:
 			color = 691337
-		
-		if text and self.finished_chat:
-			if self.chatbubbletimer.isActive():
-				self.chatbubbletimer.stop()
-			self.ic_input.clear()
+
+		if text and self.finished_chat and self.ic_delay == 0:
 			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1)
-			if self.myrealization != 0:
-				self.myrealization = 0
-				self.realizationbtn.setPixmap(self.realizationbtn_off)
-			if self.myevidence >= 0:
-				self.myevidence = -1
+			self.ic_delay = 6
 	
 	def timerEvent(self, event):
 		if not self.playing:
@@ -1633,6 +1654,11 @@ class GameWidget(QtGui.QWidget):
 				self.onExamineButton(True)
 	
 	def updateGame(self):
+		if self.ic_delay > 0:
+			self.ic_delay -= 1
+		if self.ic_input.enter_pressed:
+			self.ic_return()
+		
 		viewX, viewY = self.gameview.getViewCoords()
 		zoneamount = [0 for i in self.ao_app.zonelist]
 		for char in self.gameview.characters.values():
@@ -1663,6 +1689,8 @@ class GameWidget(QtGui.QWidget):
 				del self.examines[0]
 	
 	def startGame(self):
+		self.ic_delay = 0
+		self.ic_input.enter_pressed = False
 		self.finished_chat = True
 		self.myevidence = -1
 		self.oocchat.clear()
@@ -1719,6 +1747,7 @@ class GameWidget(QtGui.QWidget):
 		self.charselect.show()
 	
 	def stopGame(self):
+		self.ic_input.enter_pressed = False
 		if not self.playing:
 			return
 		

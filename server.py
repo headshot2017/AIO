@@ -784,7 +784,6 @@ class AIOserver(object):
 		pos = 0
 		progress = ""
 		while msg != progress:
-			sys.stdout.write(msg[pos])
 			progress += msg[pos]
 			pos += 1
 			time.sleep(1./30)
@@ -991,8 +990,6 @@ class AIOserver(object):
 						
 						if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or not self.ic_finished:
 							continue
-						
-						self.ic_finished = False
 						
 						if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
 							color = 4294967295 #set to exactly white

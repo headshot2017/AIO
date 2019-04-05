@@ -857,11 +857,11 @@ class GameWidget(QtGui.QWidget):
 		self.oocwidget = QtGui.QWidget(self)
 		self.oocwidget.setGeometry(96, 32, 512-192, 640-64)
 		
-		self.oocchat = QtGui.QTextEdit(self.oocwidget)
+		self.oocchat = QtGui.QTextBrowser(self.oocwidget)
 		self.oocchat.resize(512-192, 640-64-20)
-		self.oocchat.setStyleSheet('QTextEdit { background-color: rgb(64, 64, 64);\ncolor: white }')
+		self.oocchat.setStyleSheet('QTextEdit { background-color: rgb(64, 64, 64);\ncolor: white } a{ color: rgb(0, 192, 192); }')
 		self.oocchat.setAutoFillBackground(False)
-		self.oocchat.setReadOnly(True)
+		self.oocchat.setOpenExternalLinks(True)
 		self.oocnameinput = QtGui.QLineEdit(self.oocwidget)
 		self.oocnameinput.setGeometry(0, self.oocchat.size().height(), 96, 20)
 		self.oocnameinput.setStyleSheet('QLineEdit { background-color: rgb(64, 64, 64);\ncolor: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}')
@@ -1311,6 +1311,10 @@ class GameWidget(QtGui.QWidget):
 	
 	def onOOCMessage(self, contents):
 		name, text = contents
+		
+		dank_url_regex = QtCore.QRegExp("\\b(https?://\\S+\\.\\S+)\\b")
+		text = QtCore.QString(text).replace(dank_url_regex, "<a href='\\1'>\\1</a>")
+		
 		self.oocchat.append(name+": "+text)
 	
 	def onPrevEmotePage(self):

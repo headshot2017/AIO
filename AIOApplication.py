@@ -88,6 +88,7 @@ class AIOApplication(QtGui.QApplication):
 		self.mainwindow.startGame()
 	
 	def stopGame(self):
+		self.stopMusic()
 		self.tcpthread.disconnect()
 		self.mainwindow.stopGame()
 	

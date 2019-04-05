@@ -101,7 +101,7 @@ class AIOApplication(QtGui.QApplication):
 			if extension == ".mod" or extension == ".mid" or extension == ".midi" or extension == ".xm" or extension == ".s3m" or extension == ".it":
 				self.music = BASS_MusicLoad(False, "data\\sounds\\music\\"+file, 0, 0, 0, 0)
 			else:
-				self.music = BASS_StreamCreateFile(False, "data\\sounds\\music\\"+file, 0, 0, 0)
+				self.music = BASS_StreamCreateFile(False, "data\\sounds\\music\\"+file, 0, 0, BASS_SAMPLE_LOOP)
 			BASS_ChannelPlay(self.music, True)
 		
 	def playSound(self, file):

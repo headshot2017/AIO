@@ -690,7 +690,6 @@ class GameWidget(QtGui.QWidget):
 	blip = None
 	finished_chat = True
 	ic_delay = 0
-	pressed_enter = False
 	def __init__(self, _ao_app):
 		super(GameWidget, self).__init__()
 		self.ao_app = _ao_app
@@ -1631,7 +1630,7 @@ class GameWidget(QtGui.QWidget):
 
 		if text and self.finished_chat and self.ic_delay == 0:
 			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1)
-			self.ic_delay = 6
+			self.ic_delay = 3
 	
 	def timerEvent(self, event):
 		if not self.playing:

@@ -720,6 +720,7 @@ class AIOserver(object):
 	
 	def startMasterServerAdverter(self):
 		print "[masterserver]", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1])
+		self.ms_tcp = None
 		try:
 			self.ms_tcp = socket.create_connection((self.ms_addr[0], self.ms_addr[1]))
 		except socket.error as e:
@@ -856,7 +857,7 @@ class AIOserver(object):
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+						self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 						self.clients[client].close = True
 						del self.clients[client]
 						break
@@ -866,7 +867,7 @@ class AIOserver(object):
 						self.sendDestroy(client)
 					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-					self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+strelf.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
 					break
@@ -884,7 +885,7 @@ class AIOserver(object):
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+						self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 						self.clients[client].close = True
 						del self.clients[client]
 						break

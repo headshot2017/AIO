@@ -867,7 +867,7 @@ class AIOserver(object):
 						self.sendDestroy(client)
 					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+strelf.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(elf.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
 					break

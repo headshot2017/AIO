@@ -58,6 +58,16 @@ def versionToInt(ver):
 	except:
 		return int(major+minor+"0")
 
+def versionToStr(ver):
+	major = ver[1]
+	minor = ver[0]
+	if len(ver) > 2:
+		patch = ver[2]
+	else:
+		return major+"."+minor
+	
+	return  major+"."+minor+"."+patch
+
 class AIOserver(object):
 	running = False
 	tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

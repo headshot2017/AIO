@@ -35,6 +35,9 @@ class AIOApplication(QtGui.QApplication):
 	music = None
 	sound = None
 	GUIsound = None
+	sndvol = 100
+	musicvol = 100
+	blipvol = 100
 	def __init__(self, argv=[]):
 		super(AIOApplication, self).__init__(argv)
 		self.tcpthread = ClientThread()
@@ -102,6 +105,7 @@ class AIOApplication(QtGui.QApplication):
 				self.music = BASS_MusicLoad(False, "data\\sounds\\music\\"+file, 0, 0, 0, 0)
 			else:
 				self.music = BASS_StreamCreateFile(False, "data\\sounds\\music\\"+file, 0, 0, BASS_SAMPLE_LOOP)
+			BASS_ChannelSetAttribute(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
 			BASS_ChannelPlay(self.music, True)
 		
 	def playSound(self, file):
@@ -111,6 +115,7 @@ class AIOApplication(QtGui.QApplication):
 		
 		if os.path.exists(file):
 			self.sound = BASS_StreamCreateFile(False, file, 0, 0, 0)
+			BASS_ChannelSetAttribute(self.sound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
 			BASS_ChannelPlay(self.sound, True)
 	
 	def playGUISound(self, file):
@@ -119,6 +124,7 @@ class AIOApplication(QtGui.QApplication):
 				BASS_StreamFree(self.GUIsound)
 		
 		self.GUIsound = BASS_StreamCreateFile(False, file, 0, 0, 0)
+		BASS_ChannelSetAttribute(self.GUIsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
 		BASS_ChannelPlay(self.GUIsound, True)
 	
 	def stopMusic(self):

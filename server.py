@@ -850,7 +850,7 @@ class AIOserver(object):
 				try:
 					self.readbuffer = sock.recv(4)
 				except socket.error as e:
-					if e.args[0] == 10035:
+					if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
 						continue
 					else:
 						if self.clients[client].ready:
@@ -867,7 +867,7 @@ class AIOserver(object):
 						self.sendDestroy(client)
 					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(elf.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
 					break
@@ -878,7 +878,7 @@ class AIOserver(object):
 				try:
 					self.readbuffer = sock.recv(bufflength+1)
 				except socket.error as e:
-					if e.args[0] == 10035:
+					if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
 						continue
 					else:
 						if self.clients[client].ready:

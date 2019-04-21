@@ -73,6 +73,7 @@ class AIOserver(object):
 	defaultzone = 0
 	maxplayers = 1
 	MSstate = -1
+	ic_finished = True
 	def __init__(self):
 		global AllowBot
 		if AllowBot and not os.path.exists("data/characters"):
@@ -198,6 +199,7 @@ class AIOserver(object):
 			return
 		
 		self.econPrint("[chat][IC] %d,%d,%s: %s" % (clientid,zone,name, chatmsg))
+		thread.start_new_thread(self.ic_tick_thread, (chatmsg,))
 		
 		buffer = ""
 		buffer += struct.pack("B", AIOprotocol.MSCHAT)
@@ -718,6 +720,7 @@ class AIOserver(object):
 	
 	def startMasterServerAdverter(self):
 		print "[masterserver]", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1])
+		self.ms_tcp = None
 		try:
 			self.ms_tcp = socket.create_connection((self.ms_addr[0], self.ms_addr[1]))
 		except socket.error as e:
@@ -776,6 +779,16 @@ class AIOserver(object):
 					print "[masterserver]", "server published."
 		
 		return True
+	
+	def ic_tick_thread(self, msg):
+		self.ic_finished = False
+		pos = 0
+		progress = ""
+		while msg != progress:
+			progress += msg[pos]
+			pos += 1
+			time.sleep(1./30)
+		self.ic_finished = True
 	
 	def run(self): #main loop
 		if self.running:
@@ -837,14 +850,14 @@ class AIOserver(object):
 				try:
 					self.readbuffer = sock.recv(4)
 				except socket.error as e:
-					if e.args[0] == 10035:
+					if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
 						continue
 					else:
 						if self.clients[client].ready:
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+						self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 						self.clients[client].close = True
 						del self.clients[client]
 						break
@@ -854,7 +867,7 @@ class AIOserver(object):
 						self.sendDestroy(client)
 					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-					self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
 					break
@@ -865,14 +878,14 @@ class AIOserver(object):
 				try:
 					self.readbuffer = sock.recv(bufflength+1)
 				except socket.error as e:
-					if e.args[0] == 10035:
+					if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
 						continue
 					else:
 						if self.clients[client].ready:
 							self.sendDestroy(client)
 						sock.close()
 						print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
-						self.ms_tcp.send("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%\n")
+						self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 						self.clients[client].close = True
 						del self.clients[client]
 						break
@@ -976,7 +989,7 @@ class AIOserver(object):
 						except struct.error:
 							continue
 						
-						if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2:
+						if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or not self.ic_finished:
 							continue
 						
 						if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)

@@ -58,6 +58,23 @@ def getColor(number):
 		return QtGui.QColor(187, 187, 187)
 	return QtGui.QColor(0,0,0)
 
+class ICLineEdit(QtGui.QLineEdit):
+	enter_pressed = False
+	def __init__(self, window, ao_app):
+		super(ICLineEdit, self).__init__(window)
+		self.window = window
+		self.ao_app = ao_app
+	
+	def keyPressEvent(self, event):
+		if event.key() == QtCore.Qt.Key_Return and not event.isAutoRepeat():
+			self.enter_pressed = True
+		super(ICLineEdit, self).keyPressEvent(event)
+	
+	def keyReleaseEvent(self, event):
+		if event.key() == QtCore.Qt.Key_Return and not event.isAutoRepeat():
+			self.enter_pressed = False
+		super(ICLineEdit, self).keyReleaseEvent(event)
+
 class Broadcast(QtGui.QGraphicsItem):
 	fadeType = 0
 	def __init__(self, scene):
@@ -672,6 +689,7 @@ class GameWidget(QtGui.QWidget):
 	blip_rate = 1
 	blip = None
 	finished_chat = True
+	ic_delay = 0
 	def __init__(self, _ao_app):
 		super(GameWidget, self).__init__()
 		self.ao_app = _ao_app
@@ -710,15 +728,14 @@ class GameWidget(QtGui.QWidget):
 		self.chatbubbletimer = QtCore.QTimer()
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
-		self.ic_input = QtGui.QLineEdit(self)
-		self.ic_input.setGeometry(self.gameview.x(), 384+16, 512, 20)
+		self.ic_input = ICLineEdit(self, _ao_app)
+		self.ic_input.setGeometry(self.gameview.x(), 384+12, 512, 20)
 		self.ic_input.setPlaceholderText("Chat message...")
-		self.ic_input.returnPressed.connect(self.ic_return)
 		self.ic_input.textChanged.connect(self.ic_typing)
 		self.ic_input.hide()
 		self.areainfo = QtGui.QLabel(self)
 		self.areainfo.setAlignment(QtCore.Qt.AlignCenter)
-		self.areainfo.setGeometry(self.gameview.x(), 384, 512, 16)
+		self.areainfo.setGeometry(self.gameview.x(), 384, 512, 12)
 		self.areainfo.setStyleSheet("color: white;\nbackground-color: rgb(144, 144, 144)")
 		self.areainfo.setText("zone 0")
 		self.areainfo.hide()
@@ -746,7 +763,29 @@ class GameWidget(QtGui.QWidget):
 		emotebar = QtGui.QPixmap("data\\misc\\emote_bar.png")
 		self.emotebar = QtGui.QLabel(self)
 		self.emotebar.setPixmap(emotebar)
-		self.emotebar.move(self.gameview.x(), 384+80)
+		self.emotebar.move(self.gameview.x(), 384+92)
+		
+		self.musicslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+		self.soundslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+		self.blipslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
+		self.musicslider.setRange(0, 100)
+		self.soundslider.setRange(0, 100)
+		self.blipslider.setRange(0, 100)
+		self.musicslider.setValue(100)
+		self.soundslider.setValue(100)
+		self.blipslider.setValue(100)
+		self.musicslider.setGeometry(8, self.ic_input.y()+22, 192, 16)
+		self.soundslider.setGeometry(8, self.musicslider.y()+20, 192, 16)
+		self.blipslider.setGeometry(8, self.soundslider.y()+20, 192, 16)
+		self.musicslider.sliderMoved.connect(self.changeMusicVolume)
+		self.soundslider.sliderMoved.connect(self.changeSoundVolume)
+		self.blipslider.valueChanged.connect(self.changeBlipVolume)
+		self.sliderlabel1 = QtGui.QLabel("Music", self)
+		self.sliderlabel2 = QtGui.QLabel("SFX", self)
+		self.sliderlabel3 = QtGui.QLabel("Blips", self)
+		self.sliderlabel1.move(self.musicslider.x() + self.musicslider.size().width()+8, self.musicslider.y())
+		self.sliderlabel2.move(self.soundslider.x() + self.soundslider.size().width()+8, self.soundslider.y())
+		self.sliderlabel3.move(self.blipslider.x() + self.blipslider.size().width()+8, self.blipslider.y())
 		
 		self.prevemotepage = buttons.AIOButton(self)
 		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_left.png").scaled(40, 40)))
@@ -840,11 +879,11 @@ class GameWidget(QtGui.QWidget):
 		self.oocwidget = QtGui.QWidget(self)
 		self.oocwidget.setGeometry(96, 32, 512-192, 640-64)
 		
-		self.oocchat = QtGui.QTextEdit(self.oocwidget)
+		self.oocchat = QtGui.QTextBrowser(self.oocwidget)
 		self.oocchat.resize(512-192, 640-64-20)
-		self.oocchat.setStyleSheet('QTextEdit { background-color: rgb(64, 64, 64);\ncolor: white }')
+		self.oocchat.setStyleSheet('QTextEdit { background-color: rgb(64, 64, 64);\ncolor: white } a{ color: rgb(0, 192, 192); }')
 		self.oocchat.setAutoFillBackground(False)
-		self.oocchat.setReadOnly(True)
+		self.oocchat.setOpenExternalLinks(True)
 		self.oocnameinput = QtGui.QLineEdit(self.oocwidget)
 		self.oocnameinput.setGeometry(0, self.oocchat.size().height(), 96, 20)
 		self.oocnameinput.setStyleSheet('QLineEdit { background-color: rgb(64, 64, 64);\ncolor: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}')
@@ -944,6 +983,23 @@ class GameWidget(QtGui.QWidget):
 		self.spawned_once = False
 		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
+	
+	def changeMusicVolume(self, value):
+		self.ao_app.musicvol = value
+		if self.ao_app.music:
+			BASS_ChannelSetAttribute(self.ao_app.music, BASS_ATTRIB_VOL, value / 100.0)
+	
+	def changeSoundVolume(self, value):
+		self.ao_app.sndvol = value
+		if self.ao_app.sound:
+			BASS_ChannelSetAttribute(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
+		if self.ao_app.GUIsound:
+			BASS_ChannelSetAttribute(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
+	
+	def changeBlipVolume(self, value):
+		self.ao_app.blipvol = value
+		if self.blip:
+			BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def onPresentButton(self, ind):
 		self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip2.wav")
@@ -1092,6 +1148,16 @@ class GameWidget(QtGui.QWidget):
 		if self.gameview.characters.has_key(clientid):
 			self.gameview.characters[clientid].chatbubble = 0
 		
+		if clientid == self.ao_app.player_id: # your message arrived.
+			self.ic_input.clear()
+			if self.chatbubbletimer.isActive():
+				self.chatbubbletimer.stop()
+			if self.myrealization != 0:
+				self.myrealization = 0
+				self.realizationbtn.setPixmap(self.realizationbtn_off)
+			if self.myevidence >= 0:
+				self.myevidence = -1
+		
 		evidence -= 1
 		self.m_chatmsg = chatmsg.decode("utf-8")
 		
@@ -1123,6 +1189,7 @@ class GameWidget(QtGui.QWidget):
 		if self.blip:
 			BASS_StreamFree(self.blip)
 		self.blip = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-blip"+blip+".wav", 0, 0, 0)
+		BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, self.ao_app.blipvol / 100.0)
 		
 		self.chattext.clear()
 		self.chatname.setText(name)
@@ -1284,6 +1351,10 @@ class GameWidget(QtGui.QWidget):
 	
 	def onOOCMessage(self, contents):
 		name, text = contents
+		
+		dank_url_regex = QtCore.QRegExp("\\b(https?://\\S+\\.\\S+)\\b")
+		text = QtCore.QString(text).replace(dank_url_regex, "<a href='\\1'>\\1</a>")
+		
 		self.oocchat.append(name+": "+text)
 	
 	def onPrevEmotePage(self):
@@ -1344,6 +1415,12 @@ class GameWidget(QtGui.QWidget):
 	
 	def showCharSelect(self):
 		self.charselect.show()
+		self.musicslider.hide()
+		self.soundslider.hide()
+		self.blipslider.hide()
+		self.sliderlabel1.hide()
+		self.sliderlabel2.hide()
+		self.sliderlabel3.hide()
 		self.ic_input.hide()
 		self.areainfo.hide()
 		self.emotebar.hide()
@@ -1572,6 +1649,12 @@ class GameWidget(QtGui.QWidget):
 		
 	def hideCharSelect(self):
 		self.ic_input.show()
+		self.musicslider.show()
+		self.soundslider.show()
+		self.blipslider.show()
+		self.sliderlabel1.show()
+		self.sliderlabel2.show()
+		self.sliderlabel3.show()
 		self.areainfo.show()
 		self.movebtn.show()
 		self.switchbtn.show()
@@ -1600,17 +1683,10 @@ class GameWidget(QtGui.QWidget):
 			color = getColor(self.mychatcolor).rgb()
 		else:
 			color = 691337
-		
-		if text and self.finished_chat:
-			if self.chatbubbletimer.isActive():
-				self.chatbubbletimer.stop()
-			self.ic_input.clear()
+
+		if text and self.finished_chat and self.ic_delay == 0:
 			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1)
-			if self.myrealization != 0:
-				self.myrealization = 0
-				self.realizationbtn.setPixmap(self.realizationbtn_off)
-			if self.myevidence >= 0:
-				self.myevidence = -1
+			self.ic_delay = 3
 	
 	def timerEvent(self, event):
 		if not self.playing:
@@ -1633,6 +1709,11 @@ class GameWidget(QtGui.QWidget):
 				self.onExamineButton(True)
 	
 	def updateGame(self):
+		if self.ic_delay > 0:
+			self.ic_delay -= 1
+		if self.ic_input.enter_pressed:
+			self.ic_return()
+		
 		viewX, viewY = self.gameview.getViewCoords()
 		zoneamount = [0 for i in self.ao_app.zonelist]
 		for char in self.gameview.characters.values():
@@ -1663,6 +1744,8 @@ class GameWidget(QtGui.QWidget):
 				del self.examines[0]
 	
 	def startGame(self):
+		self.ic_delay = 0
+		self.ic_input.enter_pressed = False
 		self.finished_chat = True
 		self.myevidence = -1
 		self.oocchat.clear()
@@ -1716,9 +1799,16 @@ class GameWidget(QtGui.QWidget):
 		self.evidencedialog.hide()
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
+		self.musicslider.hide()
+		self.soundslider.hide()
+		self.blipslider.hide()
+		self.sliderlabel1.hide()
+		self.sliderlabel2.hide()
+		self.sliderlabel3.hide()
 		self.charselect.show()
 	
 	def stopGame(self):
+		self.ic_input.enter_pressed = False
 		if not self.playing:
 			return
 		
@@ -1744,6 +1834,12 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.hide()
 		self.oocwidget.hide()
 		self.musiclist.hide()
+		self.musicslider.hide()
+		self.soundslider.hide()
+		self.blipslider.hide()
+		self.sliderlabel1.hide()
+		self.sliderlabel2.hide()
+		self.sliderlabel3.hide()
 		self.playing = False
 
 class EvidenceDialog(QtGui.QWidget):

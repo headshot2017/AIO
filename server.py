@@ -1597,7 +1597,7 @@ class AIOserver(object):
 			client.send("Enter password:\n> ")
 			for i in range(500):
 				if not self.econ_clients.has_key(i):
-					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF]
+					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF, 0]
 					break
 		except:
 			pass
@@ -1646,8 +1646,8 @@ class AIOserver(object):
 					print "[econ]", "%s is now logged in." % client[1]
 				
 				else:
-					client[3] += 1
-					if client[3] >= MaxLoginFails:
+					client[4] += 1
+					if client[4] >= MaxLoginFails:
 						print "[econ]", "%s was kicked due to entering the wrong password." % client[1]
 						try:
 							client[0].close()
@@ -1657,7 +1657,7 @@ class AIOserver(object):
 						continue
 					
 					else:
-						client[0].send("Wrong password %d/%d.%s> " % (client[3], MaxLoginFails, "\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
+						client[0].send("Wrong password %d/%d.%s> " % (client[4], MaxLoginFails, "\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 			
 			elif state == ECONSTATE_AUTHED:
 				var = data.split(" ")[0]

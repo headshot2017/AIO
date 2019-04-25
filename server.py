@@ -1687,6 +1687,22 @@ class AIOserver(object):
 			
 			self.sendOOC(ServerOOCName, "=== ANNOUNCEMENT ===\n"+globalmsg)
 		
+		elif cmd == "crash":
+			if isConsole or isEcon:
+				self.sendOOC("", "this must be executed ingame", client)
+				return
+			if not self.clients[client].ip.startswith("127."):
+				self.sendOOC(ServerOOCName, "you are not allowed to use this!", client)
+				return
+			if not cmdargs:
+				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
+				return
+			if cmdargs[0].lower() != "now":
+				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
+				return
+			
+			raise Exception("(CRASH MANUALLY TRIGGERED)")
+		
 		elif cmd == "bot":
 			if isConsole or isEcon:
 				self.sendOOC("", "sorry. you must be ingame to use this command.", client)
@@ -1951,7 +1967,7 @@ if __name__ == "__main__":
 		atime = time.localtime()
 		print tracebackmsg
 		
-		with open("server/traceback_%d:%d:%d_%d-%d-%d" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
+		with open("server/traceback_%d.%d.%d_%d-%d-%d.txt" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
 			f.write(tracebackmsg)
 		
 		for i in server.clients.keys():

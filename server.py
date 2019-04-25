@@ -634,7 +634,7 @@ class AIOserver(object):
 			else:
 				self.kick(ClientID, "You have been banned for life: %s" % reason)
 		
-		self.econPrint("[bans] banned %s for %d min (%s) " % (self.banlist[-1][0], min, reason))
+		self.econPrint("[bans] banned %s for %d min (%s) " % (self.banlist[-1][0], min+1, reason))
 		self.writeBanList()
 		
 	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
@@ -1508,15 +1508,15 @@ class AIOserver(object):
 			else:
 				reallength = 0
 			
+			min = abs(time.time() - reallength) / 60 if reallength > 0 else 0
+			mintext = plural("minute", min+1)
 			self.ban(id, reallength, reason)
 			
 			if not self.clients.has_key(client) and not isConsole and not isEcon:
 				return
 			
-			min = abs(time.time() - banlength) / 60 if reallength > 0 else 0
-			mintext = plural("minute", min+1)
 			if min > 0:
-				self.sendOOC(ServerOOCName, "user %s has been banned for %d minutes (%s)" % (str(id), min+1, reason), client)
+				self.sendOOC(ServerOOCName, "user %s has been banned for %d %s (%s)" % (str(id), min+1, mintext, reason), client)
 			else:
 				self.sendOOC(ServerOOCName, "user %s has been lifebanned (%s)" % (str(id), reason), client)
 		

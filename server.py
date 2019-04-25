@@ -1945,6 +1945,7 @@ if __name__ == "__main__":
 	except Exception as e: #server crashed
 		tracebackmsg = traceback.format_exc(e)
 		atime = time.localtime()
+		print tracebackmsg
 		
 		with open("server/traceback_%d:%d:%d_%d-%d-%d" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
 			f.write(tracebackmsg)

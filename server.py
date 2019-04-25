@@ -600,6 +600,7 @@ class AIOserver(object):
 		else:
 			self.sendBuffer(ClientID, buffer)
 			self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+			self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 			del self.clients[ClientID]
 	
 	def ban(self, ClientID, length, reason):
@@ -1493,7 +1494,7 @@ class AIOserver(object):
 					self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
 					return
 			else:
-				if len(id.split(".")) < 4:
+				if len(id.split(".")) != 4:
 					self.sendOOC(ServerOOCName, "invalid IP address %s" % id, client)
 					return
 			

@@ -1,4 +1,4 @@
-import socket, thread, iniconfig, os, sys, struct, urllib, time
+import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback
 import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
@@ -583,7 +583,7 @@ class AIOserver(object):
 				else:
 					return self.sendBuffer(ClientID, buffer)
 	
-	def kick(self, ClientID, reason="No reason given"):
+	def kick(self, ClientID, reason="No reason given", printMsg=True):
 		if not self.running:
 			print "[error]", "tried to use kick() without server running"
 			return
@@ -596,10 +596,12 @@ class AIOserver(object):
 		
 		if isinstance(ClientID, socket.socket):
 			self.ClientID.sendall(buffer+"\r")
-			self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
+			if printMsg:
+				self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
 		else:
 			self.sendBuffer(ClientID, buffer)
-			self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+			if printMsg:
+				self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
 			self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 			del self.clients[ClientID]
 	
@@ -1448,7 +1450,7 @@ class AIOserver(object):
 				self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
 				return
 			
-			if id.startswith("127.") or id.lower() == "localhost" or id.startswith("192."):
+			if (id.startswith("127.") or id.lower() == "localhost" or id.startswith("192.")) and not isConsole and not isEcon:
 				self.sendOOC(ServerOOCName, "HOOOOLD UP fam you can't do that", client)
 				return
 			
@@ -1463,12 +1465,17 @@ class AIOserver(object):
 				bantype = "m"
 				banlength = int(banlength)
 			else:
-				banlength = int(banlength[:-1])
+				try:
+					banlength = int(banlength[:-1])
+				except:
+					self.sendOOC(ServerOOCName, "invalid ban length argument.", client)
+					return
+			
 			if bantype != "m" and bantype != "h" and bantype != "d":
 				self.sendOOC(ServerOOCName, "invalid ban type: %s" % bantype, client)
 				return
 			
-			if (bantype == "d" and banlength >= 365) or (bantype == "h" and banlength >= 8760) or (bantype == "m" and banlength >= 525600):
+			if ((bantype == "d" and banlength >= 365) or (bantype == "h" and banlength >= 8760) or (bantype == "m" and banlength >= 525600)) and not isConsole and not isEcon:
 				self.sendOOC(ServerOOCName, "woah, you can't ban people for a year, what's wrong with you?", client)
 				return
 			
@@ -1493,10 +1500,17 @@ class AIOserver(object):
 				if self.clients[id].isBot():
 					self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
 					return
+				if id == client:
+					self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+					return
 			else:
 				if len(id.split(".")) != 4:
 					self.sendOOC(ServerOOCName, "invalid IP address %s" % id, client)
 					return
+				for i in self.clients.keys():
+					if client == i and self.clients[i].ip == id:
+						self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+						return
 			
 			if banlength > 0:
 				reallength = int(time.time())
@@ -1512,9 +1526,6 @@ class AIOserver(object):
 			min = abs(time.time() - reallength) / 60 if reallength > 0 else 0
 			mintext = plural("minute", min+1)
 			self.ban(id, reallength, reason)
-			
-			if not self.clients.has_key(client) and not isConsole and not isEcon:
-				return
 			
 			if min > 0:
 				self.sendOOC(ServerOOCName, "user %s has been banned for %d %s (%s)" % (str(id), min+1, mintext, reason), client)
@@ -1928,4 +1939,15 @@ class AIOserver(object):
 			
 if __name__ == "__main__":
 	server = AIOserver()
-	server.run()
+	
+	try:
+		server.run()
+	except Exception as e: #server crashed
+		tracebackmsg = traceback.format_exc(e)
+		atime = time.localtime()
+		
+		with open("server/traceback_%d:%d:%d_%d-%d-%d" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
+			f.write(tracebackmsg)
+		
+		for i in server.clients.keys():
+			server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False)

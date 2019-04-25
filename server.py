@@ -1955,4 +1955,4 @@ if __name__ == "__main__":
 			f.write(tracebackmsg)
 		
 		for i in server.clients.keys():
-			server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False)
+			server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False, True)

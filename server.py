@@ -583,7 +583,7 @@ class AIOserver(object):
 				else:
 					return self.sendBuffer(ClientID, buffer)
 	
-	def kick(self, ClientID, reason="No reason given", printMsg=True):
+	def kick(self, ClientID, reason="No reason given", printMsg=True, noUpdate=False):
 		if not self.running:
 			print "[error]", "tried to use kick() without server running"
 			return
@@ -600,9 +600,13 @@ class AIOserver(object):
 				self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
 		else:
 			self.sendBuffer(ClientID, buffer)
+			
 			if printMsg:
 				self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
-			self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+			
+			if not noUpdate:
+				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+			
 			del self.clients[ClientID]
 	
 	def ban(self, ClientID, length, reason):

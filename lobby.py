@@ -192,7 +192,7 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 	
 	def onOptionsSave(self):
-		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image"))
+		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image")))
 		
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)

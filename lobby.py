@@ -163,7 +163,7 @@ class lobby(QtGui.QWidget):
 		
 		self.connectingstatus.raise_()
 		
-		self.optionsgui = options.Options()
+		self.optionsgui = options.Options(_ao_app)
 		
 		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
 		ip = a[0]

@@ -23,6 +23,7 @@ MASTER_WAITINGSUCCESS = 0
 ################################
 
 def plural(text, value):
+	print text, value
 	return text+"s" if value != 1 else text
 
 def isNumber(text):
@@ -180,7 +181,7 @@ class AIOserver(object):
 					if bans[0] == ipaddr[0]:
 						if bans[1] > 0:
 							min = abs(time.time() - bans[1]) / 60
-							mintext = plural("minute", min+1)
+							mintext = plural("minute", int(min+1))
 							self.kick(i, "You have been banned for %d %s: %s" % (min+1, mintext, bans[2]))
 						else:
 							self.kick(i, "You have been banned for life: %s" % bans[2])
@@ -621,7 +622,7 @@ class AIOserver(object):
 			min = abs(time.time() - length) / 60
 		else:
 			min = 0
-		mintext = plural("minute", min+1)
+		mintext = plural("minute", int(min+1))
 		
 		if type(ClientID) == str:
 			if "." in ClientID: # if it's an ip address
@@ -1528,7 +1529,7 @@ class AIOserver(object):
 				reallength = 0
 			
 			min = abs(time.time() - reallength) / 60 if reallength > 0 else 0
-			mintext = plural("minute", min+1)
+			mintext = plural("minute", int(min+1))
 			self.ban(id, reallength, reason)
 			
 			if min > 0:

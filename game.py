@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from functools import partial
 from pybass import *
-import random, os, AIOprotocol, buttons, math, ini
+import random, os, AIOprotocol, buttons, math
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -1776,7 +1776,7 @@ class GameWidget(QtGui.QWidget):
 		
 		QtGui.QMessageBox.information(self, "Server Message Of The Day", self.ao_app.motd)
 		
-		self.oocnameinput.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
+		self.oocnameinput.setText(self.ao_app.ini_read_string("aaio.ini", "General", "OOC name"))
 		if not self.oocnameinput.text() or self.oocnameinput.text().startsWith("Player "):
 			self.oocnameinput.setText("Player %d" % self.ao_app.player_id)
 		

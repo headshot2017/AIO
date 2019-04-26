@@ -1,6 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from game_version import GAME_VERSION
 import os, socket, buttons
+import options
 
 class ConnectingStatus(QtGui.QWidget):
 	ao_app = None
@@ -103,6 +104,7 @@ class lobby(QtGui.QWidget):
 		self.allservers = buttons.AIOButton(self)
 		self.favoritesbtn = buttons.AIOButton(self)
 		self.joinipaddress = buttons.AIOButton(self)
+		self.optionsbtn = buttons.AIOButton(self)
 		
 		self.addtofav.setPixmap(QtGui.QPixmap("data\\misc\\add_to_favorites.png"))
 		self.addtofav.move(640-16, desc_y+desc_h+4)
@@ -118,6 +120,8 @@ class lobby(QtGui.QWidget):
 		self.newsbtn.move(self.refreshbtn.x(), self.favoritesbtn.y() + 32)
 		self.joinipaddress.setPixmap(QtGui.QPixmap("data\\misc\\joinip_button.png"))
 		self.joinipaddress.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
+		self.optionsbtn.setPixmap(QtGui.QPixmap("data\\misc\\options_button.png"))
+		self.optionsbtn.move(8, self.size().height()-40)
 		
 		self.description = QtGui.QTextEdit(self)
 		self.description.setFont(self.font)
@@ -148,6 +152,7 @@ class lobby(QtGui.QWidget):
 		self.favoritesbtn.clicked.connect(self.on_favorites_list)
 		self.newsbtn.clicked.connect(self.on_news_tab)
 		self.joinipaddress.clicked.connect(self.join_ip_address)
+		self.optionsbtn.clicked.connect(self.on_settings_button)
 		self.addtofav.show()
 		self.connectbtn.show()
 		self.refreshbtn.show()
@@ -157,6 +162,8 @@ class lobby(QtGui.QWidget):
 		self.joinipaddress.show()
 		
 		self.connectingstatus.raise_()
+		
+		self.optionsgui = options.Options()
 		
 		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
 		ip = a[0]
@@ -241,6 +248,9 @@ class lobby(QtGui.QWidget):
 		self.refreshbtn.show()
 		self.newstext.show()
 		self.newslabel.show()
+	
+	def on_settings_button(self):
+		self.optionsgui.showSettings()
 	
 	def add_to_favorites(self):
 		if self.tab == 1:

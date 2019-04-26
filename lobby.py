@@ -99,6 +99,7 @@ class lobby(QtGui.QWidget):
 		self.addtofav = buttons.AIOButton(self)
 		self.connectbtn = buttons.AIOButton(self)
 		self.refreshbtn = buttons.AIOButton(self)
+		self.newsbtn = buttons.AIOButton(self)
 		self.allservers = buttons.AIOButton(self)
 		self.favoritesbtn = buttons.AIOButton(self)
 		self.joinipaddress = buttons.AIOButton(self)
@@ -113,6 +114,8 @@ class lobby(QtGui.QWidget):
 		self.allservers.move(self.refreshbtn.x() - 128 - 8, self.refreshbtn.y() + 64)
 		self.favoritesbtn.setPixmap(QtGui.QPixmap("data\\misc\\favorites.png"))
 		self.favoritesbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
+		self.newsbtn.setPixmap(QtGui.QPixmap("data\\misc\\news_button.png"))
+		self.newsbtn.move(self.refreshbtn.x(), self.favoritesbtn.y() + 32)
 		self.joinipaddress.setPixmap(QtGui.QPixmap("data\\misc\\joinip_button.png"))
 		self.joinipaddress.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
 		
@@ -127,17 +130,30 @@ class lobby(QtGui.QWidget):
 		self.description.setStyleSheet("background-color: rgba(0, 0, 0, 0);"
 														"color: white")
 		
+		self.newstext = QtGui.QTextEdit(self)
+		self.newstext.setFont(self.font)
+		self.newstext.setGeometry(64, 64, 512-64, 240)
+		self.newstext.setReadOnly(True)
+		self.newslabel = QtGui.QLabel(self)
+		self.newslabel.setFont(self.font)
+		self.newslabel.setText("News")
+		self.newslabel.move(self.newstext.x(), self.newstext.y() - 20)
+		self.newstext.hide()
+		self.newslabel.hide()
+		
 		self.addtofav.clicked.connect(self.add_to_favorites)
 		self.connectbtn.clicked.connect(self.connectClicked)
 		self.refreshbtn.clicked.connect(self.refresh)
 		self.allservers.clicked.connect(self.on_public_servers)
 		self.favoritesbtn.clicked.connect(self.on_favorites_list)
+		self.newsbtn.clicked.connect(self.on_news_tab)
 		self.joinipaddress.clicked.connect(self.join_ip_address)
 		self.addtofav.show()
 		self.connectbtn.show()
 		self.refreshbtn.show()
 		self.allservers.show()
 		self.favoritesbtn.show()
+		self.newsbtn.show()
 		self.joinipaddress.show()
 		
 		self.connectingstatus.raise_()
@@ -151,6 +167,7 @@ class lobby(QtGui.QWidget):
 		
 		self.msthread = MasterServerThread(ip, port)
 		self.msthread.gotServers.connect(self.gotServerList)
+		self.msthread.gotNews.connect(self.gotNews)
 		self.msthread.start()
 		self.servers = []
 		try:
@@ -183,11 +200,26 @@ class lobby(QtGui.QWidget):
 		if self.tab == 0:
 			self.updateServerList(servers)
 	
+	def gotNews(self, news):
+		self.newstext.setText(news)
+		if not os.path.exists("data/aaio_news.txt"):
+			open("data/aaio_news.txt", "w").close()
+		
+		with open("data/aaio_news.txt") as f:
+			if f.read() != news:
+				f.close()
+				f = open("data/aaio_news.txt", "w")
+				f.write(news)
+				f.close()
+				self.on_news_tab()
+	
 	def on_public_servers(self):
 		if self.tab == 0:
 			return
 		
 		self.tab = 0
+		self.newstext.hide()
+		self.newslabel.hide()
 		self.updateServerList(self.servers)
 		self.refreshbtn.show()
 	
@@ -196,8 +228,19 @@ class lobby(QtGui.QWidget):
 			return
 		
 		self.tab = 1
+		self.newstext.hide()
+		self.newslabel.hide()
 		self.updateServerList(self.favorites)
 		self.refreshbtn.hide()
+	
+	def on_news_tab(self):
+		if self.tab == 2:
+			return
+		
+		self.tab = 2
+		self.refreshbtn.show()
+		self.newstext.show()
+		self.newslabel.show()
 	
 	def add_to_favorites(self):
 		if self.tab == 1:
@@ -216,7 +259,10 @@ class lobby(QtGui.QWidget):
 			file.write(server[2]+":"+str(server[3])+":"+server[0]+":"+server[1]+"\n")
 	
 	def refresh(self):
-		self.msthread.sendRefresh()
+		if self.tab != 2:
+			self.msthread.sendRefresh()
+		else:
+			self.msthread.getNews()
 	
 	def join_ip_address(self):
 		addr, ok = QtGui.QInputDialog.getText(self, "Join IP address...", "Enter the IP address of the server you wish to join.\nIt must have the format \"ip:port\"\nExample: 127.0.0.1:27010")
@@ -272,6 +318,7 @@ class lobby(QtGui.QWidget):
 
 class MasterServerThread(QtCore.QThread):
 	gotServers = QtCore.pyqtSignal(tuple)
+	gotNews = QtCore.pyqtSignal(str)
 	def __init__(self, ip, port):
 		super(MasterServerThread, self).__init__()
 		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -289,11 +336,14 @@ class MasterServerThread(QtCore.QThread):
 	def sendRefresh(self):
 		self.tcp.send("12#%\n")
 	
+	def getNews(self):
+		self.tcp.send("NEWS#%\n")
+	
 	def run(self):
 		try:
 			self.tcp.connect((self.ip, self.port))
 		except socket.error as err:
-			self.gotServers.emit((("Error connecting to master server. Click for details", str(err.args), "127.0.0.1", 27010),))
+			self.gotServers.emit((("Error connecting to master server. Click for details", str(err), "127.0.0.1", 27010),))
 			self.closeConnection()
 		
 		self.tcp.settimeout(0.1)
@@ -335,6 +385,7 @@ class MasterServerThread(QtCore.QThread):
 				if header == "1": #connected, contains client ID (not that useful anyway)
 					player_id = int(network[0])
 					self.sendRefresh() #request servers
+					self.getNews() #get news tab
 				
 				elif header == "12": #server list
 					total_servers = len(network) / 4
@@ -347,4 +398,6 @@ class MasterServerThread(QtCore.QThread):
 						servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
 					
 					self.gotServers.emit(tuple(servers))
-					
+				
+				elif header == "NEWS": #news tab
+					self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))

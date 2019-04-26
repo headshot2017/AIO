@@ -164,6 +164,7 @@ class lobby(QtGui.QWidget):
 		self.connectingstatus.raise_()
 		
 		self.optionsgui = options.Options(_ao_app)
+		self.optionsgui.fileSaved.connect(self.onOptionsSave)
 		
 		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
 		ip = a[0]
@@ -189,6 +190,9 @@ class lobby(QtGui.QWidget):
 		
 		self.serverselected = -1
 		self.tab = 0
+	
+	def onOptionsSave(self):
+		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image"))
 		
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)

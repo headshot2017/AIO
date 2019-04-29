@@ -140,7 +140,11 @@ class AIOserver(object):
 				sys.exit()
 		
 		scene_ini = iniconfig.IniConfig("server/scene/"+self.scene+"/init.ini")
-		self.maxplayers = int(scene_ini.get("chars", "total", 14))
+		
+		self.maxplayers = int(ini.get("Server", "maxplayers", -1))
+		if self.maxplayers < 0:
+			self.maxplayers = int(scene_ini.get("chars", "total", 14))
+		
 		zonelength = int(scene_ini.get("background", "total", 1))
 		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxplayers+1)]
 		self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway")] for zone in range(1, zonelength+1)]

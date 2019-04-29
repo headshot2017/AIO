@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from functools import partial
 from pybass import *
-import random, os, AIOprotocol, buttons, math
+import random, os, AIOprotocol, buttons, math, charselect
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -976,16 +976,8 @@ class GameWidget(QtGui.QWidget):
 		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
 		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
 		
-		self.charselect = QtGui.QWidget(self)
-		self.charselect.setGeometry(0, 384, 512, 640-384)
-		self.charcombo = QtGui.QComboBox(self.charselect)
-		self.charcombo.setGeometry(64, (640-384)/2-10, 192, 20)
-		self.charconfirm = QtGui.QPushButton(self.charselect, text="Confirm")
-		self.charconfirm.setGeometry(512-((self.charcombo.x()+self.charcombo.size().width())/2)-32, (640-384)/2-10, 64, 20)
-		self.charconfirm.clicked.connect(self.confirmChar_clicked)
-		self.disconnectbtn = QtGui.QPushButton(self.charselect, text="Disconnect")
-		self.disconnectbtn.move(8, 8)
-		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
+		self.charselect = charselect.CharSelect(self, _ao_app)
+		self.charselect.charClicked.connect(self.confirmChar_clicked)
 		
 		self.chatlog.raise_()
 		
@@ -1660,8 +1652,7 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.zoneforegrounds[i][0].setOffset(0, -fg_image.height()*2)
 			self.gameview.zoneforegrounds[i][0].setZValue(fg_y)
 	
-	def confirmChar_clicked(self):
-		selection = self.charcombo.currentIndex()
+	def confirmChar_clicked(self, selection):
 		self.ao_app.tcpthread.setChar(selection)
 		
 	def hideCharSelect(self):
@@ -1769,13 +1760,11 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.clear()
 		self.chatname.clear()
 		self.chattext.clear()
-		if self.charcombo.count():
-			self.charcombo.clear()
 		self.musiclist.clear()
 		self.movemenu.clear()
 		self.movemenuActions = []
 		self.evidencename.clear()
-		self.charcombo.addItems(self.ao_app.charlist)
+		self.charselect.showCharList(self.ao_app.charlist)
 		
 		for i in range(len(self.ao_app.zonelist)):
 			self.movemenuActions.append(self.movemenu.addAction(str(i)+": "+self.ao_app.zonelist[i][1]))

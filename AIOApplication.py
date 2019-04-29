@@ -303,7 +303,8 @@ class ClientThread(QtCore.QThread):
 	def run(self):
 		tempdata = ""
 		connection_phase = 0
-		pingtimer = 150
+		pingtimer = 7
+		already_pinged = False
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -320,11 +321,13 @@ class ClientThread(QtCore.QThread):
 			if not self.connected:
 				break
 			
-			if pingtimer > 0:
-				pingtimer -= 1
-				if pingtimer == 0:
-					pingbefore = time.time()
-					self.sendPing()
+			can_send = int(time.time()) % pingtimer == 0
+			if can_send and not already_pinged:
+				pingbefore = time.time()
+				already_pinged = True
+				self.sendPing()
+			elif not can_send:
+				already_pinged = False
 			
 			try:
 				data = self.tcp.recv(4096)
@@ -535,8 +538,7 @@ class ClientThread(QtCore.QThread):
 				
 				elif header == AIOprotocol.PING:
 					pingafter = time.time()
-					pingtimer = 150
-					self.gotPing.emit(int(pingbefore - pingafter * 1000))
+					self.gotPing.emit(int((pingafter - pingbefore)* 1000))
 				
 				if data:
 					if data[0] == "\r":

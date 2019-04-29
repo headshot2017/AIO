@@ -963,6 +963,10 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.setStyleSheet('background-color: rgb(96, 96, 96);\ncolor: white')
 		self.chatlog.setReadOnly(True)
 		
+		self.pinglabel = QtGui.QLabel(self)
+		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
+		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
+		
 		self.charselect = QtGui.QWidget(self)
 		self.charselect.setGeometry(0, 384, 512, 640-384)
 		self.charcombo = QtGui.QComboBox(self.charselect)
@@ -985,8 +989,8 @@ class GameWidget(QtGui.QWidget):
 		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
 	
-	def onGotPing(self, newping):
-		print "ping: %d" % newping
+	def onGotPing(self, ping):
+		self.pinglabel.setText("Ping: %d" % ping)
 	
 	def changeMusicVolume(self, value):
 		self.ao_app.musicvol = value

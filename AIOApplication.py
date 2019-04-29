@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from game_version import GAME_VERSION
 from ConfigParser import ConfigParser
-import socket, struct, AIOprotocol, os
+import socket, struct, AIOprotocol, os, time
 from AIOMainWindow import AIOMainWindow
 from pybass import *
 

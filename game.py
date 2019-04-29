@@ -80,8 +80,10 @@ class Broadcast(QtGui.QGraphicsItem):
 	def __init__(self, scene):
 		super(Broadcast, self).__init__(scene=scene)
 		self.pixmap = QtGui.QGraphicsPixmapItem(self)
-		self.pixmap.setPixmap(QtGui.QPixmap("data\\misc\\broadcast.png"))
+		self.orig_pixmap = QtGui.QPixmap("data\\misc\\broadcast.png")
+		self.pixmap.setPixmap(self.orig_pixmap)
 		self.text = QtGui.QGraphicsSimpleTextItem(self)
+		
 		aFont = QtGui.QFont("Tahoma", 8)
 		self.fontmetrics = QtGui.QFontMetrics(aFont)
 		self.setOpacity(0)
@@ -118,7 +120,14 @@ class Broadcast(QtGui.QGraphicsItem):
 		self.fadeTimer.start(50)
 	
 	def showText(self, text):
-		self.text.setPos((self.pixmap.pixmap().size().width()/2) - (self.fontmetrics.boundingRect(text).width()/2), 1)
+		apixmap = self.orig_pixmap
+		if self.fontmetrics.boundingRect(text).width() > self.orig_pixmap.size().width()-6:
+			apixmap = self.orig_pixmap.scaled(self.fontmetrics.boundingRect(text).width()+6, self.orig_pixmap.size().height())
+		
+		self.pixmap.setPixmap(apixmap)
+		
+		self.pixmap.setPos(256 - (apixmap.size().width()/2), 0)
+		self.text.setPos(self.pixmap.x() + ((self.pixmap.pixmap().size().width()/2) - (self.fontmetrics.boundingRect(text).width()/2)), 1)
 		self.text.setText(text)
 		self.fadeType = 0
 		if self.waitTimer.isActive():
@@ -721,7 +730,7 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.move((self.size().width()/2) - (self.gameview.size().width()/2), 0)
 		
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
-		self.broadcastObj.setPos(256-(self.broadcastObj.pixmap.pixmap().size().width()/2), 64)
+		self.broadcastObj.setPos(0, 64)
 		
 		self.testtimer = QtCore.QBasicTimer()
 		self.tcptimer = QtCore.QBasicTimer()

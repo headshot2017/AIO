@@ -786,6 +786,14 @@ class AIOserver(object):
 		
 		self.sendBuffer(ClientID, buffer)
 	
+	def sendPong(self, ClientID):
+		if not self.running:
+			print "[error]", "tried to use sendPong() without server running"
+			return
+		
+		buffer = struct.pack("B", AIOprotocol.PING)
+		self.sendBuffer(ClientID, buffer)
+	
 	def startMasterServerAdverter(self):
 		print "[masterserver]", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1])
 		self.ms_tcp = None
@@ -1212,7 +1220,10 @@ class AIOserver(object):
 						elif type == AIOprotocol.EV_DELETE:
 							print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
 							self.deleteEvidence(self.clients[client].zone, ind)
-	
+					
+					elif header == AIOprotocol.PING: #pong
+						self.sendPong(client)
+
 	def parseOOCcommand(self, client, cmd, cmdargs):
 		isConsole = client == -1
 		isEcon = client >= 10000

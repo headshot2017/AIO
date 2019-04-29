@@ -707,6 +707,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.broadcastMessage.connect(self.onBroadcast)
 		self.ao_app.tcpthread.chatBubble.connect(self.onChatBubble)
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
+		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 		
 		self.aSound = ["", -1, 0] #filename, delay, zone
@@ -983,6 +984,9 @@ class GameWidget(QtGui.QWidget):
 		self.spawned_once = False
 		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
+	
+	def onGotPing(self, newping):
+		print "ping: %d" % newping
 	
 	def changeMusicVolume(self, value):
 		self.ao_app.musicvol = value

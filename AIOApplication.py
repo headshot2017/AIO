@@ -161,6 +161,7 @@ class ClientThread(QtCore.QThread):
 	chatBubble = QtCore.pyqtSignal(list)
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
+	gotPing = QtCore.pyqtSignal(int)
 	
 	def __init__(self):
 		super(ClientThread, self).__init__()
@@ -294,9 +295,15 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", dir_nr)
 			self.sendBuffer(buf)
 	
+	def sendPing(self):
+		if self.connected:
+			buf = struct.pack("B", AIOprotocol.PING)
+			self.sendBuffer(buf)
+	
 	def run(self):
 		tempdata = ""
 		connection_phase = 0
+		pingtimer = 150
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -312,6 +319,12 @@ class ClientThread(QtCore.QThread):
 		while True:
 			if not self.connected:
 				break
+			
+			if pingtimer > 0:
+				pingtimer -= 1
+				if pingtimer == 0:
+					pingbefore = time.time()
+					self.sendPing()
 			
 			try:
 				data = self.tcp.recv(4096)
@@ -519,6 +532,11 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.WARN:
 					data, message = buffer_read("S", data)
 					self.serverWarning.emit(message.decode("utf-8"))
+				
+				elif header == AIOprotocol.PING:
+					pingafter = time.time()
+					pingtimer = 150
+					self.gotPing.emit(int(pingbefore - pingafter * 1000))
 				
 				if data:
 					if data[0] == "\r":

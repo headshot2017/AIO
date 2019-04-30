@@ -1446,6 +1446,7 @@ class GameWidget(QtGui.QWidget):
 		self.evidencedialog.setVisible(False)
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
+		self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
@@ -1674,6 +1675,7 @@ class GameWidget(QtGui.QWidget):
 		self.oocbtn.show()
 		self.evidencebtn.show()
 		self.charselect.hide()
+		self.pinglabel.move(512-96, self.ic_input.y()+22)
 	
 	def ic_typing(self):
 		if self.ic_input.text():
@@ -1814,6 +1816,7 @@ class GameWidget(QtGui.QWidget):
 		self.sliderlabel2.hide()
 		self.sliderlabel3.hide()
 		self.charselect.show()
+		self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def stopGame(self):
 		self.ic_input.enter_pressed = False

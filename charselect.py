@@ -9,7 +9,7 @@ class CharSelect(QtGui.QWidget):
 		self.ao_app = ao_app
 		
 		self.charscroller = QtGui.QScrollArea(self)
-		self.charscroller.setGeometry(16, 32, 384+48, 192+32)
+		self.charscroller.setGeometry(16, 32, 384+96, 192+32)
 		self.scrollwidget = QtGui.QWidget(self.charscroller)
 		self.charscroller.setWidget(self.scrollwidget)
 		self.setGeometry(0, 384, 512, 640-384)

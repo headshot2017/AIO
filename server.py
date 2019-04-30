@@ -143,7 +143,8 @@ class AIOserver(object):
 		
 		self.maxplayers = int(ini.get("Server", "maxplayers", -1))
 		if self.maxplayers < 0:
-			self.maxplayers = int(scene_ini.get("chars", "total", 14))
+			self.maxplayers = int(scene_ini.get("chars", "total", 3))
+		self.maxchars = int(scene_ini.get("chars", "total", 3))
 		
 		zonelength = int(scene_ini.get("background", "total", 1))
 		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxplayers+1)]
@@ -213,7 +214,7 @@ class AIOserver(object):
 		buffer = ""
 		buffer += struct.pack("B", AIOprotocol.CONNECT)
 		buffer += struct.pack("I", ClientID)
-		buffer += struct.pack("I", self.maxplayers)
+		buffer += struct.pack("I", self.maxchars)
 		buffer += self.zonelist[self.defaultzone][0]+"\0"
 		buffer += struct.pack("I", len(self.musiclist))
 		buffer += struct.pack("I", len(self.zonelist))

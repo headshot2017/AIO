@@ -3,14 +3,17 @@ import buttons
 
 class CharSelect(QtGui.QWidget):
 	charClicked = QtCore.pyqtSignal(int)
+	charHover = QtCore.pyqtSignal(int)
 	
 	def __init__(self, parent, ao_app):
 		super(CharSelect, self).__init__(parent)
 		self.ao_app = ao_app
+		self.charbuttons = []
 		
 		self.charscroller = QtGui.QScrollArea(self)
 		self.charscroller.setGeometry(16, 32, 384+96, 192+32)
 		self.scrollwidget = QtGui.QWidget(self.charscroller)
+		self.scrollwidget.resize(384+96-20, 384)
 		self.charscroller.setWidget(self.scrollwidget)
 		self.setGeometry(0, 384, 512, 640-384)
 		
@@ -27,7 +30,15 @@ class CharSelect(QtGui.QWidget):
 		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 	
 	def showCharList(self, chars):
-		pass
+		all = range(len(self.charbuttons))
+		for i in all:
+			del self.charbuttons[0]
+		self.charbuttons.append(buttons.AIOCharButton(self.scrollwidget, self.ao_app, 0))
+		self.charbuttons[0].move(8, 8)
+		self.charbuttons[0].mouseEnter.connect(self.charHovered)
 	
-	def confirmChar_clicked(self):
-		self.charClicked.emit(self.charcombo.currentIndex())
+	def charHovered(self, ind):
+		print ind
+	
+	def confirmChar_clicked(self, ind):
+		self.charClicked.emit(ind)

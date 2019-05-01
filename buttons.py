@@ -45,6 +45,7 @@ class AIOCharButton(AIOIndexButton):
 		self.setPixmap(QPixmap("data/misc/char_icon.png"))
 		
 		self.charpic = QLabel(self)
+		self.charpic.move(0, -8)
 		prefix = ao_app.ini_read_string("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "imgprefix")+"-"
 		prefix = "" if prefix == "-" else prefix
 		
@@ -53,6 +54,8 @@ class AIOCharButton(AIOIndexButton):
 		else:
 			pix = QPixmap("data/misc/error.gif")
 		self.charpic.setPixmap(pix.scaled(pix.size().width()*2, pix.size().height()*2))
+		if self.charpic.pixmap().size().width() > self.pixmap().size().width():
+			self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
 		self.charpic.show()
 		self.show()
 	

@@ -49,13 +49,23 @@ class AIOCharButton(AIOIndexButton):
 		prefix = ao_app.ini_read_string("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "imgprefix")+"-"
 		prefix = "" if prefix == "-" else prefix
 		
-		if os.path.exists("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif"):
+		scale = True
+		if os.path.exists("data/characters/"+ao_app.charlist[ind]+"/char_icon.png"):
+			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/char_icon.png")
+			scale = False
+		elif os.path.exists("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif"):
 			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif")
 		else:
 			pix = QPixmap("data/misc/error.gif")
-		self.charpic.setPixmap(pix.scaled(pix.size().width()*2, pix.size().height()*2))
-		if self.charpic.pixmap().size().width() > self.pixmap().size().width():
-			self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
+		
+		if scale:
+			scale = ao_app.ini_read_float("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "scale", 1)*2
+			self.charpic.setPixmap(pix.scaled(pix.size().width()*scale, pix.size().height()*scale))
+			if self.charpic.pixmap().size().width() > self.pixmap().size().width():
+				self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
+		else:
+			self.charpic.setPixmap(pix)
+		
 		self.charpic.show()
 		self.show()
 	

@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from functools import partial
 from pybass import *
-import random, os, AIOprotocol, buttons, math
+import random, os, AIOprotocol, buttons, math, charselect
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -80,8 +80,10 @@ class Broadcast(QtGui.QGraphicsItem):
 	def __init__(self, scene):
 		super(Broadcast, self).__init__(scene=scene)
 		self.pixmap = QtGui.QGraphicsPixmapItem(self)
-		self.pixmap.setPixmap(QtGui.QPixmap("data\\misc\\broadcast.png"))
+		self.orig_pixmap = QtGui.QPixmap("data\\misc\\broadcast.png")
+		self.pixmap.setPixmap(self.orig_pixmap)
 		self.text = QtGui.QGraphicsSimpleTextItem(self)
+		
 		aFont = QtGui.QFont("Tahoma", 8)
 		self.fontmetrics = QtGui.QFontMetrics(aFont)
 		self.setOpacity(0)
@@ -118,7 +120,14 @@ class Broadcast(QtGui.QGraphicsItem):
 		self.fadeTimer.start(50)
 	
 	def showText(self, text):
-		self.text.setPos((self.pixmap.pixmap().size().width()/2) - (self.fontmetrics.boundingRect(text).width()/2), 1)
+		apixmap = self.orig_pixmap
+		if self.fontmetrics.boundingRect(text).width() > self.orig_pixmap.size().width()-6:
+			apixmap = self.orig_pixmap.scaled(self.fontmetrics.boundingRect(text).width()+6, self.orig_pixmap.size().height())
+		
+		self.pixmap.setPixmap(apixmap)
+		
+		self.pixmap.setPos(256 - (apixmap.size().width()/2), 0)
+		self.text.setPos(self.pixmap.x() + ((self.pixmap.pixmap().size().width()/2) - (self.fontmetrics.boundingRect(text).width()/2)), 1)
 		self.text.setText(text)
 		self.fadeType = 0
 		if self.waitTimer.isActive():
@@ -707,6 +716,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.broadcastMessage.connect(self.onBroadcast)
 		self.ao_app.tcpthread.chatBubble.connect(self.onChatBubble)
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
+		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 		
 		self.aSound = ["", -1, 0] #filename, delay, zone
@@ -720,7 +730,7 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.move((self.size().width()/2) - (self.gameview.size().width()/2), 0)
 		
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
-		self.broadcastObj.setPos(256-(self.broadcastObj.pixmap.pixmap().size().width()/2), 64)
+		self.broadcastObj.setPos(0, 64)
 		
 		self.testtimer = QtCore.QBasicTimer()
 		self.tcptimer = QtCore.QBasicTimer()
@@ -962,16 +972,12 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.setStyleSheet('background-color: rgb(96, 96, 96);\ncolor: white')
 		self.chatlog.setReadOnly(True)
 		
-		self.charselect = QtGui.QWidget(self)
-		self.charselect.setGeometry(0, 384, 512, 640-384)
-		self.charcombo = QtGui.QComboBox(self.charselect)
-		self.charcombo.setGeometry(64, (640-384)/2-10, 192, 20)
-		self.charconfirm = QtGui.QPushButton(self.charselect, text="Confirm")
-		self.charconfirm.setGeometry(512-((self.charcombo.x()+self.charcombo.size().width())/2)-32, (640-384)/2-10, 64, 20)
-		self.charconfirm.clicked.connect(self.confirmChar_clicked)
-		self.disconnectbtn = QtGui.QPushButton(self.charselect, text="Disconnect")
-		self.disconnectbtn.move(8, 8)
-		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
+		self.pinglabel = QtGui.QLabel(self)
+		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
+		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
+		
+		self.charselect = charselect.CharSelect(self, _ao_app)
+		self.charselect.charClicked.connect(self.confirmChar_clicked)
 		
 		self.chatlog.raise_()
 		
@@ -983,6 +989,9 @@ class GameWidget(QtGui.QWidget):
 		self.spawned_once = False
 		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
+	
+	def onGotPing(self, ping):
+		self.pinglabel.setText("Ping: %d" % ping)
 	
 	def changeMusicVolume(self, value):
 		self.ao_app.musicvol = value
@@ -1437,6 +1446,7 @@ class GameWidget(QtGui.QWidget):
 		self.evidencedialog.setVisible(False)
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
+		self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
@@ -1643,8 +1653,7 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.zoneforegrounds[i][0].setOffset(0, -fg_image.height()*2)
 			self.gameview.zoneforegrounds[i][0].setZValue(fg_y)
 	
-	def confirmChar_clicked(self):
-		selection = self.charcombo.currentIndex()
+	def confirmChar_clicked(self, selection):
 		self.ao_app.tcpthread.setChar(selection)
 		
 	def hideCharSelect(self):
@@ -1666,6 +1675,7 @@ class GameWidget(QtGui.QWidget):
 		self.oocbtn.show()
 		self.evidencebtn.show()
 		self.charselect.hide()
+		self.pinglabel.move(512-96, self.ic_input.y()+22)
 	
 	def ic_typing(self):
 		if self.ic_input.text():
@@ -1752,13 +1762,11 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.clear()
 		self.chatname.clear()
 		self.chattext.clear()
-		if self.charcombo.count():
-			self.charcombo.clear()
 		self.musiclist.clear()
 		self.movemenu.clear()
 		self.movemenuActions = []
 		self.evidencename.clear()
-		self.charcombo.addItems(self.ao_app.charlist)
+		self.charselect.showCharList(self.ao_app.charlist)
 		
 		for i in range(len(self.ao_app.zonelist)):
 			self.movemenuActions.append(self.movemenu.addAction(str(i)+": "+self.ao_app.zonelist[i][1]))
@@ -1776,8 +1784,10 @@ class GameWidget(QtGui.QWidget):
 		
 		QtGui.QMessageBox.information(self, "Server Message Of The Day", self.ao_app.motd)
 		
+		self.oocnameinput.setText(self.ao_app.ini_read_string("aaio.ini", "General", "OOC name"))
 		if not self.oocnameinput.text() or self.oocnameinput.text().startsWith("Player "):
 			self.oocnameinput.setText("Player %d" % self.ao_app.player_id)
+		
 		self.gameview.initCharacter(self.ao_app.player_id)
 		self.player = self.gameview.characters[self.ao_app.player_id]
 		self.setZone(self.ao_app.defaultzoneid)
@@ -1806,6 +1816,7 @@ class GameWidget(QtGui.QWidget):
 		self.sliderlabel2.hide()
 		self.sliderlabel3.hide()
 		self.charselect.show()
+		self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def stopGame(self):
 		self.ic_input.enter_pressed = False

@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from game_version import GAME_VERSION
 from ConfigParser import ConfigParser
-import socket, struct, AIOprotocol, os
+import socket, struct, AIOprotocol, os, time
 from AIOMainWindow import AIOMainWindow
 from pybass import *
 
@@ -161,6 +161,7 @@ class ClientThread(QtCore.QThread):
 	chatBubble = QtCore.pyqtSignal(list)
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
+	gotPing = QtCore.pyqtSignal(int)
 	
 	def __init__(self):
 		super(ClientThread, self).__init__()
@@ -294,9 +295,16 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", dir_nr)
 			self.sendBuffer(buf)
 	
+	def sendPing(self):
+		if self.connected:
+			buf = struct.pack("B", AIOprotocol.PING)
+			self.sendBuffer(buf)
+	
 	def run(self):
 		tempdata = ""
 		connection_phase = 0
+		pingtimer = 7
+		already_pinged = False
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -312,6 +320,14 @@ class ClientThread(QtCore.QThread):
 		while True:
 			if not self.connected:
 				break
+			
+			can_send = int(time.time()) % pingtimer == 0
+			if can_send and not already_pinged:
+				pingbefore = time.time()
+				already_pinged = True
+				self.sendPing()
+			elif not can_send:
+				already_pinged = False
 			
 			try:
 				data = self.tcp.recv(4096)
@@ -519,6 +535,10 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.WARN:
 					data, message = buffer_read("S", data)
 					self.serverWarning.emit(message.decode("utf-8"))
+				
+				elif header == AIOprotocol.PING:
+					pingafter = time.time()
+					self.gotPing.emit(int((pingafter - pingbefore)* 1000))
 				
 				if data:
 					if data[0] == "\r":

@@ -1,5 +1,6 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+import os
 
 class AIOButton(QLabel):
 	clicked = pyqtSignal()
@@ -35,3 +36,39 @@ class AIOIndexButton(QLabel):
 			self.clicked.emit(self.ind)
 		elif ev.buttons() == Qt.RightButton:
 			self.rightClicked.emit(self.ind)
+
+class AIOCharButton(AIOIndexButton):
+	def __init__(self, parent, ao_app, ind):
+		super(AIOCharButton, self).__init__(parent, ind)
+		self.ind = ind
+		self.ao_app = ao_app
+		self.setPixmap(QPixmap("data/misc/char_icon.png"))
+		
+		self.charpic = QLabel(self)
+		self.charpic.move(0, -8)
+		prefix = ao_app.ini_read_string("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "imgprefix")+"-"
+		prefix = "" if prefix == "-" else prefix
+		
+		scale = True
+		if os.path.exists("data/characters/"+ao_app.charlist[ind]+"/char_icon.png"):
+			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/char_icon.png")
+			scale = False
+		elif os.path.exists("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif"):
+			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif")
+		else:
+			pix = QPixmap("data/misc/error.gif")
+		
+		if scale:
+			scale = ao_app.ini_read_float("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "scale", 1)*2
+			self.charpic.setPixmap(pix.scaled(pix.size().width()*scale, pix.size().height()*scale))
+			if self.charpic.pixmap().size().width() > self.pixmap().size().width():
+				self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
+		else:
+			self.charpic.setPixmap(pix)
+		
+		self.charpic.show()
+		self.show()
+	
+	def __del__(self):
+		self.charpic.deleteLater()
+		super(AIOCharButton, self).__del__()

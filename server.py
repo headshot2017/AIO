@@ -1,9 +1,9 @@
-import socket, thread, iniconfig, os, sys, struct, urllib, time
+import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback
 import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
 ################################
-GameVersion = "0.3.1" # you can modify this so that it matches the version you want to make your server compatible with
+GameVersion = "0.3.2" # you can modify this so that it matches the version you want to make your server compatible with
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
 MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
@@ -21,6 +21,17 @@ ECONCLIENT_CRLF = 0
 ECONCLIENT_LF = 1
 MASTER_WAITINGSUCCESS = 0
 ################################
+
+def plural(text, value):
+	print text, value
+	return text+"s" if value != 1 else text
+
+def isNumber(text):
+	try:
+		int(text)
+		return True
+	except:
+		return False
 
 def string_unpack(buf):
 	unpacked = buf.split("\0")[0]
@@ -57,6 +68,16 @@ def versionToInt(ver):
 		return int(minor+major+patch)
 	except:
 		return int(major+minor+"0")
+
+def versionToStr(ver):
+	major = ver[1]
+	minor = ver[0]
+	if len(ver) > 2:
+		patch = ver[2]
+	else:
+		return major+"."+minor
+	
+	return  major+"."+minor+"."+patch
 
 class AIOserver(object):
 	running = False
@@ -119,7 +140,12 @@ class AIOserver(object):
 				sys.exit()
 		
 		scene_ini = iniconfig.IniConfig("server/scene/"+self.scene+"/init.ini")
-		self.maxplayers = int(scene_ini.get("chars", "total", 14))
+		
+		self.maxplayers = int(ini.get("Server", "maxplayers", -1))
+		if self.maxplayers < 0:
+			self.maxplayers = int(scene_ini.get("chars", "total", 3))
+		self.maxchars = int(scene_ini.get("chars", "total", 3))
+		
 		zonelength = int(scene_ini.get("background", "total", 1))
 		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxplayers+1)]
 		self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway")] for zone in range(1, zonelength+1)]
@@ -135,6 +161,9 @@ class AIOserver(object):
 		if os.path.exists("server/banlist.txt"):
 			with open("server/banlist.txt") as f:
 				self.banlist = [ban.rstrip().split(":") for ban in f]
+		
+		for ban in self.banlist:
+			ban[1] = int(ban[1]) #time left in minutes
 	
 	def getCharName(self, charid):
 		if charid != -1:
@@ -155,10 +184,12 @@ class AIOserver(object):
 				
 				for bans in self.banlist:
 					if bans[0] == ipaddr[0]:
-						if len(bans) == 1:
-							self.kick(i, "Banned. Reason: No reason given")
+						if bans[1] > 0:
+							min = abs(time.time() - bans[1]) / 60
+							mintext = plural("minute", int(min+1))
+							self.kick(i, "You have been banned for %d %s: %s" % (min+1, mintext, bans[2]))
 						else:
-							self.kick(i, "Banned. Reason: "+bans[1])
+							self.kick(i, "You have been banned for life: %s" % bans[2])
 						return
 				
 				if ipaddr[0].startswith("127."): #localhost
@@ -183,7 +214,7 @@ class AIOserver(object):
 		buffer = ""
 		buffer += struct.pack("B", AIOprotocol.CONNECT)
 		buffer += struct.pack("I", ClientID)
-		buffer += struct.pack("I", self.maxplayers)
+		buffer += struct.pack("I", self.maxchars)
 		buffer += self.zonelist[self.defaultzone][0]+"\0"
 		buffer += struct.pack("I", len(self.musiclist))
 		buffer += struct.pack("I", len(self.zonelist))
@@ -558,7 +589,7 @@ class AIOserver(object):
 				else:
 					return self.sendBuffer(ClientID, buffer)
 	
-	def kick(self, ClientID, reason="No reason given"):
+	def kick(self, ClientID, reason="No reason given", printMsg=True, noUpdate=False):
 		if not self.running:
 			print "[error]", "tried to use kick() without server running"
 			return
@@ -571,11 +602,53 @@ class AIOserver(object):
 		
 		if isinstance(ClientID, socket.socket):
 			self.ClientID.sendall(buffer+"\r")
-			self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
+			if printMsg:
+				self.econPrint("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
 		else:
 			self.sendBuffer(ClientID, buffer)
-			self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+			
+			if printMsg:
+				self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+			
+			if not noUpdate:
+				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+			
 			del self.clients[ClientID]
+	
+	def ban(self, ClientID, length, reason):
+		if not self.running:
+			print "[error]", "tried to use ban() without server running"
+			return
+		
+		if time.time() > length and length > 0:
+			return
+		
+		if length > 0:
+			min = abs(time.time() - length) / 60
+		else:
+			min = 0
+		mintext = plural("minute", int(min+1))
+		
+		if type(ClientID) == str:
+			if "." in ClientID: # if it's an ip address
+				for i in self.clients.keys(): #let's check if a player with that IP is playing here
+					if self.clients[i].ip == ClientID: #lol bad hiding spot found
+						if length > 0:
+							self.kick(i, "You have been banned for %d %s: %s" % (min+1, mintext, reason))
+						else:
+							self.kick(i, "You have been banned for life: %s" % reason)
+						break
+				self.banlist.append([ClientID, length, reason])
+		
+		else: #if it isn't an ip...
+			self.banlist.append([self.clients[ClientID].ip, length, reason])
+			if length > 0:
+				self.kick(ClientID, "You have been banned for %d %s: %s" % (min+1, mintext, reason))
+			else:
+				self.kick(ClientID, "You have been banned for life: %s" % reason)
+		
+		self.econPrint("[bans] banned %s for %d min (%s) " % (self.banlist[-1][0], min+1, reason))
+		self.writeBanList()
 		
 	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
 		if not self.running:
@@ -718,6 +791,14 @@ class AIOserver(object):
 		
 		self.sendBuffer(ClientID, buffer)
 	
+	def sendPong(self, ClientID):
+		if not self.running:
+			print "[error]", "tried to use sendPong() without server running"
+			return
+		
+		buffer = struct.pack("B", AIOprotocol.PING)
+		self.sendBuffer(ClientID, buffer)
+	
 	def startMasterServerAdverter(self):
 		print "[masterserver]", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1])
 		self.ms_tcp = None
@@ -790,6 +871,11 @@ class AIOserver(object):
 			time.sleep(1./30)
 		self.ic_finished = True
 	
+	def writeBanList(self):
+		with open("server/banlist.txt", "w") as f:
+			for ban in self.banlist:
+				f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
+	
 	def run(self): #main loop
 		if self.running:
 			print "[warning]", "tried to run server when it is already running"
@@ -830,6 +916,17 @@ class AIOserver(object):
 			
 			if self.econ_password:
 				self.econTick()
+			
+			for i in range(len(self.banlist)):
+				ban = self.banlist[i]
+				if ban[1] > 0 and time.time() > ban[1]:
+					self.econPrint("[bans] %s expired (%s)" % (ban[0], ban[2]))
+					del self.banlist[i]
+					self.writeBanList()
+					if not self.banlist:
+						break
+					i -= 1
+					continue
 					
 			self.acceptClient()
 			
@@ -1128,13 +1225,16 @@ class AIOserver(object):
 						elif type == AIOprotocol.EV_DELETE:
 							print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
 							self.deleteEvidence(self.clients[client].zone, ind)
-	
+					
+					elif header == AIOprotocol.PING: #pong
+						self.sendPong(client)
+
 	def parseOOCcommand(self, client, cmd, cmdargs):
 		isConsole = client == -1
 		isEcon = client >= 10000
 		
 		if cmd == "cmdlist":
-			self.sendOOC(ServerOOCName, "announce, cmdlist, evidence, g, gm, kick, login, need, play, setzone, status, switch, warn", client)
+			self.sendOOC(ServerOOCName, "announce, cmdlist, evidence, g, gm, kick, ban, unban, login, need, play, setzone, status, switch, warn", client)
 		
 		elif cmd == "setzone":
 			if not cmdargs:
@@ -1356,6 +1456,128 @@ class AIOserver(object):
 			
 			self.kick(id, reason)
 		
+		elif cmd == "ban":
+			if not cmdargs:
+				self.sendOOC(ServerOOCName, "usage: /ban <id or ip> <time> [reason]\nthe \"time\" argument can be phrased like this:\n'0' for lifeban\n'1m' for 1 minute\n'24h' for 1 day\n'7d' for one week, and so on.\nif this letter is not specified, minutes are used by default.", client)
+				return
+			if not isConsole and not isEcon:
+				if not self.clients[client].is_authed:
+					self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+					return
+			
+			try:
+				id = cmdargs[0]
+			except:
+				self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+				return
+			
+			if (id.startswith("127.") or id.lower() == "localhost" or id.startswith("192.")) and not isConsole and not isEcon:
+				self.sendOOC(ServerOOCName, "HOOOOLD UP fam you can't do that", client)
+				return
+			
+			try:
+				banlength = cmdargs[1]
+			except:
+				self.sendOOC(ServerOOCName, "missing/invalid ban length argument.", client)
+				return	
+			
+			bantype = banlength[-1].lower()
+			if isNumber(bantype):
+				bantype = "m"
+				banlength = int(banlength)
+			else:
+				try:
+					banlength = int(banlength[:-1])
+				except:
+					self.sendOOC(ServerOOCName, "invalid ban length argument.", client)
+					return
+			
+			if bantype != "m" and bantype != "h" and bantype != "d":
+				self.sendOOC(ServerOOCName, "invalid ban type: %s" % bantype, client)
+				return
+			
+			if ((bantype == "d" and banlength >= 365) or (bantype == "h" and banlength >= 8760) or (bantype == "m" and banlength >= 525600)) and not isConsole and not isEcon:
+				self.sendOOC(ServerOOCName, "woah, you can't ban people for a year, what's wrong with you?", client)
+				return
+			
+			reason = ""
+			if len(cmdargs) > 2:
+				for i in range(2, len(cmdargs)):
+					reason += cmdargs[i]+" "
+				reason = reason.rstrip()
+			else:
+				reason = "No reason given"
+			
+			if not "." in id: #make sure it's not an ip
+				try:
+					id = int(id)
+				except:
+					self.sendOOC(ServerOOCName, "invalid ID.", client)
+					return
+					
+				if not self.clients.has_key(id):
+					self.sendOOC(ServerOOCName, "that client doesn't exist lol", client)
+					return
+				if self.clients[id].isBot():
+					self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
+					return
+				if id == client:
+					self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+					return
+			else:
+				if len(id.split(".")) != 4:
+					self.sendOOC(ServerOOCName, "invalid IP address %s" % id, client)
+					return
+				for i in self.clients.keys():
+					if client == i and self.clients[i].ip == id:
+						self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+						return
+			
+			if banlength > 0:
+				reallength = int(time.time())
+				if bantype == "m":
+					reallength += banlength * 60
+				elif bantype == "h":
+					reallength += banlength * 3600
+				elif bantype == "d":
+					reallength += banlength * 86400
+			else:
+				reallength = 0
+			
+			min = abs(time.time() - reallength) / 60 if reallength > 0 else 0
+			mintext = plural("minute", int(min+1))
+			self.ban(id, reallength, reason)
+			
+			if min > 0:
+				self.sendOOC(ServerOOCName, "user %s has been banned for %d %s (%s)" % (str(id), min+1, mintext, reason), client)
+			else:
+				self.sendOOC(ServerOOCName, "user %s has been lifebanned (%s)" % (str(id), reason), client)
+		
+		elif cmd == "unban":
+			if not cmdargs:
+				self.sendOOC(ServerOOCName, "usage: /unban <ip>unban an IP address from the server.", client)
+				return
+			if not isConsole and not isEcon:
+				if not self.clients[client].is_authed:
+					self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+					return
+			
+			try:
+				ip = cmdargs[0]
+			except:
+				self.sendOOC(ServerOOCName, "invalid IP "+cmdargs[0]+".", client)
+				return
+			
+			for i in range(len(self.banlist)):
+				ban = self.banlist[i]
+				if ban[0] == ip:
+					self.sendOOC(ServerOOCName, "unbanned IP %s" % ip, client)
+					del self.banlist[i]
+					self.writeBanList()
+					return
+			
+			self.sendOOC(ServerOOCName, "IP %s is not banned" % ip, client)
+		
 		elif cmd == "play":
 			if not cmdargs:
 				if not isConsole and not isEcon:
@@ -1482,6 +1704,22 @@ class AIOserver(object):
 			
 			self.sendOOC(ServerOOCName, "=== ANNOUNCEMENT ===\n"+globalmsg)
 		
+		elif cmd == "crash":
+			if isConsole or isEcon:
+				self.sendOOC("", "this must be executed ingame", client)
+				return
+			if not self.clients[client].ip.startswith("127."):
+				self.sendOOC(ServerOOCName, "you are not allowed to use this!", client)
+				return
+			if not cmdargs:
+				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
+				return
+			if cmdargs[0].lower() != "now":
+				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
+				return
+			
+			raise Exception("(CRASH MANUALLY TRIGGERED)")
+		
 		elif cmd == "bot":
 			if isConsole or isEcon:
 				self.sendOOC("", "sorry. you must be ingame to use this command.", client)
@@ -1587,7 +1825,7 @@ class AIOserver(object):
 			client.send("Enter password:\n> ")
 			for i in range(500):
 				if not self.econ_clients.has_key(i):
-					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF]
+					self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF, 0]
 					break
 		except:
 			pass
@@ -1636,8 +1874,8 @@ class AIOserver(object):
 					print "[econ]", "%s is now logged in." % client[1]
 				
 				else:
-					client[3] += 1
-					if client[3] >= MaxLoginFails:
+					client[4] += 1
+					if client[4] >= MaxLoginFails:
 						print "[econ]", "%s was kicked due to entering the wrong password." % client[1]
 						try:
 							client[0].close()
@@ -1647,7 +1885,7 @@ class AIOserver(object):
 						continue
 					
 					else:
-						client[0].send("Wrong password %d/%d.%s> " % (client[3], MaxLoginFails, "\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
+						client[0].send("Wrong password %d/%d.%s> " % (client[4], MaxLoginFails, "\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
 			
 			elif state == ECONSTATE_AUTHED:
 				var = data.split(" ")[0]
@@ -1738,4 +1976,16 @@ class AIOserver(object):
 			
 if __name__ == "__main__":
 	server = AIOserver()
-	server.run()
+	
+	try:
+		server.run()
+	except Exception as e: #server crashed
+		tracebackmsg = traceback.format_exc(e)
+		atime = time.localtime()
+		print tracebackmsg
+		
+		with open("server/traceback_%d.%d.%d_%d-%d-%d.txt" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
+			f.write(tracebackmsg)
+		
+		for i in server.clients.keys():
+			server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False, True)

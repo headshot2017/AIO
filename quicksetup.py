@@ -10,6 +10,9 @@ def pip_install(package):
 print "installing pyinstaller"
 pip_install('pyinstaller')
 
+print "installing ini"
+pip_install('ini')
+
 print "downloading pybass"
 filedata = urllib2.urlopen('https://datapacket.dl.sourceforge.net/project/pybass/pybass_055.zip')  
 datatowrite = filedata.read()

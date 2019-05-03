@@ -43,6 +43,7 @@ class AIOCharButton(AIOIndexButton):
 		self.ind = ind
 		self.ao_app = ao_app
 		self.setPixmap(QPixmap("data/misc/char_icon.png"))
+		self.resize(64, 64)
 		
 		self.charpic = QLabel(self)
 		self.charpic.move(0, -8)

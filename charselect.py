@@ -16,6 +16,9 @@ class CharSelect(QtGui.QWidget):
 		self.charscroller.setWidget(self.scrollwidget)
 		self.setGeometry(0, 384, 512, 640-384)
 		
+		for i in range(750):
+			self.charbuttons.append(buttons.AIOCharButton(self.scrollwidget, self.ao_app, i))
+		
 		self.disconnectbtn = QtGui.QPushButton(self, text="Disconnect")
 		self.disconnectbtn.move(8, 8)
 		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
@@ -31,9 +34,12 @@ class CharSelect(QtGui.QWidget):
 	
 	def showCharList(self, chars):
 		self.charname.setText("Select your character...")
+		
+		"""
 		all = range(len(self.charbuttons))
 		for i in all:
 			del self.charbuttons[0]
+		"""
 		
 		#since it's a scrollbar system, we don't need height variables. infinite height
 		spacing = 2
@@ -41,17 +47,20 @@ class CharSelect(QtGui.QWidget):
 		left, top = (12, 8)
 		width = self.scrollwidget.size().width()
 		columns = (width - 64) / (spacing + 64) + 1
-		for i in range(len(chars)):
-			x_pos = (64 + spacing) * x_mod_count
-			y_pos = (64 + spacing) * y_mod_count
-			self.charbuttons.append(buttons.AIOCharButton(self.scrollwidget, self.ao_app, i))
-			self.charbuttons[i].move(left+x_pos, top+y_pos)
-			self.charbuttons[i].mouseEnter.connect(self.charHovered)
-			self.charbuttons[i].clicked.connect(self.confirmChar_clicked)
-			x_mod_count += 1
-			if x_mod_count == columns:
-				x_mod_count = 0
-				y_mod_count += 1
+		for i in range(750):
+			if i < len(chars):
+				x_pos = (64 + spacing) * x_mod_count
+				y_pos = (64 + spacing) * y_mod_count
+				self.charbuttons[i].showChar()
+				self.charbuttons[i].move(left+x_pos, top+y_pos)
+				self.charbuttons[i].mouseEnter.connect(self.charHovered)
+				self.charbuttons[i].clicked.connect(self.confirmChar_clicked)
+				x_mod_count += 1
+				if x_mod_count == columns:
+					x_mod_count = 0
+					y_mod_count += 1
+			else:
+				self.charbuttons[i].hide()
 		
 		self.scrollwidget.resize(self.scrollwidget.size().width(), top+y_pos+64)
 	

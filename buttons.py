@@ -49,6 +49,7 @@ class AIOCharButton(AIOIndexButton):
 		self.charpic.move(0, -8)
 		
 		self.show()
+		self.showChar()
 	
 	def showChar(self):
 		prefix = self.ao_app.ini_read_string("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "imgprefix")+"-"
@@ -68,10 +69,13 @@ class AIOCharButton(AIOIndexButton):
 			self.charpic.setPixmap(pix.scaled(pix.size().width()*scale, pix.size().height()*scale))
 			if self.charpic.pixmap().size().width() > self.pixmap().size().width():
 				self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
-			self.charpic.show()
+			elif self.charpic.pixmap().size().width() < self.pixmap().size().width():
+				self.charpic.move((self.charpic.pixmap().size().width()/4) - 4, -8)
 		else:
-			self.setPixmap(pix)
-			self.charpic.hide()
+			self.charpic.setPixmap(pix)
+			self.charpic.move(0, 0)
+		
+		self.charpic.show()
 	
 	def __del__(self):
 		self.charpic.deleteLater()

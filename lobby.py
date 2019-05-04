@@ -1,5 +1,5 @@
 from PyQt4 import QtCore, QtGui
-from game_version import GAME_VERSION
+from game_version import LOBBY_VERSION
 import os, socket, buttons
 import options
 
@@ -84,7 +84,7 @@ class lobby(QtGui.QWidget):
 		
 		self.font = QtGui.QFont("Arial", 12)
 		
-		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(GAME_VERSION))
+		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(LOBBY_VERSION))
 		self.text.setFont(self.font)
 		self.text.move(8, 8)
 		

@@ -1821,6 +1821,7 @@ class AIOserver(object):
 	def econTick(self):
 		try:
 			client, ipaddr = self.econ_tcp.accept()
+			client.settimeout(0.1)
 			print "[econ]", "%s connected." % ipaddr[0]
 			client.send("Enter password:\n> ")
 			for i in range(500):
@@ -1839,7 +1840,7 @@ class AIOserver(object):
 			try:
 				data = client[0].recv(4096)
 			except (socket.error, socket.timeout) as e:
-				if e.args[0] == 10035 or e.args[0] == "timed out":
+				if e.args[0] == 10035 or e.args[0] == "timed out" or e.errno == 11:
 					continue
 				else:
 					print "[econ]", "%s disconnected." % client[1]

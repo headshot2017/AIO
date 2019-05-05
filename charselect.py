@@ -31,6 +31,7 @@ class CharSelect(QtGui.QWidget):
 	
 	def showCharList(self, chars):
 		self.charname.setText("Select your character...")
+		
 		all = range(len(self.charbuttons))
 		for i in all:
 			del self.charbuttons[0]

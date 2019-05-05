@@ -1821,7 +1821,7 @@ class AIOserver(object):
 	def econTick(self):
 		try:
 			client, ipaddr = self.econ_tcp.accept()
-			client.settimeout(0.1)
+			client.setblocking(False)
 			print "[econ]", "%s connected." % ipaddr[0]
 			client.send("Enter password:\n> ")
 			for i in range(500):

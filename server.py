@@ -1831,7 +1831,7 @@ class AIOserver(object):
 		except:
 			pass
 		
-		for i in range(len(self.econ_clients.keys())):
+		for i in self.econ_clients.keys():
 			try:
 				client = self.econ_clients[i]
 			except:

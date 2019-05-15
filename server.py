@@ -176,7 +176,8 @@ class AIOserver(object):
 			client, ipaddr = self.tcp.accept()
 		except socket.error:
 			return
-			
+		
+		client.setblocking(False)
 		for i in range(self.maxplayers):
 			if not self.clients.has_key(i):
 				self.econPrint("[game] incoming connection from %s (%d)" % (ipaddr[0], i))

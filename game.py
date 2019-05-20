@@ -349,7 +349,7 @@ class Character(BaseCharacter):
 		self.walkanims[0] = []
 		for i in range(self.ao_app.ini_read_int(inipath, "WalkAnims", "total", 1)):
 			self.walkanims[0].append(self.ao_app.ini_read_string(inipath, "WalkAnims", str(i+1), "walk"))
-		self.walkanims[1] = self.ao_app.ini_read_int(inipath, "WalkAnims", "runanim", 2)-1
+		self.walkanims[1] = self.ao_app.ini_read_int(inipath, "WalkAnims", "runanim", 1)-1
 		
 		max_emotes = self.ao_app.ini_read_int(inipath, "Emotions", "total")
 		self.emotes[0] = []

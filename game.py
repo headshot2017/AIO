@@ -290,7 +290,7 @@ class Character(BaseCharacter):
 	sprite = ""
 	blip = ""
 	scale = 1
-	walkanims = [[], -1, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
+	walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
 	emotes = [[], [], [], [], []] #value 0 contains the emotes, value 1 contains loop values, value 2 contains directions (east, west...), value 3 contains sound names and value 4 sound delays
 	isPlayer = False
 	maxwidth = 0

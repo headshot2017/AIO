@@ -775,6 +775,10 @@ class GameWidget(QtGui.QWidget):
 		self.emotebar.setPixmap(emotebar)
 		self.emotebar.move(self.gameview.x(), 384+92)
 		
+		self.pinglabel = QtGui.QLabel(self)
+		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
+		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
+		
 		self.musicslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
 		self.soundslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
 		self.blipslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
@@ -796,6 +800,17 @@ class GameWidget(QtGui.QWidget):
 		self.sliderlabel1.move(self.musicslider.x() + self.musicslider.size().width()+8, self.musicslider.y())
 		self.sliderlabel2.move(self.soundslider.x() + self.soundslider.size().width()+8, self.soundslider.y())
 		self.sliderlabel3.move(self.blipslider.x() + self.blipslider.size().width()+8, self.blipslider.y())
+		
+		self.walkanim_dropdown = QtGui.QComboBox(self)
+		self.runanim_dropdown = QtGui.QComboBox(self)
+		self.walkanim_dropdown.setGeometry(256, self.soundslider.y()+16, 96, 20)
+		self.runanim_dropdown.setGeometry(256+self.walkanim_dropdown.size().width()+16, self.soundslider.y()+16, 96, 20)
+		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
+		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
+		self.walkanim_label = QtGui.QLabel("Walk animation", self)
+		self.runanim_label = QtGui.QLabel("Run animation", self)
+		self.walkanim_label.move(self.walkanim_dropdown.x(), self.walkanim_dropdown.y()-16)
+		self.runanim_label.move(self.runanim_dropdown.x(), self.runanim_dropdown.y()-16)
 		
 		self.prevemotepage = buttons.AIOButton(self)
 		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_left.png").scaled(40, 40)))
@@ -972,10 +987,6 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.setStyleSheet('background-color: rgb(96, 96, 96);\ncolor: white')
 		self.chatlog.setReadOnly(True)
 		
-		self.pinglabel = QtGui.QLabel(self)
-		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
-		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
-		
 		self.charselect = charselect.CharSelect(self, _ao_app)
 		self.charselect.charClicked.connect(self.confirmChar_clicked)
 		
@@ -989,6 +1000,11 @@ class GameWidget(QtGui.QWidget):
 		self.spawned_once = False
 		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
+	
+	def changeWalkAnim(self, ind):
+		self.player.walkanims[2] = ind
+	def changeRunAnim(self, ind):
+		self.player.walkanims[1] = ind
 	
 	def onGotPing(self, ping):
 		self.pinglabel.setText("Ping: %d" % ping)
@@ -1564,6 +1580,14 @@ class GameWidget(QtGui.QWidget):
 			if char == -1:
 				self.showCharSelect()
 			else:
+				walk = self.player.walkanims[2]
+				run = self.player.walkanims[1]
+				self.walkanim_dropdown.clear()
+				self.runanim_dropdown.clear()
+				self.walkanim_dropdown.addItems(self.player.walkanims[0])
+				self.runanim_dropdown.addItems(self.player.walkanims[0])
+				self.walkanim_dropdown.setCurrentIndex(walk)
+				self.runanim_dropdown.setCurrentIndex(run)
 				self.current_emote_page = 0
 				self.set_emote_page()
 				self.hideCharSelect()

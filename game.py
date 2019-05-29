@@ -283,6 +283,8 @@ class Character(BaseCharacter):
 	yprevious2 = 0
 	hspeed = 0
 	vspeed = 0
+	walkspd = 6
+	runspd = 12
 	run = False
 	charid = -1
 	zone = -1
@@ -346,6 +348,9 @@ class Character(BaseCharacter):
 		self.currentemote = -1
 		self.blip = self.ao_app.ini_read_string(inipath, "Options", "blip", "male")
 		
+		self.walkspd = self.ao_app.ini_read_int(inipath, "Options", "walkspeed", 6)
+		self.runspd = self.ao_app.ini_read_int(inipath, "Options", "runspeed", 12)
+		
 		self.walkanims[0] = []
 		for i in range(self.ao_app.ini_read_int(inipath, "WalkAnims", "total", 1)):
 			self.walkanims[0].append(self.ao_app.ini_read_string(inipath, "WalkAnims", str(i+1), "walk"))
@@ -403,8 +408,8 @@ class Character(BaseCharacter):
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
 			
 			if (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
-				self.vspeed = (-3 - (self.run*3)) * 2
-				self.hspeed = (3 + (self.run*3)) * 2
+				self.vspeed = -self.runspd if self.run else -self.walkspd
+				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -416,9 +421,10 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
-				self.vspeed = (-3 - (self.run*3)) * 2
-				self.hspeed = (-3 - (self.run*3)) * 2
+				self.vspeed = -self.runspd if self.run else -self.walkspd
+				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -430,9 +436,10 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
-				self.vspeed = (3 + (self.run*3)) * 2
-				self.hspeed = (3 + (self.run*3)) * 2
+				self.vspeed = self.runspd if self.run else self.walkspd
+				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -444,9 +451,10 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
-				self.vspeed = (+3 + (self.run*3)) * 2
-				self.hspeed = (-3 - (self.run*3)) * 2
+				self.vspeed = self.runspd if self.run else self.walkspd
+				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -458,8 +466,9 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif QtCore.Qt.Key_W in self.pressed_keys or QtCore.Qt.Key_Up in self.pressed_keys:
-				self.vspeed = (-3 - (self.run*3)) * 2
+				self.vspeed = -self.runspd if self.run else -self.walkspd
 				self.hspeed = 0
 				self.emoting = 0
 				self.currentemote = -1
@@ -472,8 +481,9 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif QtCore.Qt.Key_S in self.pressed_keys or QtCore.Qt.Key_Down in self.pressed_keys:
-				self.vspeed = (+3 + (self.run*3)) * 2
+				self.vspeed = self.runspd if self.run else self.walkspd
 				self.hspeed = 0
 				self.emoting = 0
 				self.currentemote = -1
@@ -486,9 +496,10 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif QtCore.Qt.Key_A in self.pressed_keys or QtCore.Qt.Key_Left in self.pressed_keys:
 				self.vspeed = 0
-				self.hspeed = (-3 - (self.run*3)) * 2
+				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -500,9 +511,10 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			elif QtCore.Qt.Key_D in self.pressed_keys or QtCore.Qt.Key_Right in self.pressed_keys:
 				self.vspeed = 0
-				self.hspeed = (3 + (self.run*3)) * 2
+				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -514,6 +526,7 @@ class Character(BaseCharacter):
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+			
 			else:
 				self.hspeed = 0
 				self.vspeed = 0

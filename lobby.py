@@ -1,7 +1,6 @@
 from PyQt4 import QtCore, QtGui
 from game_version import LOBBY_VERSION
-import os, socket, buttons
-import options
+import os, socket, buttons, options, ini
 
 class ConnectingStatus(QtGui.QWidget):
 	ao_app = None
@@ -166,7 +165,7 @@ class lobby(QtGui.QWidget):
 		self.optionsgui = options.Options(_ao_app)
 		self.optionsgui.fileSaved.connect(self.onOptionsSave)
 		
-		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
+		a = ini.read_ini("aaio.ini", "MasterServer", "IP").split(":")
 		ip = a[0]
 		try:
 			port = int(a[1])
@@ -192,7 +191,7 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 	
 	def onOptionsSave(self):
-		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image")))
+		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
 		
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)

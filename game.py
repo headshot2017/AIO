@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from functools import partial
 from pybass import *
-import random, os, AIOprotocol, buttons, math, charselect
+import random, os, AIOprotocol, buttons, math, charselect, ini
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -324,12 +324,12 @@ class Character(BaseCharacter):
 		
 		inipath = "data\\characters\\"+self.ao_app.charlist[newcharid]+"\\char.ini"
 		
-		self.charprefix = self.ao_app.ini_read_string(inipath, "Options", "imgprefix")
+		self.charprefix = ini.read_ini(inipath, "Options", "imgprefix")
 		if self.charprefix:
 			self.charprefix += "-"
 		
 		imgsize = QtGui.QPixmap("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\"+self.charprefix+"spin.gif").size()
-		self.scale = self.ao_app.ini_read_float(inipath, "Options", "scale", 1.0)
+		self.scale = ini.read_ini_float(inipath, "Options", "scale", 1.0)
 		self.setScale(self.scale*2)
 		
 		if self.translated:
@@ -346,28 +346,28 @@ class Character(BaseCharacter):
 		
 		self.emoting = 0
 		self.currentemote = -1
-		self.blip = self.ao_app.ini_read_string(inipath, "Options", "blip", "male")
+		self.blip = ini.read_ini(inipath, "Options", "blip", "male")
 		
-		self.walkspd = self.ao_app.ini_read_int(inipath, "Options", "walkspeed", 6)
-		self.runspd = self.ao_app.ini_read_int(inipath, "Options", "runspeed", 12)
+		self.walkspd = ini.read_ini_int(inipath, "Options", "walkspeed", 6)
+		self.runspd = ini.read_ini_int(inipath, "Options", "runspeed", 12)
 		
 		self.walkanims[0] = []
-		for i in range(self.ao_app.ini_read_int(inipath, "WalkAnims", "total", 1)):
-			self.walkanims[0].append(self.ao_app.ini_read_string(inipath, "WalkAnims", str(i+1), "walk"))
-		self.walkanims[1] = self.ao_app.ini_read_int(inipath, "WalkAnims", "runanim", 1)-1
+		for i in range(ini.read_ini_int(inipath, "WalkAnims", "total", 1)):
+			self.walkanims[0].append(ini.read_ini(inipath, "WalkAnims", str(i+1), "walk"))
+		self.walkanims[1] = ini.read_ini_int(inipath, "WalkAnims", "runanim", 1)-1
 		
-		max_emotes = self.ao_app.ini_read_int(inipath, "Emotions", "total")
+		max_emotes = ini.read_ini_int(inipath, "Emotions", "total")
 		self.emotes[0] = []
 		self.emotes[1] = []
 		self.emotes[2] = []
 		self.emotes[3] = []
 		self.emotes[4] = []
 		for i in range(max_emotes):
-			self.emotes[0].append(self.ao_app.ini_read_string(inipath, "Emotions", str(i+1)))
-			self.emotes[1].append(self.ao_app.ini_read_int(inipath, "Emotions", str(i+1)+"_loop", 0))
-			self.emotes[2].append(self.ao_app.ini_read_string(inipath, "Directions", str(i+1)).split("#"))
-			self.emotes[3].append(self.ao_app.ini_read_string(inipath, "SoundN", str(i+1)).split("#"))
-			self.emotes[4].append(self.ao_app.ini_read_int(inipath, "SoundT", str(i+1)))
+			self.emotes[0].append(ini.read_ini(inipath, "Emotions", str(i+1)))
+			self.emotes[1].append(ini.read_ini_int(inipath, "Emotions", str(i+1)+"_loop", 0))
+			self.emotes[2].append(ini.read_ini(inipath, "Directions", str(i+1)).split("#"))
+			self.emotes[3].append(ini.read_ini(inipath, "SoundN", str(i+1)).split("#"))
+			self.emotes[4].append(ini.read_ini_int(inipath, "SoundT", str(i+1)))
 		
 		self.playSpin("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
 	
@@ -764,7 +764,7 @@ class GameWidget(QtGui.QWidget):
 		self.areainfo.hide()
 		
 		self.chatbox = QtGui.QLabel(self)
-		chatbox = QtGui.QPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
+		chatbox = QtGui.QPixmap("data\\misc\\"+ini.read_ini("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
 		self.chatbox.setPixmap(chatbox)
 		self.chatbox.move(self.gameview.x() + (self.gameview.size().width()/2) - (chatbox.size().width()/2), 384-chatbox.size().height())
 		
@@ -1513,7 +1513,7 @@ class GameWidget(QtGui.QWidget):
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
 		
-		total_emotes = self.ao_app.ini_read_int("data\\characters\\"+self.ao_app.charlist[self.player.charid]+"\\char.ini", "Emotions", "total")
+		total_emotes = ini.read_ini_int("data\\characters\\"+self.ao_app.charlist[self.player.charid]+"\\char.ini", "Emotions", "total")
 		for button in self.emotebuttons:
 			button.hide()
 		
@@ -1606,7 +1606,7 @@ class GameWidget(QtGui.QWidget):
 				self.hideCharSelect()
 				if not self.spawned_once:
 					inipath = "data\\zones\\"+self.ao_app.zonelist[self.player.zone][0]+".ini"
-					x, y = self.ao_app.ini_read_string(inipath, "Game", "spawn", "0,0").split(",")
+					x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
 					self.player.moveReal(float(x), float(y))
 					self.spawned_once = True
 		else:
@@ -1668,7 +1668,7 @@ class GameWidget(QtGui.QWidget):
 		self.examines = []
 		
 		inipath = zone+".ini"
-		x, y = self.ao_app.ini_read_string(inipath, "Game", "spawn", "0,0").split(",")
+		x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
 		if self.spawned_once:
 			self.player.moveReal(float(x), float(y))
 		
@@ -1679,10 +1679,10 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.gamescene.removeItem(fg[0])
 			
 		self.gameview.zoneforegrounds = []
-		for i in range(self.ao_app.ini_read_int(inipath, "Background", "foregrounds")):
-			file = self.ao_app.ini_read_string(inipath, "Background", str(i+1))
-			fg_x = self.ao_app.ini_read_float(inipath, "Background", str(i+1)+"_x")
-			fg_y = self.ao_app.ini_read_float(inipath, "Background", str(i+1)+"_y")
+		for i in range(ini.read_ini_int(inipath, "Background", "foregrounds")):
+			file = ini.read_ini(inipath, "Background", str(i+1))
+			fg_x = ini.read_ini_float(inipath, "Background", str(i+1)+"_x")
+			fg_y = ini.read_ini_float(inipath, "Background", str(i+1)+"_y")
 			fg_image = QtGui.QImage(zone+"_"+file+".png")
 			
 			self.gameview.zoneforegrounds.append([QtGui.QGraphicsPixmapItem(scene=self.gameview.gamescene), fg_x, fg_y])
@@ -1821,7 +1821,7 @@ class GameWidget(QtGui.QWidget):
 		
 		QtGui.QMessageBox.information(self, "Server Message Of The Day", self.ao_app.motd)
 		
-		self.oocnameinput.setText(self.ao_app.ini_read_string("aaio.ini", "General", "OOC name"))
+		self.oocnameinput.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
 		if not self.oocnameinput.text() or self.oocnameinput.text().startsWith("Player "):
 			self.oocnameinput.setText("Player %d" % self.ao_app.player_id)
 		

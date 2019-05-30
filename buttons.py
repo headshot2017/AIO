@@ -1,6 +1,6 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import os
+import os, ini
 
 class AIOButton(QLabel):
 	clicked = pyqtSignal()
@@ -52,7 +52,7 @@ class AIOCharButton(AIOIndexButton):
 		self.showChar()
 	
 	def showChar(self):
-		prefix = self.ao_app.ini_read_string("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "imgprefix")+"-"
+		prefix = ini.read_ini("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "imgprefix")+"-"
 		prefix = "" if prefix == "-" else prefix
 		
 		scale = True
@@ -65,7 +65,7 @@ class AIOCharButton(AIOIndexButton):
 			pix = QPixmap("data/misc/error.gif")
 		
 		if scale:
-			scale = self.ao_app.ini_read_float("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "scale", 1)*2
+			scale = ini.read_ini_float("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "scale", 1.0)*2
 			self.charpic.setPixmap(pix.scaled(pix.size().width()*scale, pix.size().height()*scale))
 			if self.charpic.pixmap().size().width() > self.pixmap().size().width():
 				self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)

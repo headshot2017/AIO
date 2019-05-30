@@ -1,6 +1,6 @@
 from PyQt4 import QtCore, QtGui
 from ConfigParser import ConfigParser
-import os
+import os, ini
 
 class Options(QtGui.QWidget):
 	fileSaved = QtCore.pyqtSignal()
@@ -96,15 +96,15 @@ class Options(QtGui.QWidget):
 		if os.path.exists("aaio.ini"):
 			self.inifile.read("aaio.ini")
 			try:
-				self.defaultoocname.setText(self.ao_app.ini_read_string("aaio.ini", "General", "OOC name").decode("utf-8"))
+				self.defaultoocname.setText(ini.read_ini("aaio.ini", "General", "OOC name").decode("utf-8"))
 			except:
-				self.defaultoocname.setText(self.ao_app.ini_read_string("aaio.ini", "General", "OOC name"))
+				self.defaultoocname.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
 			
-			chatbox_ind = self.chatboximage_dropdown.findText(self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image"))
+			chatbox_ind = self.chatboximage_dropdown.findText(ini.read_ini("aaio.ini", "General", "Chatbox image"))
 			if chatbox_ind > 0:
 				self.chatboximage_dropdown.setCurrentIndex(chatbox_ind)
 			
-			self.ms_lineedit.setText(self.ao_app.ini_read_string("aaio.ini", "MasterServer", "IP"))
+			self.ms_lineedit.setText(ini.read_ini("aaio.ini", "MasterServer", "IP"))
 		else:
 			self.defaultoocname.setText("")
 			self.chatbox_dropdown.setCurrentIndex(0)

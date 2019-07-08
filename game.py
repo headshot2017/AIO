@@ -286,6 +286,7 @@ class Character(BaseCharacter):
 	walkspd = 6
 	runspd = 12
 	run = False
+	smoothmoves = 0 #remote player smooth movement
 	charid = -1
 	zone = -1
 	charprefix = ""
@@ -564,6 +565,11 @@ class Character(BaseCharacter):
 		self.xx += self.hspeed
 		self.yy += self.vspeed
 		
+		if not self.isPlayer:
+			self.smoothmoves += 1
+			if self.smoothmoves == 5:
+				self.hspeed = self.vspeed = self.smoothmoves = 0
+		
 class GamePort(QtGui.QWidget):
 	def __init__(self, parent, ao_app):
 		super(GamePort, self).__init__(parent)
@@ -677,10 +683,14 @@ class GamePort(QtGui.QWidget):
 		self.zonewalls.setPos(-viewX, -viewY)
 		for fg in self.zoneforegrounds:
 			fg[0].setPos(-viewX + fg[1], -viewY + fg[2])
+		
+		player_id = self.ao_app.player_id
+		mychar = self.characters[player_id]
+		if mychar.collidesWithItem(self.zonewalls) and mychar.isPlayer:
+				mychar.xx = mychar.xprevious2
+				mychar.yy = mychar.yprevious2
+		
 		for char in self.characters.values():
-			if char.collidesWithItem(self.zonewalls):
-				char.xx = char.xprevious2
-				char.yy = char.yprevious2
 			char.setZValue(char.yy  - (char.pixmap().size().height()*2) + (char.maxheight*0.75))
 			char.chatbubblepix.setZValue(char.zValue())
 			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
@@ -1619,10 +1629,8 @@ class GameWidget(QtGui.QWidget):
 				continue
 			
 			char = self.gameview.characters[client]
-			char.xx = x
-			char.yy = y
-			char.hspeed = hspeed
-			char.vspeed = vspeed
+			char.hspeed = (x - char.xx) / 5.0
+			char.vspeed = (y - char.yy) / 5.0
 			char.sprite = sprite
 			char.emoting = emoting
 			

@@ -123,6 +123,9 @@ class AIOserver(object):
 		self.motd = ini.get("Server", "motd", "Welcome to my server!##Overview of in-game controls:#Arrow keys or WASD keys - move#Shift - run#ESC or close button - quit#Spacebar - show emotes bar#T key - IC chat (Check the options menu to change this)##Musiclist controls:#Arrow keys - select song#Enter - play selected song##Have fun!")
 		self.publish = int(ini.get("Server", "publish", "1"))
 		self.evidence_limit = int(ini.get("Server", "evidence_limit", "255"))
+		if self.evidence_limit > 255:
+			print "[warning]", "evidence_limit is higher than 255, changing to the limit"
+			self.evidence_limit = 255
 		self.ms_addr = ini.get("MasterServer", "ip", "headshot.iminecraft.se:27011").split(":")
 		if len(self.ms_addr) == 1:
 			self.ms_addr.append("27011")

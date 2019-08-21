@@ -20,6 +20,7 @@ ECONSTATE_AUTHED = 1
 ECONCLIENT_CRLF = 0
 ECONCLIENT_LF = 1
 MASTER_WAITINGSUCCESS = 0
+MASTER_PUBLISHED = 1
 ################################
 
 def plural(text, value):
@@ -94,6 +95,7 @@ class AIOserver(object):
 	defaultzone = 0
 	maxplayers = 1
 	MSstate = -1
+	MStick = -1
 	ic_finished = True
 	def __init__(self):
 		global AllowBot
@@ -842,13 +844,15 @@ class AIOserver(object):
 				type = network[0]
 				if type == "13":
 					if self.MSstate == MASTER_WAITINGSUCCESS:
-						self.MSstate = -1
+						self.MSstate = MASTER_PUBLISHED
+						self.MStick = 200
 						ip = self.ms_addr[0]
 						if ip.startswith("127.") or ip == "localhost":
 							try:
 								url = urllib.urlopen("http://ipv4bot.whatismyipaddress.com")
 							except:
 								print "[masterserver]", "failed to get own IP address. make sure you have internet access."
+								self.MSstate = -1
 								self.ms_tcp.close()
 								return False
 			
@@ -859,8 +863,14 @@ class AIOserver(object):
 					
 				elif type == "SET_IP":
 					print "[masterserver]", "server published."
+				
+				elif type == "KEEPALIVE":
+					self.MStick = 200
 		
 		return True
+	
+	def MSkeepAlive(self):
+		self.sendToMasterServer("KEEPALIVE#%")
 	
 	def ic_tick_thread(self, msg):
 		self.ic_finished = False
@@ -914,6 +924,12 @@ class AIOserver(object):
 					MSretryTick -= 1
 					if MSretryTick == 0:
 						loopMS = self.startMasterServerAdverter()
+			
+			if self.MSstate == MASTER_PUBLISHED:
+				if self.MStick > 0:
+					self.MStick -= 1
+					if not self.MStick:
+						self.MSkeepAlive()
 			
 			if self.econ_password:
 				self.econTick()

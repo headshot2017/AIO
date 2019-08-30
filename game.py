@@ -274,7 +274,6 @@ class Character(BaseCharacter):
 	dir_nr = 0
 	emoting = 0
 	currentemote = -1
-	chatbubble = 0
 	xx = 160.0
 	yy = 384.0
 	xprevious = 0
@@ -307,10 +306,16 @@ class Character(BaseCharacter):
 		self.setPos(0, 0)
 		self.pressed_keys = set()
 		self.translated = False
-		chatbubbl = QtGui.QImage("data\\misc\\chatbubble.png")
 		self.chatbubblepix = QtGui.QGraphicsPixmapItem(scene=scene)
+		self.setChatBubble(0)
+	
+	def setChatBubble(self, value):
+		self.chatbubble = value
+		if value == 2:
+			chatbubbl = QtGui.QImage("data\\misc\\chatbubble_green.png")
+		else:
+			chatbubbl = QtGui.QImage("data\\misc\\chatbubble.png")
 		self.chatbubblepix.setPixmap(QtGui.QPixmap.fromImage(chatbubbl.scaled(chatbubbl.width()*2, chatbubbl.height()*2)))
-		self.chatbubblepix.hide()
 	
 	def afterStop(self):
 		self.emoting = 2
@@ -541,7 +546,7 @@ class Character(BaseCharacter):
 				else:
 					self.play("data\\characters\\"+self.ao_app.charlist[self.charid]+"\\"+newsprite, True)
 				
-			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble:
+			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
 				self.ao_app.tcpthread.sendChatBubble(0)
 			
@@ -1153,7 +1158,7 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.characters[cid].chatbubble = 0
 			return
 		
-		self.gameview.characters[cid].chatbubble = on
+		self.gameview.characters[cid].setChatBubble(on)
 	
 	def onBroadcast(self, contents):
 		zone, message = contents
@@ -1194,7 +1199,7 @@ class GameWidget(QtGui.QWidget):
 			return
 		
 		if self.gameview.characters.has_key(clientid):
-			self.gameview.characters[clientid].chatbubble = 0
+			self.gameview.characters[clientid].setChatBubble(2)
 		
 		if clientid == self.ao_app.player_id: # your message arrived.
 			self.ic_input.clear()
@@ -1208,6 +1213,7 @@ class GameWidget(QtGui.QWidget):
 		
 		evidence -= 1
 		self.m_chatmsg = chatmsg.decode("utf-8")
+		self.m_chatClientID = clientid
 		
 		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg)
 		if evidence >= 0:
@@ -1267,8 +1273,10 @@ class GameWidget(QtGui.QWidget):
 		if self.message_is_centered:
 			self.m_chatmsg = self.m_chatmsg.strip("~~")
 		
-		if self.tick_pos >= len(self.m_chatmsg):
+		if self.tick_pos >= len(self.m_chatmsg) and not self.finished_chat:
 			self.finished_chat = True
+			if self.gameview.characters.has_key(self.m_chatClientID):
+				self.gameview.characters[self.m_chatClientID].setChatBubble(0)
 		else:
 			f_character2 = self.m_chatmsg[self.tick_pos]
 			f_character = QtCore.QString(f_character2)

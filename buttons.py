@@ -1,6 +1,6 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import os
+import os, ini
 
 class AIOButton(QLabel):
 	clicked = pyqtSignal()
@@ -43,31 +43,39 @@ class AIOCharButton(AIOIndexButton):
 		self.ind = ind
 		self.ao_app = ao_app
 		self.setPixmap(QPixmap("data/misc/char_icon.png"))
+		self.resize(64, 64)
 		
 		self.charpic = QLabel(self)
 		self.charpic.move(0, -8)
-		prefix = ao_app.ini_read_string("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "imgprefix")+"-"
+		
+		self.show()
+		self.showChar()
+	
+	def showChar(self):
+		prefix = ini.read_ini("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "imgprefix")+"-"
 		prefix = "" if prefix == "-" else prefix
 		
 		scale = True
-		if os.path.exists("data/characters/"+ao_app.charlist[ind]+"/char_icon.png"):
-			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/char_icon.png")
+		if os.path.exists("data/characters/"+self.ao_app.charlist[self.ind]+"/char_icon.png"):
+			pix = QPixmap("data/characters/"+self.ao_app.charlist[self.ind]+"/char_icon.png")
 			scale = False
-		elif os.path.exists("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif"):
-			pix = QPixmap("data/characters/"+ao_app.charlist[ind]+"/"+prefix+"spin.gif")
+		elif os.path.exists("data/characters/"+self.ao_app.charlist[self.ind]+"/"+prefix+"spin.gif"):
+			pix = QPixmap("data/characters/"+self.ao_app.charlist[self.ind]+"/"+prefix+"spin.gif")
 		else:
 			pix = QPixmap("data/misc/error.gif")
 		
 		if scale:
-			scale = ao_app.ini_read_float("data/characters/"+ao_app.charlist[ind]+"/char.ini", "Options", "scale", 1)*2
+			scale = ini.read_ini_float("data/characters/"+self.ao_app.charlist[self.ind]+"/char.ini", "Options", "scale", 1.0)*2
 			self.charpic.setPixmap(pix.scaled(pix.size().width()*scale, pix.size().height()*scale))
 			if self.charpic.pixmap().size().width() > self.pixmap().size().width():
 				self.charpic.move(-(self.charpic.pixmap().size().width()/4) + 8, -8)
+			elif self.charpic.pixmap().size().width() < self.pixmap().size().width():
+				self.charpic.move((self.charpic.pixmap().size().width()/4) - 4, -8)
 		else:
 			self.charpic.setPixmap(pix)
+			self.charpic.move(0, 0)
 		
 		self.charpic.show()
-		self.show()
 	
 	def __del__(self):
 		self.charpic.deleteLater()

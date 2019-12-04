@@ -43,39 +43,6 @@ class AIOApplication(QtGui.QApplication):
 		self.tcpthread = ClientThread()
 		self.mainwindow = AIOMainWindow(self)
 		self.mainwindow.show()
-		
-	def ini_read_int(self, file, section, value, default=0):
-		tempini = ConfigParser()
-		tempini.read(file)
-		values = tempini.sections()
-		for val in values:
-			if val.lower() == section.lower():
-				for c in tempini.options(val):
-					if c.lower() == value.lower():
-						return int(tempini.get(val, c))
-		return default
-	
-	def ini_read_float(self, file, section, value, default=0.0):
-		tempini = ConfigParser()
-		tempini.read(file)
-		values = tempini.sections()
-		for val in values:
-			if val.lower() == section.lower():
-				for c in tempini.options(val):
-					if c.lower() == value.lower():
-						return float(tempini.get(val, c))
-		return default
-	
-	def ini_read_string(self, file, section, value, default=""):
-		tempini = ConfigParser()
-		tempini.read(file)
-		values = tempini.sections()
-		for val in values:
-			if val.lower() == section.lower():
-				for c in tempini.options(val):
-					if c.lower() == value.lower():
-						return str(tempini.get(val, c))
-		return default
 	
 	def startGame(self, player_id, defaultzone, motd, charlist, musiclist, zonelist, evidencelist):
 		self.player_id = player_id

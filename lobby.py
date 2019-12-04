@@ -1,7 +1,6 @@
 from PyQt4 import QtCore, QtGui
-from game_version import GAME_VERSION
-import os, socket, buttons
-import options
+from game_version import LOBBY_VERSION
+import os, socket, buttons, options, ini
 
 class ConnectingStatus(QtGui.QWidget):
 	ao_app = None
@@ -84,7 +83,7 @@ class lobby(QtGui.QWidget):
 		
 		self.font = QtGui.QFont("Arial", 12)
 		
-		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(GAME_VERSION))
+		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(LOBBY_VERSION))
 		self.text.setFont(self.font)
 		self.text.move(8, 8)
 		
@@ -166,7 +165,7 @@ class lobby(QtGui.QWidget):
 		self.optionsgui = options.Options(_ao_app)
 		self.optionsgui.fileSaved.connect(self.onOptionsSave)
 		
-		a = _ao_app.ini_read_string("aaio.ini", "MasterServer", "IP").split(":")
+		a = ini.read_ini("aaio.ini", "MasterServer", "IP").split(":")
 		ip = a[0]
 		try:
 			port = int(a[1])
@@ -192,7 +191,7 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 	
 	def onOptionsSave(self):
-		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+self.ao_app.ini_read_string("aaio.ini", "General", "Chatbox image")))
+		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
 		
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)
@@ -354,6 +353,8 @@ class MasterServerThread(QtCore.QThread):
 		self.tcp.send("NEWS#%\n")
 	
 	def run(self):
+		got_news = False
+		
 		try:
 			self.tcp.connect((self.ip, self.port))
 		except socket.error as err:
@@ -399,7 +400,6 @@ class MasterServerThread(QtCore.QThread):
 				if header == "1": #connected, contains client ID (not that useful anyway)
 					player_id = int(network[0])
 					self.sendRefresh() #request servers
-					self.getNews() #get news tab
 				
 				elif header == "12": #server list
 					total_servers = len(network) / 4
@@ -412,6 +412,10 @@ class MasterServerThread(QtCore.QThread):
 						servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
 					
 					self.gotServers.emit(tuple(servers))
+					
+					if not got_news:
+						self.getNews() #get news tab
+						got_news = True
 				
 				elif header == "NEWS": #news tab
 					self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))

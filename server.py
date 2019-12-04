@@ -20,6 +20,7 @@ ECONSTATE_AUTHED = 1
 ECONCLIENT_CRLF = 0
 ECONCLIENT_LF = 1
 MASTER_WAITINGSUCCESS = 0
+MASTER_PUBLISHED = 1
 ################################
 
 def plural(text, value):
@@ -94,6 +95,7 @@ class AIOserver(object):
 	defaultzone = 0
 	maxplayers = 1
 	MSstate = -1
+	MStick = -1
 	ic_finished = True
 	def __init__(self):
 		global AllowBot
@@ -121,6 +123,9 @@ class AIOserver(object):
 		self.motd = ini.get("Server", "motd", "Welcome to my server!##Overview of in-game controls:#Arrow keys or WASD keys - move#Shift - run#ESC or close button - quit#Spacebar - show emotes bar#T key - IC chat (Check the options menu to change this)##Musiclist controls:#Arrow keys - select song#Enter - play selected song##Have fun!")
 		self.publish = int(ini.get("Server", "publish", "1"))
 		self.evidence_limit = int(ini.get("Server", "evidence_limit", "255"))
+		if self.evidence_limit > 255:
+			print "[warning]", "evidence_limit is higher than 255, changing to the limit"
+			self.evidence_limit = 255
 		self.ms_addr = ini.get("MasterServer", "ip", "headshot.iminecraft.se:27011").split(":")
 		if len(self.ms_addr) == 1:
 			self.ms_addr.append("27011")
@@ -176,7 +181,7 @@ class AIOserver(object):
 			client, ipaddr = self.tcp.accept()
 		except socket.error:
 			return
-			
+		
 		for i in range(self.maxplayers):
 			if not self.clients.has_key(i):
 				self.econPrint("[game] incoming connection from %s (%d)" % (ipaddr[0], i))
@@ -195,6 +200,7 @@ class AIOserver(object):
 				if ipaddr[0].startswith("127."): #localhost
 					self.clients[i].is_authed = True
 				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+				thread.start_new_thread(self.clientLoop, (i,))
 				return
 		
 		self.kick(client, "Server is full.")
@@ -841,13 +847,15 @@ class AIOserver(object):
 				type = network[0]
 				if type == "13":
 					if self.MSstate == MASTER_WAITINGSUCCESS:
-						self.MSstate = -1
+						self.MSstate = MASTER_PUBLISHED
+						self.MStick = 200
 						ip = self.ms_addr[0]
 						if ip.startswith("127.") or ip == "localhost":
 							try:
 								url = urllib.urlopen("http://ipv4bot.whatismyipaddress.com")
 							except:
 								print "[masterserver]", "failed to get own IP address. make sure you have internet access."
+								self.MSstate = -1
 								self.ms_tcp.close()
 								return False
 			
@@ -858,8 +866,14 @@ class AIOserver(object):
 					
 				elif type == "SET_IP":
 					print "[masterserver]", "server published."
+				
+				elif type == "KEEPALIVE":
+					self.MStick = 200
 		
 		return True
+	
+	def MSkeepAlive(self):
+		self.sendToMasterServer("KEEPALIVE#%")
 	
 	def ic_tick_thread(self, msg):
 		self.ic_finished = False
@@ -875,6 +889,306 @@ class AIOserver(object):
 		with open("server/banlist.txt", "w") as f:
 			for ban in self.banlist:
 				f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
+	
+	def clientLoop(self, client):
+		while True:
+			if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
+				return
+			
+			if self.clients[client].ready and len(self.clients) > 1:
+				if self.clients[client].isBot():
+					self.sendBotMovement(client)
+				else:
+					self.sendMovement(client)
+			
+			if not self.clients.has_key(client) or self.clients[client].isBot(): #trust no one, not even myself.
+				continue
+			
+			sock = self.clients[client].sock
+			try:
+				self.readbuffer = sock.recv(4)
+			except socket.error as e:
+				if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
+					continue
+				else:
+					if self.clients[client].ready:
+						self.sendDestroy(client)
+					sock.close()
+					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+					self.clients[client].close = True
+					del self.clients[client]
+					break
+			
+			if not self.readbuffer:
+				if self.clients[client].ready:
+					self.sendDestroy(client)
+				sock.close()
+				print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+				self.clients[client].close = True
+				del self.clients[client]
+				break
+			
+			if len(self.readbuffer) < 4:
+				continue
+			self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
+			try:
+				self.readbuffer = sock.recv(bufflength+1)
+			except socket.error as e:
+				if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
+					continue
+				else:
+					if self.clients[client].ready:
+						self.sendDestroy(client)
+					sock.close()
+					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+					self.clients[client].close = True
+					del self.clients[client]
+					break
+			except MemoryError, OverflowError:
+				continue
+			
+			while self.readbuffer:
+				if self.readbuffer.endswith("\r"):
+					self.readbuffer = self.readbuffer.rstrip("\r")
+				if self.readbuffer.startswith("\r"):
+					temp = list(self.readbuffer)
+					del temp[0]
+					self.readbuffer = "".join(temp)
+					del temp
+				self.readbuffer, header = buffer_read("B", self.readbuffer)
+				
+				# commence fun... <sigh>
+				if header == AIOprotocol.CONNECT: # client sends version
+					mismatch = False
+					self.readbuffer, version = buffer_read("S", self.readbuffer)
+					text = "[game] client %d using version %s" % (client, version)
+					if version != GameVersion:
+						text += " (mismatch!)"
+						mismatch = True
+					self.econPrint(text)
+					self.clients[client].ClientVersion = version
+					if mismatch and not AllowVersionMismatch:
+						self.kick(client, "your client version (%s) doesn't match the server's (%s).#make sure you got the latest AIO update at tiny.cc/updateaio, or the server's custom client." % (version, GameVersion))
+						break
+					
+					self.clients[client].can_send_request = True
+					self.sendWelcome(client)
+				
+				elif header == AIOprotocol.REQUEST: #get character, music and zone lists
+					if not self.clients[client].can_send_request:
+						self.kick(client, "your client tried to send a character/music/zone list request first before sending the client version to the server")
+						break
+						
+					self.readbuffer, req = buffer_read("B", self.readbuffer)
+					if req == 0: #characters
+						self.sendCharList(client)
+					elif req == 1: #music
+						self.sendMusicList(client)
+					elif req == 2: #zones
+						self.sendZoneList(client)
+					elif req == 3: #evidence for current zone
+						self.sendEvidenceRequest(client)
+						self.clients[client].ready = True
+						self.econPrint("[game] player is ready. id=%d addr=%s" % (client, self.clients[client].ip))
+						self.sendCreate(client)
+				
+				elif header == AIOprotocol.MOVE: #player movement.
+					try:
+						self.readbuffer, x = buffer_read("f", self.readbuffer)
+						self.readbuffer, y = buffer_read("f", self.readbuffer)
+						self.readbuffer, hspeed = buffer_read("h", self.readbuffer)
+						self.readbuffer, vspeed = buffer_read("h", self.readbuffer)
+						self.readbuffer, sprite = buffer_read("S", self.readbuffer)
+						self.readbuffer, emoting = buffer_read("B", self.readbuffer)
+						self.readbuffer, dir_nr = buffer_read("B", self.readbuffer)
+					except struct.error:
+						continue
+					if not self.clients[client].ready:
+						continue
+					
+					self.clients[client].x = x
+					self.clients[client].y = y
+					self.clients[client].hspeed = hspeed
+					self.clients[client].vspeed = vspeed
+					self.clients[client].sprite = sprite
+					self.clients[client].emoting = emoting
+					self.clients[client].dir_nr = dir_nr
+				
+				elif header == AIOprotocol.SETZONE:
+					try:
+						self.readbuffer, zone = buffer_read("H", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready:
+						continue
+					
+					self.setPlayerZone(client, zone)
+					self.sendEvidenceList(client, zone)
+				
+				elif header == AIOprotocol.SETCHAR:
+					self.readbuffer, charid = buffer_read("h", self.readbuffer)
+					if not self.clients[client].ready:
+						continue
+					
+					self.clients[client].first_picked = True
+					self.setPlayerChar(client, charid)
+				
+				elif header == AIOprotocol.MSCHAT: #IC chat.
+					try:
+						self.readbuffer, chatmsg = buffer_read("S", self.readbuffer)
+						self.readbuffer, blip = buffer_read("S", self.readbuffer)
+						self.readbuffer, color = buffer_read("I", self.readbuffer)
+						self.readbuffer, realization = buffer_read("B", self.readbuffer)
+						self.readbuffer, evidence = buffer_read("B", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or not self.ic_finished:
+						continue
+					
+					if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
+						color = 4294967295 #set to exactly white
+					
+					self.sendChat(self.getCharName(self.clients[client].CharID), chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
+					#print "[chat][IC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.getCharName(self.clients[client].CharID), chatmsg)
+				
+				elif header == AIOprotocol.OOC:
+					try:
+						self.readbuffer, name = buffer_read("S", self.readbuffer)
+						self.readbuffer, chatmsg = buffer_read("S", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready or self.clients[client].CharID == -1 or not chatmsg:
+						continue
+						
+					fail = False
+					if not name or name.lower().endswith(ServerOOCName.lower()) or name.lower().startswith(ServerOOCName.lower()):
+						fail = True
+					for client2 in self.clients.values():
+						if client2 == self.clients[client]:
+							continue
+						if (client2.OOCname.lower() == name.lower() or name.lower().startswith(client2.OOCname.lower()) or name.lower().endswith(client2.OOCname.lower())) and client2.OOCname:
+							fail = True
+					
+					if not fail:
+						self.clients[client].OOCname = name
+					
+					if not self.clients[client].OOCname:
+						self.sendOOC(ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
+					else:
+						if chatmsg[0] != "/":
+							self.sendOOC(self.clients[client].OOCname, chatmsg, zone=self.clients[client].zone)
+						else: #commands.
+							cmdargs = chatmsg.split(" ")
+							cmd = cmdargs.pop(0).lower().replace("/", "", 1)
+							print "[chat][OOC]", "%d,%d,%s used command '%s'" % (client, self.clients[client].zone, self.clients[client].OOCname, chatmsg)
+							self.parseOOCcommand(client, cmd, cmdargs)
+							
+				elif header == AIOprotocol.EXAMINE: #AA-like "Examine" functionality
+					try:
+						self.readbuffer, x = buffer_read("f", self.readbuffer)
+						self.readbuffer, y = buffer_read("f", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready or self.clients[client].CharID == -1:
+						continue
+					if self.clients[client].ratelimits[2] > 0:
+						#print "[game]", "ratelimited Examine on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
+						continue
+					
+					self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y)
+					self.clients[client].ratelimits[2] = ExamineRateLimit
+				
+				elif header == AIOprotocol.MUSIC: #music change
+					self.readbuffer, songname = buffer_read("S", self.readbuffer)
+					if not self.clients[client].ready or self.clients[client].CharID == -1:
+						continue
+					
+					if self.clients[client].ratelimits[0] > 0:
+						#print "[game]", "ratelimited music on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
+						continue
+					
+					change = False
+					for song in self.musiclist:
+						if songname.lower() == song.lower():
+							change = True
+					
+					message = "%s id=%d addr=%s zone=%d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone)
+					if change:
+						self.changeMusic(songname, self.clients[client].CharID, self.clients[client].zone)
+						print "[game]", message, "changed the music to "+songname
+						
+					else:
+						print "[game]", message, "attempted to change the music to "+songname
+					self.clients[client].ratelimits[0] = MusicRateLimit
+				
+				elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
+					self.readbuffer, on = buffer_read("B", self.readbuffer)
+					if not self.clients[client].ready or self.clients[client].CharID == -1:
+						continue
+					
+					self.setChatBubble(client, on)
+				
+				elif header == AIOprotocol.EMOTESOUND:
+					try:
+						self.readbuffer, soundname = buffer_read("S", self.readbuffer)
+						self.readbuffer, delay = buffer_read("I", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready or self.clients[client].CharID == -1:
+						continue
+						
+					if self.clients[client].ratelimits[1] > 0:
+						#print "[game]", "ratelimited emotesound on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
+						continue
+					
+					self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
+					self.clients[client].ratelimits[1] = EmoteSoundRateLimit
+				
+				elif header == AIOprotocol.EVIDENCE:
+					try:
+						self.readbuffer, type = buffer_read("B", self.readbuffer)
+						if type == AIOprotocol.EV_ADD:
+							self.readbuffer, name = buffer_read("S", self.readbuffer)
+							self.readbuffer, desc = buffer_read("S", self.readbuffer)
+							self.readbuffer, image = buffer_read("S", self.readbuffer)
+						elif type == AIOprotocol.EV_EDIT:
+							self.readbuffer, ind = buffer_read("B", self.readbuffer)
+							self.readbuffer, name = buffer_read("S", self.readbuffer)
+							self.readbuffer, desc = buffer_read("S", self.readbuffer)
+							self.readbuffer, image = buffer_read("S", self.readbuffer)
+						elif type == AIOprotocol.EV_DELETE:
+							self.readbuffer, ind = buffer_read("B", self.readbuffer)
+					except struct.error:
+						continue
+					
+					if not self.clients[client].ready or self.clients[client].CharID == -1:
+						continue
+					
+					if type == AIOprotocol.EV_ADD:
+						if len(self.evidencelist[self.clients[client].zone]) == self.evidence_limit:
+							print "[game]", "%s id=%d addr=%s zone=%d tried to add a piece of evidence but exceeded the limit"
+							self.sendWarning(client, "You cannot add more than %d pieces of evidence at a time." % self.evidence_limit)
+							continue
+						
+						print "[game]", "%s id=%d addr=%s zone=%d added a piece of evidence: %s" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, name)
+						self.addEvidence(self.clients[client].zone, name, desc, image)
+					elif type == AIOprotocol.EV_EDIT:
+						print "[game]", "%s id=%d addr=%s zone=%d edited piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
+						self.editEvidence(self.clients[client].zone, ind, name, desc, image)
+					elif type == AIOprotocol.EV_DELETE:
+						print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
+						self.deleteEvidence(self.clients[client].zone, ind)
+				
+				elif header == AIOprotocol.PING: #pong
+					self.sendPong(client)
 	
 	def run(self): #main loop
 		if self.running:
@@ -914,6 +1228,12 @@ class AIOserver(object):
 					if MSretryTick == 0:
 						loopMS = self.startMasterServerAdverter()
 			
+			if self.MSstate == MASTER_PUBLISHED:
+				if self.MStick > 0:
+					self.MStick -= 1
+					if not self.MStick:
+						self.MSkeepAlive()
+			
 			if self.econ_password:
 				self.econTick()
 			
@@ -930,7 +1250,7 @@ class AIOserver(object):
 					
 			self.acceptClient()
 			
-			for client in self.clients.keys():
+			"""for client in self.clients.keys():
 				if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
 					continue
 				
@@ -1227,7 +1547,7 @@ class AIOserver(object):
 							self.deleteEvidence(self.clients[client].zone, ind)
 					
 					elif header == AIOprotocol.PING: #pong
-						self.sendPong(client)
+						self.sendPong(client)"""
 
 	def parseOOCcommand(self, client, cmd, cmdargs):
 		isConsole = client == -1
@@ -1821,6 +2141,7 @@ class AIOserver(object):
 	def econTick(self):
 		try:
 			client, ipaddr = self.econ_tcp.accept()
+			client.setblocking(False)
 			print "[econ]", "%s connected." % ipaddr[0]
 			client.send("Enter password:\n> ")
 			for i in range(500):
@@ -1830,7 +2151,7 @@ class AIOserver(object):
 		except:
 			pass
 		
-		for i in range(len(self.econ_clients.keys())):
+		for i in self.econ_clients.keys():
 			try:
 				client = self.econ_clients[i]
 			except:
@@ -1839,7 +2160,7 @@ class AIOserver(object):
 			try:
 				data = client[0].recv(4096)
 			except (socket.error, socket.timeout) as e:
-				if e.args[0] == 10035 or e.args[0] == "timed out":
+				if e.args[0] == 10035 or e.args[0] == "timed out" or e.errno == 11:
 					continue
 				else:
 					print "[econ]", "%s disconnected." % client[1]

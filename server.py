@@ -879,31 +879,31 @@ class AIOserver(object):
 		self.ic_finished = False
 		pos = 0
 		progress = ""
-		while msg != progress:
+		while msg != progress and not self.ic_finished:
 			progress += msg[pos]
 			pos += 1
 			time.sleep(1./30)
 		self.ic_finished = True
-	
+
 	def writeBanList(self):
 		with open("server/banlist.txt", "w") as f:
 			for ban in self.banlist:
 				f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
-	
+
 	def clientLoop(self, client):
 		while True:
 			if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
 				return
-			
+
 			if self.clients[client].ready and len(self.clients) > 1:
 				if self.clients[client].isBot():
 					self.sendBotMovement(client)
 				else:
 					self.sendMovement(client)
-			
+
 			if not self.clients.has_key(client) or self.clients[client].isBot(): #trust no one, not even myself.
 				continue
-			
+
 			sock = self.clients[client].sock
 			try:
 				self.readbuffer = sock.recv(4)
@@ -913,21 +913,21 @@ class AIOserver(object):
 				else:
 					if self.clients[client].ready:
 						self.sendDestroy(client)
-					sock.close()
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
 					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
+					sock.close()
 					break
 			
 			if not self.readbuffer:
 				if self.clients[client].ready:
 					self.sendDestroy(client)
-				sock.close()
 				print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
 				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 				self.clients[client].close = True
 				del self.clients[client]
+				sock.close()
 				break
 			
 			if len(self.readbuffer) < 4:
@@ -1047,9 +1047,10 @@ class AIOserver(object):
 					except struct.error:
 						continue
 					
-					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or not self.ic_finished:
+					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed]):
 						continue
-					
+					self.ic_finished = True
+
 					if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
 						color = 4294967295 #set to exactly white
 					

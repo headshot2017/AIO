@@ -9,7 +9,7 @@ class AIOplayer(object):
 	sock = None
 	ip = "0"
 	is_authed = False
-	ratelimits = [0, 0, 0] #index 0 = music, index 1 = emotesound, index 3 = examine
+	ratelimits = [0, 0, 0, 0] #index 0 = music, index 1 = emotesound, index 2 = examine, index 3 = ooc
 	ready = False
 	can_send_request = False
 	x = 0.0
@@ -25,6 +25,7 @@ class AIOplayer(object):
 	loginfails = 0
 	close = False
 	first_picked = False
+
 	def __init__(self, sock, ip):
 		self.sock = sock
 		self.ip = ip

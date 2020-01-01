@@ -7,9 +7,10 @@ GameVersion = "0.3.2" # you can modify this so that it matches the version you w
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
 MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
-EmoteSoundRateLimit = 1 #amount of ticks to wait before allowing to use emotes with sound again
+EmoteSoundRateLimit = 1 #amount of seconds to wait before allowing to use emotes with sound again
 MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
+OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
 
 AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
 ################################
@@ -1066,7 +1067,9 @@ class AIOserver(object):
 					
 					if not self.clients[client].ready or self.clients[client].CharID == -1 or not chatmsg:
 						continue
-						
+					if self.clients[client].ratelimits[3]: #ooc anti-spam
+						continue
+
 					fail = False
 					if not name or name.lower().endswith(ServerOOCName.lower()) or name.lower().startswith(ServerOOCName.lower()):
 						fail = True
@@ -1082,6 +1085,7 @@ class AIOserver(object):
 					if not self.clients[client].OOCname:
 						self.sendOOC(ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
 					else:
+						self.clients[client].ratelimits[3] = OOCRateLimit
 						if chatmsg[0] != "/":
 							self.sendOOC(self.clients[client].OOCname, chatmsg, zone=self.clients[client].zone)
 						else: #commands.

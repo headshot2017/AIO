@@ -1048,7 +1048,7 @@ class AIOserver(object):
 					except struct.error:
 						continue
 					
-					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed]):
+					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed):
 						continue
 					self.ic_finished = True
 

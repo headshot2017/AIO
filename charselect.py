@@ -8,13 +8,14 @@ class CharSelect(QtGui.QWidget):
 		super(CharSelect, self).__init__(parent)
 		self.ao_app = ao_app
 		self.charbuttons = []
-		
+		self.parent = parent
+
+		self.setGeometry(512, 8, parent.size().width()-512-40, parent.size().height()-40)
 		self.charscroller = QtGui.QScrollArea(self)
-		self.charscroller.setGeometry(8, 32, 512-8, 192+32)
+		self.charscroller.setGeometry(4, 32, self.size().width()-8, self.size().height())
 		self.scrollwidget = QtGui.QWidget(self.charscroller)
-		self.scrollwidget.resize(512-28, 384)
+		self.scrollwidget.resize(self.charscroller.size().width()-24, self.size().height())
 		self.charscroller.setWidget(self.scrollwidget)
-		self.setGeometry(0, 384, 512, 640-384)
 		
 		self.disconnectbtn = QtGui.QPushButton(self, text="Disconnect")
 		self.disconnectbtn.move(8, 8)
@@ -23,7 +24,7 @@ class CharSelect(QtGui.QWidget):
 		self.charnameimg = QtGui.QLabel(self)
 		self.charnameimg.setPixmap(QtGui.QPixmap("data/misc/evidence_name.png"))
 		self.charnameimg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
-		self.charnameimg.move(256 - (self.charnameimg.pixmap().size().width()/2), 4)
+		self.charnameimg.move((self.charnameimg.pixmap().size().width()/3), 4)
 		self.charname = QtGui.QLabel(self.charnameimg)
 		self.charname.setAlignment(QtCore.Qt.AlignCenter)
 		self.charname.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+QtGui.QColor(255, 165, 0).name())
@@ -39,7 +40,7 @@ class CharSelect(QtGui.QWidget):
 		#since it's a scrollbar system, we don't need height variables. infinite height
 		spacing = 2
 		x_mod_count = y_mod_count = 0
-		left, top = (12, 8)
+		left, top = (8, 8)
 		width = self.scrollwidget.size().width()
 		columns = (width - 64) / (spacing + 64) + 1
 		for i in range(len(chars)):

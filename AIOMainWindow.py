@@ -22,7 +22,7 @@ class AIOMainWindow(QtGui.QMainWindow):
 	def startGame(self):
 		self.gamewidget.startGame()
 		self.stackwidget.setCurrentWidget(self.gamewidget)
-		self.setFixedSize(512, 640)
+		self.setFixedSize(1000, 512+20)
 		self.center()
 	
 	def stopGame(self):

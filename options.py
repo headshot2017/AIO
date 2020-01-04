@@ -1,6 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from ConfigParser import ConfigParser
-import os, ini
+from pybass import *
+import os, ini, platform
 
 class Options(QtGui.QWidget):
 	fileSaved = QtCore.pyqtSignal()
@@ -22,8 +23,11 @@ class Options(QtGui.QWidget):
 		
 		general_tab = QtGui.QWidget()
 		advanced_tab = QtGui.QWidget()
+		audio_tab = QtGui.QWidget()
 		general_layout = QtGui.QVBoxLayout(general_tab)
 		general_layout.setAlignment(QtCore.Qt.AlignTop)
+		audio_layout = QtGui.QVBoxLayout(audio_tab)
+		audio_layout.setAlignment(QtCore.Qt.AlignTop)
 		advanced_layout = QtGui.QVBoxLayout(advanced_tab)
 		advanced_layout.setAlignment(QtCore.Qt.AlignTop)
 		
@@ -69,19 +73,36 @@ class Options(QtGui.QWidget):
 		general_layout.addWidget(self.chatboximage, 0, QtCore.Qt.AlignCenter)
 		#general_layout.addWidget(savechangeswarn, 50, QtCore.Qt.AlignBottom)
 		
+		###### Audio tab ######
+		device_layout = QtGui.QHBoxLayout()
+		device_label = QtGui.QLabel("Audio device")
+		self.device_list = QtGui.QComboBox()
+		device_layout.addWidget(device_label)
+		device_layout.addWidget(self.device_list)
+
+		info = BASS_DEVICEINFO()
+		ind = -1 if platform.system() in ("Windows", "Darwin") else 0
+		while BASS_GetDeviceInfo(ind, info):
+			self.device_list(info.name)
+			ind += 1
+
+		audio_layout.addLayout(device_layout)
+
 		###### Advanced tab ######
 		ms_layout = QtGui.QHBoxLayout()
 		ms_label = QtGui.QLabel("MasterServer IP")
 		self.ms_lineedit = QtGui.QLineEdit()
-		
+
 		ms_layout.addWidget(ms_label)
 		ms_layout.addWidget(self.ms_lineedit)
-		
+
 		advanced_layout.addLayout(ms_layout)
-		
+
+
 		self.tabs.addTab(general_tab, "General")
+		self.tabs.addTab(audio_tab, "Audio")
 		self.tabs.addTab(advanced_tab, "Advanced")
-		
+
 		save_layout.addWidget(savebtn, 100, QtCore.Qt.AlignRight)
 		save_layout.addWidget(cancelbtn, 0, QtCore.Qt.AlignRight)
 		main_layout.addWidget(self.tabs)

@@ -1217,7 +1217,8 @@ class GameWidget(QtGui.QWidget):
 				self.myevidence = -1
 		
 		evidence -= 1
-		self.m_chatmsg = chatmsg.decode("utf-8")
+        name = name.replace("<", "&lt;").replace(">", "&gt;")
+		self.m_chatmsg = chatmsg.decode("utf-8").replace("<", "&lt;").replace(">", "&gt;")
 		self.m_chatClientID = clientid
 		
 		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg)
@@ -1416,6 +1417,8 @@ class GameWidget(QtGui.QWidget):
 		dank_url_regex = QtCore.QRegExp("\\b(https?://\\S+\\.\\S+)\\b")
 		text = QtCore.QString(text).replace(dank_url_regex, "<a href='\\1'>\\1</a>").replace("\n", "<br />")
 		
+		name = name.replace("<", "&lt;").replace(">", "&gt;")
+		text = text.replace("<", "&lt;").replace(">", "&gt;")
 		self.oocchat.append("<b>"+name+":</b> "+text)
 	
 	def onPrevEmotePage(self):

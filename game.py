@@ -933,14 +933,14 @@ class GameWidget(QtGui.QWidget):
 		self.musicslider.setRange(0, 100)
 		self.soundslider.setRange(0, 100)
 		self.blipslider.setRange(0, 100)
-		self.musicslider.setValue(100)
-		self.soundslider.setValue(100)
-		self.blipslider.setValue(100)
+		self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
+		self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
+		self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
 		self.musicslider.setGeometry(512+8, self.musiclist.y() + self.musiclist.size().height()+4, 192, 16)
 		self.soundslider.setGeometry(512+8, self.musicslider.y()+20, 192, 16)
 		self.blipslider.setGeometry(512+8, self.soundslider.y()+20, 192, 16)
-		self.musicslider.sliderMoved.connect(self.changeMusicVolume)
-		self.soundslider.sliderMoved.connect(self.changeSoundVolume)
+		self.musicslider.valueChanged.connect(self.changeMusicVolume)
+		self.soundslider.valueChanged.connect(self.changeSoundVolume)
 		self.blipslider.valueChanged.connect(self.changeBlipVolume)
 		self.sliderlabel1 = QtGui.QLabel("Music", self)
 		self.sliderlabel2 = QtGui.QLabel("SFX", self)
@@ -1834,6 +1834,10 @@ class GameWidget(QtGui.QWidget):
 		self.movemenuActions = []
 		self.evidencename.clear()
 		self.charselect.showCharList(self.ao_app.charlist)
+
+		self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
+		self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
+		self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
 
 		aFont = QtGui.QFont("Tahoma", 8)
 		

@@ -1222,10 +1222,10 @@ class GameWidget(QtGui.QWidget):
 		
 		evidence -= 1
 		name = name.replace("<", "&lt;").replace(">", "&gt;")
-		self.m_chatmsg = chatmsg.decode("utf-8").replace("<", "&lt;").replace(">", "&gt;")
+		self.m_chatmsg = chatmsg.decode("utf-8")
 		self.m_chatClientID = clientid
 		
-		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg)
+		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;"))
 		if evidence >= 0:
 			msg += "<br /><b>"+name+"</b> presented an evidence: "
 			try:
@@ -1291,8 +1291,8 @@ class GameWidget(QtGui.QWidget):
 			f_character2 = self.m_chatmsg[self.tick_pos]
 			f_character = QtCore.QString(f_character2)
 			
-			if f_character == " ":
-				self.chattext.insertPlainText(" ")
+			if f_character == " " or f_character == "<":
+				self.chattext.insertPlainText(f_character)
 			
 			elif f_character == "\\" and not self.next_character_is_not_special:
 				self.next_character_is_not_special = True

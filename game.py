@@ -121,8 +121,12 @@ class Broadcast(QtGui.QGraphicsItem):
 	
 	def showText(self, text):
 		apixmap = self.orig_pixmap
-		if self.fontmetrics.boundingRect(text).width() > self.orig_pixmap.size().width()-6:
-			apixmap = self.orig_pixmap.scaled(self.fontmetrics.boundingRect(text).width()+6, self.orig_pixmap.size().height())
+		width = self.fontmetrics.boundingRect(text).width()+6
+		height = self.fontmetrics.boundingRect(text).height()
+		if width < self.orig_pixmap.size().width():
+			width = self.orig_pixmap.size().width()
+		
+		apixmap = self.orig_pixmap.scaled(width, height)
 		
 		self.pixmap.setPixmap(apixmap)
 		
@@ -1217,7 +1221,7 @@ class GameWidget(QtGui.QWidget):
 				self.myevidence = -1
 		
 		evidence -= 1
-        name = name.replace("<", "&lt;").replace(">", "&gt;")
+		name = name.replace("<", "&lt;").replace(">", "&gt;")
 		self.m_chatmsg = chatmsg.decode("utf-8").replace("<", "&lt;").replace(">", "&gt;")
 		self.m_chatClientID = clientid
 		

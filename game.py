@@ -120,11 +120,12 @@ class Broadcast(QtGui.QGraphicsItem):
 		self.fadeTimer.start(50)
 	
 	def showText(self, text):
-		apixmap = self.orig_pixmap
-		width = self.fontmetrics.boundingRect(text).width()+6
-		height = self.fontmetrics.boundingRect(text).height()
-		if width < self.orig_pixmap.size().width():
-			width = self.orig_pixmap.size().width()
+		aRect = self.fontmetrics.boundingRect(0, 0, self.orig_pixmap.size().width(), self.orig_pixmap.size().height(), QtCore.Qt.TextWordWrap, text)
+		width = self.orig_pixmap.size().width() if aRect.width()+6 < self.orig_pixmap.size().width() else aRect.width()+6
+		height = aRect.height()+3
+		#print height, self.orig_pixmap.size().height(), self.fontmetrics.boundingRect(text).size().height(), dir(self.fontmetrics.boundingRect(text)), self.fontmetrics.boundingRect(text).getRect()
+		#if width < self.orig_pixmap.size().width():
+			#width = self.orig_pixmap.size().width()
 		
 		apixmap = self.orig_pixmap.scaled(width, height)
 		
@@ -1225,7 +1226,7 @@ class GameWidget(QtGui.QWidget):
 		self.m_chatmsg = chatmsg.decode("utf-8")
 		self.m_chatClientID = clientid
 		
-		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;"))
+		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />"))
 		if evidence >= 0:
 			msg += "<br /><b>"+name+"</b> presented an evidence: "
 			try:
@@ -1291,7 +1292,7 @@ class GameWidget(QtGui.QWidget):
 			f_character2 = self.m_chatmsg[self.tick_pos]
 			f_character = QtCore.QString(f_character2)
 			
-			if f_character == " " or f_character == "<":
+			if f_character == " " or f_character == "<" or f_character == "\n" or f_character == "\r":
 				self.chattext.insertPlainText(f_character)
 			
 			elif f_character == "\\" and not self.next_character_is_not_special:
@@ -1419,10 +1420,9 @@ class GameWidget(QtGui.QWidget):
 		name, text = contents
 		
 		dank_url_regex = QtCore.QRegExp("\\b(https?://\\S+\\.\\S+)\\b")
-		text = QtCore.QString(text).replace(dank_url_regex, "<a href='\\1'>\\1</a>").replace("\n", "<br />")
+		text = QtCore.QString(text).replace("<", "&lt;").replace(">", "&gt;").replace(dank_url_regex, "<a href='\\1'>\\1</a>").replace("\n", "<br />")
 		
 		name = name.replace("<", "&lt;").replace(">", "&gt;")
-		text = text.replace("<", "&lt;").replace(">", "&gt;")
 		self.oocchat.append("<b>"+name+":</b> "+text)
 	
 	def onPrevEmotePage(self):

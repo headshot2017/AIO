@@ -120,14 +120,10 @@ class Broadcast(QtGui.QGraphicsItem):
 		self.fadeTimer.start(50)
 	
 	def showText(self, text):
-		aRect = self.fontmetrics.boundingRect(0, 0, self.orig_pixmap.size().width(), self.orig_pixmap.size().height(), QtCore.Qt.TextWordWrap, text)
-		width = self.orig_pixmap.size().width() if aRect.width()+6 < self.orig_pixmap.size().width() else aRect.width()+6
-		height = aRect.height()+3
-		#print height, self.orig_pixmap.size().height(), self.fontmetrics.boundingRect(text).size().height(), dir(self.fontmetrics.boundingRect(text)), self.fontmetrics.boundingRect(text).getRect()
-		#if width < self.orig_pixmap.size().width():
-			#width = self.orig_pixmap.size().width()
-		
-		apixmap = self.orig_pixmap.scaled(width, height)
+		apixmap = self.orig_pixmap
+		width = self.fontmetrics.boundingRect(text).width()+6
+		if width > self.orig_pixmap.size().width():
+			apixmap = self.orig_pixmap.scaled(width, apixmap.size().height())
 		
 		self.pixmap.setPixmap(apixmap)
 		

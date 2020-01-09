@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, QtOpenGL
 from functools import partial
 from pybass import *
 import random, os, AIOprotocol, buttons, math, charselect, ini
@@ -587,6 +587,8 @@ class GamePort(QtGui.QWidget):
 		self.resize(512, 384)
 		self.gamescene = QtGui.QGraphicsScene(0, 0, 512, 384, self)
 		self.gameview = QtGui.QGraphicsView(self.gamescene, self)
+		if ini.read_ini_int("aaio.ini", "Advanced", "opengl", 0): # render with OpenGL (experimental)
+			self.gameview.setViewport(QtOpenGL.QGLWidget())
 		self.gameview.show()
 		
 		self.zonebackground = QtGui.QGraphicsPixmapItem(scene=self.gamescene)
@@ -1589,6 +1591,8 @@ class GameWidget(QtGui.QWidget):
 		else:
 			self.chatlog.append("The music was changed to %s" % filename.replace("<", "&#60;").replace(">", "&#62;"))
 			self.broadcastObj.showText("The music was changed to %s" % filename)
+		
+		self.ao_app.musicvol = self.musicslider.value()
 		self.ao_app.playMusic(filename)
 	
 	def onPlayerCreate(self, contents):

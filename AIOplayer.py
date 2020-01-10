@@ -25,6 +25,7 @@ class AIOplayer(object):
 	loginfails = 0
 	close = False
 	first_picked = False
+	pingpong = 0
 
 	def __init__(self, sock, ip):
 		self.sock = sock
@@ -38,11 +39,11 @@ class AIOplayer(object):
 		while True:
 			if self.close:
 				thread.exit()
+
 			for i in range(len(self.ratelimits)):
-				if self.ratelimits[i] > 0:
-					self.ratelimits[i] -= 0.1
-			if not self.isBot():
-				time.sleep(0.1)
+				if self.ratelimits[i] > 0: self.ratelimits[i] -= 0.1
+			if self.pingpong: self.pingpong -= 0.1
+			if not self.isBot(): time.sleep(0.1)
 	
 	def isBot(self):
 		return not bool(self.sock)

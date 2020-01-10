@@ -11,6 +11,7 @@ EmoteSoundRateLimit = 1 #amount of seconds to wait before allowing to use emotes
 MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
 OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
+ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
 
 AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
 ################################
@@ -202,6 +203,7 @@ class AIOserver(object):
 				if ipaddr[0].startswith("127."): #localhost
 					self.clients[i].is_authed = True
 				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+				self.clients[i].pingpong = ClientPingTime
 				thread.start_new_thread(self.clientLoop, (i,))
 				return
 		
@@ -919,20 +921,22 @@ class AIOserver(object):
 					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
 					del self.clients[client]
-					sock.close()
+					try: sock.close()
+					except: pass
 					break
 			
-			if not self.readbuffer:
+			if not self.readbuffer or not self.clients[client].pingpong:
 				if self.clients[client].ready:
 					self.sendDestroy(client)
 				print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
 				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 				self.clients[client].close = True
 				del self.clients[client]
-				sock.close()
+				try: sock.close()
+				except: pass
 				break
 			
-			if len(self.readbuffer) < 4:
+			if len(self.readbuffer) < 4: # we need these 4 bytes to read the packet length
 				continue
 			self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
 			try:
@@ -943,7 +947,8 @@ class AIOserver(object):
 				else:
 					if self.clients[client].ready:
 						self.sendDestroy(client)
-					sock.close()
+					try: sock.close()
+					except: pass
 					print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
 					self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
 					self.clients[client].close = True
@@ -1205,6 +1210,7 @@ class AIOserver(object):
 						self.deleteEvidence(self.clients[client].zone, ind)
 				
 				elif header == AIOprotocol.PING: #pong
+					self.clients[client].pingpong = ClientPingTime
 					self.sendPong(client)
 	
 	def run(self): #main loop

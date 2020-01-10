@@ -925,7 +925,7 @@ class AIOserver(object):
 					except: pass
 					break
 			
-			if not self.readbuffer or not self.clients[client].pingpong:
+			if not self.readbuffer or self.clients[client].pingpong <= 0:
 				if self.clients[client].ready:
 					self.sendDestroy(client)
 				print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)

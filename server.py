@@ -93,6 +93,7 @@ class AIOserver(object):
 	zonelist = []
 	evidencelist = []
 	banlist = []
+	last_messages = [] # message IDs, 15 messages
 	defaultzone = 0
 	maxplayers = 1
 	MSstate = -1
@@ -1048,9 +1049,20 @@ class AIOserver(object):
 					except struct.error:
 						continue
 					
-					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed):
+					# for old client compatibility
+					try:
+						self.readbuffer, message_id = buffer_read("I", self.readbuffer)
+					except:
+						message_id = 0
+                    
+					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed) or ([message_id, client] in self.last_messages):
 						continue
 					self.ic_finished = True
+                    
+					if message_id != 0:
+						self.last_messages.append([message_id, client])
+						if len(self.last_messages) > 15: # clear one message after another
+							del self.last_messages[0]
 
 					if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
 						color = 4294967295 #set to exactly white

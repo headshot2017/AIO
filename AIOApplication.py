@@ -178,7 +178,7 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", type)
 			self.sendBuffer(buf)
 	
-	def sendIC(self, chatmsg, blip, color, realization, evidence):
+	def sendIC(self, chatmsg, blip, color, realization, evidence, message_id):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MSCHAT)
 			buf += chatmsg+"\0"
@@ -186,6 +186,7 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("I", color)
 			buf += struct.pack("B", realization)
 			buf += struct.pack("B", evidence)
+			buf += struct.pack("I", message_id)
 			self.sendBuffer(buf)
 	
 	def sendOOC(self, name, chatmsg):

@@ -730,6 +730,8 @@ class GameWidget(QtGui.QWidget):
 	blip = None
 	finished_chat = True
 	ic_delay = 0
+	message_id = 0 # anti-lag spam
+    
 	def __init__(self, _ao_app):
 		super(GameWidget, self).__init__()
 		self.ao_app = _ao_app
@@ -1210,6 +1212,7 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.characters[clientid].setChatBubble(2)
 		
 		if clientid == self.ao_app.player_id: # your message arrived.
+			self.message_id = random.randint(100000000, 999999999)
 			self.ic_input.clear()
 			if self.chatbubbletimer.isActive():
 				self.chatbubbletimer.stop()
@@ -1769,7 +1772,7 @@ class GameWidget(QtGui.QWidget):
 			color = 691337
 
 		if text and self.finished_chat and self.ic_delay == 0:
-			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1)
+			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1, self.message_id)
 			self.ic_delay = 3
 	
 	def timerEvent(self, event):
@@ -1830,6 +1833,7 @@ class GameWidget(QtGui.QWidget):
 	def startGame(self):
 		self.ic_delay = 0
 		self.ic_input.enter_pressed = False
+		self.message_id = random.randint(100000000, 999999999)
 		self.finished_chat = True
 		self.myevidence = -1
 		self.oocchat.clear()

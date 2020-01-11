@@ -1,0 +1,113 @@
+<Investigation>
+Investigation - Opening 2009.mp3
+Investigation - Middlegame 2009.mp3
+Investigation - Core 2009.mp3
+Investigation ~ Contradiction at the Crime Scene.mp3
+Investigation ~ Truth at the Crime Scene.mp3
+Reproducing the Scene ~ The Gentleman Thief's Secret.mp3
+<Prelude>
+Prelude(AA).mp3
+Prelude(AJ).mp3
+<Trial>
+Trial(AA).mp3
+Trial(JFA).mp3
+Trial(T&T).mp3
+Trial(AJ).mp3
+Trial(Miles).mp3
+Trial(DD).mp3
+<Announce The Truth>
+Annonce The Truth(AA).mp3
+Annonce The Truth(JFA).mp3
+Annonce The Truth(T&T).mp3
+Annonce The Truth(AJ).mp3
+Annonce The Truth(Miles).mp3
+Annonce The Truth(MLI).mp3
+<Objection>
+OBJECTION (AA).mp3
+OBJECTION (JFA).mp3
+OBJECTION (T&T).mp3
+OBJECTIOM(AJ).mp3
+OBJECTION(Miles).mp3
+OBJECTION (AAI2).mp3
+OBJECTION (MLI).mp3
+OBJECTION (DD).mp3
+OBJECTION(DD-Apollo).mp3
+OBJECTION(DD-Athena).mp3
+<Pursuit>
+PURSUIT(AA).mp3
+PURSUIT(AA) - variation.mp3
+PURSUIT(AAAJ).mp3
+PURSUIT(JFA).mp3
+PURSUIT(JFA) - variation.mp3
+PURSUIT(T&T).mp3
+PURSUIT(T&T) - variation.mp3
+PURSUIT(AJ).mp3
+PURSUIT(DD).mp3
+114 Pursuit(Miles).mp3
+Pursuit(MLI).mp3
+Pursuit ~ I Want to Find the Truth(Orchestra).mp3
+<Confrontation/Questioning>
+Questioning(AA-normal).mp3
+Questioning(AA-allergo).mp3
+Questioning JFA (Moderato).mp3
+Questioning JFA (Allegro).mp3
+Questioning T&T (Moderato).mp3
+Questioning T&T (Allegro).mp3
+Questioning (MLI).mp3
+Questioning AJ (Moderato).mp3
+Questioning AJ (Allegro).mp3
+Questioning SOJ (Moderato).mp3
+Questioning SOJ (Allegro).mp3
+Confrontation ~ Moderato 2009.mp3
+Confrontation ~ Allegro 2009.mp3
+Confrontation ~ Presto 2009.mp3
+Confrontation MLI (Moderato).mp3
+Confrontation MLI (Allegro).mp3
+<Suspense>
+Suspence(AA).mp3
+Suspense(MLI).mp3
+Hotline of Fate.mp3
+Crises of Fate.mp3
+Trifle of Fate.mp3
+<Logic>
+Logic(AAI).mp3
+Logic and Trick (SOJ).mp3
+Logic (MLI).mp3
+Tricks and Gimmicks.mp3
+logic_and_trick.mp3
+<People>
+Speak up, Pup!.mp3
+Eccentric (2007).mp3
+Interesting People.mp3
+Noisy People.mp3
+Strange People.mp3
+Great Revival ~ Franziska von Karma.mp3
+Great Revival ~ Miles Edgeworth.mp3
+The Great Truth Burglar.mp3
+Dick Gumshoe ~ I Can Do It When It Counts, Pal!.mp3
+Zinc Lablanc ~ Time is Money.mp3
+Tyrell Badd ~ The Truth Isn't Sweet.mp3
+Cammy Meele ~ Good Niiight.mp3
+Calisto Yew ~ Let Me Laugh at the Cool.mp3
+Athena Cykes ~ Let's Do This!.mp3
+Godot - The Fragrance of Dark Coffee.mp3
+Luke Atmey ~ I Just Want Love.mp3
+Sebastian Debeste ~ First-Class Reasoning.mp3
+Sebastian Debeste ~ First-Class Farewell.mp3
+Justine Courtney ~ Goddess of Law.mp3
+<Misc.>
+Forgotten Legend.mp3
+The Kidnapped Turnabout.mp3
+EggRoll.mp3
+01_turnabout_courtroom_-_prologue.mp3
+The Price One Pays.mp3
+Mystery Skulls - Money.mp3
+Ghost Trick - 4 Minutes Before Death.mp3
+Ghost Trick - Countdown.mp3
+Sin.mp3
+Windows Crazy Error.mp3
+Wake Me Up Inside.mp3
+Danzel Curry-Ultimate.mp3
+day_and_night.xm
+METAL.MOD
+STALKER.MID

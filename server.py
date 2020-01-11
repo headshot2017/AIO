@@ -1084,7 +1084,7 @@ class AIOserver(object):
 					
 					if not self.clients[client].ready or self.clients[client].CharID == -1 or not chatmsg:
 						continue
-					if self.clients[client].ratelimits[3]: #ooc anti-spam
+					if self.clients[client].ratelimits[3] > 0: #ooc anti-spam
 						continue
 
 					fail = False

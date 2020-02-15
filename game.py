@@ -1846,9 +1846,9 @@ class GameWidget(QtGui.QWidget):
 		self.evidencename.clear()
 		self.charselect.showCharList(self.ao_app.charlist)
 
-		self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
-		self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
-		self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
+		self.changeMusicVolume(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
+		self.changeSoundVolume(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
+		self.changeBlipVolume(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
 
 		aFont = QtGui.QFont("Tahoma", 8)
 		

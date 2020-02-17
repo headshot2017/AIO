@@ -263,7 +263,7 @@ class ClientThread(QtCore.QThread):
 			buf = struct.pack("B", AIOprotocol.BARS)
 			buf += struct.pack("B", bar)
 			buf += struct.pack("B", health)
-            self.sendBuffer(buf)
+			self.sendBuffer(buf)
 	
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
 		if self.connected:
@@ -521,7 +521,7 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.BARS:
 					data, bar = buffer.read("B", data)
 					data, health = buffer.read("B", data)
-					self.penaltyBar.emit([bar, health]
+					self.penaltyBar.emit([bar, health])
 				
 				elif header == AIOprotocol.PING:
 					pingafter = time.time()

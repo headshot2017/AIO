@@ -85,8 +85,8 @@ class AIOCharButton(AIOIndexButton):
 		super(AIOCharButton, self).__del__()
 
 class PenaltyBar(QLabel):
-	minusClicked = QtCore.pyqtSignal(int)
-	plusClicked = QtCore.pyqtSignal(int)
+	minusClicked = pyqtSignal(int)
+	plusClicked = pyqtSignal(int)
 	def __init__(self, parent, type):
 		super(PenaltyBar, self).__init__(parent)
 		self.parent = parent
@@ -96,15 +96,15 @@ class PenaltyBar(QLabel):
 		self.resize(84, 14)
 		if type == 1: #defense bar.
 			for i in range(11):
-				self.penaltybars.append(QtGui.QPixmap("data/misc/defensebar"+str(i)+".png"))
+				self.penaltybars.append(QPixmap("data/misc/defensebar"+str(i)+".png"))
 			side = "def"
 		elif type == 2: #prosecution bar
 			for i in range(11):
-				self.penaltybars.append(QtGui.QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
+				self.penaltybars.append(QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
 			side = "pro"
 		self.side = side
-		self.minusbtn = AIOButton(parent, QtGui.QPixmap("data/misc/"+side+"minus.png"))
-		self.plusbtn = AIOButton(parent, QtGui.QPixmap("data/misc/"+side+"plus.png"))
+		self.minusbtn = AIOButton(parent, QPixmap("data/misc/"+side+"minus.png"))
+		self.plusbtn = AIOButton(parent, QPixmap("data/misc/"+side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)
 		self.plusbtn.clicked.connect(self.plusClick)
 		self.setPixmap(self.penaltybars[10])
@@ -124,8 +124,8 @@ class PenaltyBar(QLabel):
 		self.minusClicked.emit(self.type)
 	
 	def setHealth(self, health):
-		self.minusbtn.setPixmap(QtGui.QPixmap(AOpath+"themes\\default\\"+self.side+"minus.png"))
-		self.plusbtn.setPixmap(QtGui.QPixmap(AOpath+"themes\\default\\"+self.side+"plus.png"))
+		self.minusbtn.setPixmap(QPixmap(AOpath+"themes\\default\\"+self.side+"minus.png"))
+		self.plusbtn.setPixmap(QPixmap(AOpath+"themes\\default\\"+self.side+"plus.png"))
 		self.setPixmap(self.penaltybars[health])
 		self.health = health
 		

@@ -23,6 +23,9 @@ class AIOIndexButton(QLabel):
 		super(AIOIndexButton, self).__init__(parent)
 		self.ind = ind
 	
+	def __del__(self):
+		self.deleteLater()
+	
 	def event(self, event):
 		if event.type() == QEvent.Enter:
 			self.mouseEnter.emit(self.ind)

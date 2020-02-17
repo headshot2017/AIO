@@ -83,3 +83,51 @@ class AIOCharButton(AIOIndexButton):
 	def __del__(self):
 		self.charpic.deleteLater()
 		super(AIOCharButton, self).__del__()
+
+class PenaltyBar(QtGui.QLabel):
+	minusClicked = QtCore.pyqtSignal(int)
+	plusClicked = QtCore.pyqtSignal(int)
+	def __init__(self, parent, type):
+		super(PenaltyBar, self).__init__(parent)
+		self.parent = parent
+		self.penaltybars = []
+		self.type = type
+		self.health = 10
+		self.resize(84, 14)
+		if type == 1: #defense bar.
+			for i in range(11):
+				self.penaltybars.append(QtGui.QPixmap("data/misc/defensebar"+str(i)+".png"))
+			side = "def"
+		elif type == 2: #prosecution bar
+			for i in range(11):
+				self.penaltybars.append(QtGui.QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
+			side = "pro"
+		self.side = side
+		self.minusbtn = AIOButton(parent, QtGui.QPixmap("data/misc/"+side+"minus.png"))
+		self.plusbtn = AIOButton(parent, QtGui.QPixmap("data/misc/"+side+"plus.png"))
+		self.minusbtn.clicked.connect(self.minusClick)
+		self.plusbtn.clicked.connect(self.plusClick)
+		self.setPixmap(self.penaltybars[10])
+		self.minusbtn.show()
+		self.plusbtn.show()
+		self.show()
+	
+	def moveBar(self, x, y):
+		self.move(x, y)
+		self.minusbtn.move(x-(9/2), y+(14/2)-(9/2))
+		self.plusbtn.move(x+84-(9/2), y+(14/2)-(9/2))
+	
+	def plusClick(self):
+		self.plusClicked.emit(self.type)
+	
+	def minusClick(self):
+		self.minusClicked.emit(self.type)
+	
+	def setHealth(self, health):
+		self.minusbtn.setPixmap(QtGui.QPixmap(AOpath+"themes\\default\\"+self.side+"minus.png"))
+		self.plusbtn.setPixmap(QtGui.QPixmap(AOpath+"themes\\default\\"+self.side+"plus.png"))
+		self.setPixmap(self.penaltybars[health])
+		self.health = health
+		
+	def getHealth(self):
+		return self.health

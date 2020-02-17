@@ -134,6 +134,7 @@ class ClientThread(QtCore.QThread):
 	chatBubble = QtCore.pyqtSignal(list)
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
+    penaltyBar = QtCore.pyqtSignal(list)
 	gotPing = QtCore.pyqtSignal(int)
 	
 	def __init__(self):
@@ -256,6 +257,13 @@ class ClientThread(QtCore.QThread):
 				return False
 			
 			self.sendBuffer(buf)
+	
+	def sendPenaltyBar(self, bar, health):
+		if self.connected:
+			buf = struct.pack("B", AIOprotocol.BARS)
+			buf += struct.pack("B", bar)
+			buf += struct.pack("B", health)
+            self.sendBuffer(buf)
 	
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
 		if self.connected:
@@ -509,6 +517,11 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.WARN:
 					data, message = buffer_read("S", data)
 					self.serverWarning.emit(message.decode("utf-8"))
+				
+				elif header == AIOprotocol.BARS:
+					data, bar = buffer.read("B", data)
+					data, health = buffer.read("B", data)
+					self.penaltyBar.emit([bar, health]
 				
 				elif header == AIOprotocol.PING:
 					pingafter = time.time()

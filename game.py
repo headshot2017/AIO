@@ -1048,11 +1048,13 @@ class GameWidget(QtGui.QWidget):
 		self.pinglabel.setText("Ping: %d" % ping)
 	
 	def changeMusicVolume(self, value):
+		print "new music volume"
 		self.ao_app.musicvol = value
 		if self.ao_app.music:
 			BASS_ChannelSetAttribute(self.ao_app.music, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeSoundVolume(self, value):
+		print "new sound volume"
 		self.ao_app.sndvol = value
 		if self.ao_app.sound:
 			BASS_ChannelSetAttribute(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
@@ -1060,6 +1062,7 @@ class GameWidget(QtGui.QWidget):
 			BASS_ChannelSetAttribute(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeBlipVolume(self, value):
+		print "new blip volume"
 		self.ao_app.blipvol = value
 		if self.blip:
 			BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, value / 100.0)

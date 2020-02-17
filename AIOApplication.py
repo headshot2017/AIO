@@ -134,7 +134,7 @@ class ClientThread(QtCore.QThread):
 	chatBubble = QtCore.pyqtSignal(list)
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
-    penaltyBar = QtCore.pyqtSignal(list)
+	penaltyBar = QtCore.pyqtSignal(list)
 	gotPing = QtCore.pyqtSignal(int)
 	
 	def __init__(self):

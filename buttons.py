@@ -103,8 +103,10 @@ class PenaltyBar(QLabel):
 				self.penaltybars.append(QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
 			side = "pro"
 		self.side = side
-		self.minusbtn = AIOButton(parent, QPixmap("data/misc/"+side+"minus.png"))
-		self.plusbtn = AIOButton(parent, QPixmap("data/misc/"+side+"plus.png"))
+		self.minusbtn = AIOButton(parent)
+		self.plusbtn = AIOButton(parent)
+		self.minusbtn.setPixmap(QPixmap("data/misc/"+side+"minus.png"))
+		self.plusbtn.setPixmap(QPixmap("data/misc/"+side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)
 		self.plusbtn.clicked.connect(self.plusClick)
 		self.setPixmap(self.penaltybars[10])
@@ -112,10 +114,10 @@ class PenaltyBar(QLabel):
 		self.plusbtn.show()
 		self.show()
 	
-	def moveBar(self, x, y):
-		self.move(x, y)
+	def move(self, x, y):
 		self.minusbtn.move(x-(9/2), y+(14/2)-(9/2))
 		self.plusbtn.move(x+84-(9/2), y+(14/2)-(9/2))
+		super(PenaltyBar, self).move(x, y)
 	
 	def plusClick(self):
 		self.plusClicked.emit(self.type)
@@ -128,6 +130,3 @@ class PenaltyBar(QLabel):
 		self.plusbtn.setPixmap(QPixmap(AOpath+"themes\\default\\"+self.side+"plus.png"))
 		self.setPixmap(self.penaltybars[health])
 		self.health = health
-		
-	def getHealth(self):
-		return self.health

@@ -84,7 +84,7 @@ class AIOCharButton(AIOIndexButton):
 		self.charpic.deleteLater()
 		super(AIOCharButton, self).__del__()
 
-class PenaltyBar(QtGui.QLabel):
+class PenaltyBar(QLabel):
 	minusClicked = QtCore.pyqtSignal(int)
 	plusClicked = QtCore.pyqtSignal(int)
 	def __init__(self, parent, type):

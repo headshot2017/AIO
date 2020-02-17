@@ -749,10 +749,11 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.broadcastMessage.connect(self.onBroadcast)
 		self.ao_app.tcpthread.chatBubble.connect(self.onChatBubble)
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
+		#self.ao_app.tcpthread.penaltyBar.connect(self.onPenaltyBar)
 		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 
-                emotebar = QtGui.QPixmap("data\\misc\\emote_bar.png")
+		emotebar = QtGui.QPixmap("data\\misc\\emote_bar.png")
 		
 		self.aSound = ["", -1, 0] #filename, delay, zone
 		self.mychatcolor = 0
@@ -964,6 +965,13 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_label = QtGui.QLabel("Run animation", self)
 		self.walkanim_label.move(self.walkanim_dropdown.x(), self.walkanim_dropdown.y()-16)
 		self.runanim_label.move(self.runanim_dropdown.x(), self.runanim_dropdown.y()-16)
+        
+		self.penaltybars = []
+		for i in range(1, 3):
+			self.penaltybars.append(buttons.PenaltyBar(self, i))
+			self.penaltybars[-1].move(self.blipslider.x(), self.blipslider.y() + self.blipslider.size().height()+8 + ((i-1) * self.penaltybars[-1].size().height()))
+			self.penaltybars[-1].minusClicked.connect(self.onPenaltyBarMinus)
+			self.penaltybars[-1].plusClicked.connect(self.onPenaltyBarPlus)
 		
 		self.evidence_page = 0
 		self.evidencebtn = buttons.AIOButton(self)
@@ -1043,18 +1051,18 @@ class GameWidget(QtGui.QWidget):
 		self.player.walkanims[2] = ind
 	def changeRunAnim(self, ind):
 		self.player.walkanims[1] = ind
-	
+    
 	def onGotPing(self, ping):
 		self.pinglabel.setText("Ping: %d" % ping)
 	
 	def changeMusicVolume(self, value):
-		print "new music volume"
+		#print "new music volume"
 		self.ao_app.musicvol = value
 		if self.ao_app.music:
 			BASS_ChannelSetAttribute(self.ao_app.music, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeSoundVolume(self, value):
-		print "new sound volume"
+		#print "new sound volume"
 		self.ao_app.sndvol = value
 		if self.ao_app.sound:
 			BASS_ChannelSetAttribute(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
@@ -1062,7 +1070,7 @@ class GameWidget(QtGui.QWidget):
 			BASS_ChannelSetAttribute(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeBlipVolume(self, value):
-		print "new blip volume"
+		#print "new blip volume"
 		self.ao_app.blipvol = value
 		if self.blip:
 			BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, value / 100.0)
@@ -1073,6 +1081,16 @@ class GameWidget(QtGui.QWidget):
 		self.evidencewidget.hide()
 		self.evidencedialog.hide()
 	
+	def onPenaltyBar(self, contents):
+		bar, health = contents
+		self.penaltybars[bar].setHealth(health)
+
+	def onPenaltyBarMinus(self, bar):
+		self.ao_app.tcpthread.sendPenaltyBar(bar, self.penaltybars[bar].health-1)
+
+	def onPenaltyBarPlus(self, bar):
+		self.ao_app.tcpthread.sendPenaltyBar(bar, self.penaltybars[bar].health+1)
+
 	def onEvidenceChanged(self, contents):
 		type, zone = contents.pop(0), contents.pop(0)
 		if self.player.zone != zone:

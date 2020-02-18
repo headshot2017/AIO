@@ -749,7 +749,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.broadcastMessage.connect(self.onBroadcast)
 		self.ao_app.tcpthread.chatBubble.connect(self.onChatBubble)
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
-		#self.ao_app.tcpthread.penaltyBar.connect(self.onPenaltyBar)
+		self.ao_app.tcpthread.penaltyBar.connect(self.onPenaltyBar)
 		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 
@@ -967,7 +967,7 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_label.move(self.runanim_dropdown.x(), self.runanim_dropdown.y()-16)
         
 		self.penaltybars = []
-		for i in range(1, 3):
+		for i in range(2):
 			self.penaltybars.append(buttons.PenaltyBar(self, i))
 			self.penaltybars[-1].move(self.blipslider.x(), self.blipslider.y() + self.blipslider.size().height()+8 + ((i-1) * self.penaltybars[-1].size().height()))
 			self.penaltybars[-1].minusClicked.connect(self.onPenaltyBarMinus)

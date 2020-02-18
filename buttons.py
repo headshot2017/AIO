@@ -94,11 +94,11 @@ class PenaltyBar(QLabel):
 		self.type = type
 		self.health = 10
 		self.resize(84, 14)
-		if type == 1: #defense bar.
+		if type == 0: #defense bar.
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/misc/defensebar"+str(i)+".png"))
 			side = "def"
-		elif type == 2: #prosecution bar
+		elif type == 1: #prosecution bar
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
 			side = "pro"
@@ -126,7 +126,5 @@ class PenaltyBar(QLabel):
 		self.minusClicked.emit(self.type)
 	
 	def setHealth(self, health):
-		self.minusbtn.setPixmap(QPixmap(AOpath+"themes\\default\\"+self.side+"minus.png"))
-		self.plusbtn.setPixmap(QPixmap(AOpath+"themes\\default\\"+self.side+"plus.png"))
 		self.setPixmap(self.penaltybars[health])
 		self.health = health

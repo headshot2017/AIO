@@ -519,8 +519,8 @@ class ClientThread(QtCore.QThread):
 					self.serverWarning.emit(message.decode("utf-8"))
 				
 				elif header == AIOprotocol.BARS:
-					data, bar = buffer.read("B", data)
-					data, health = buffer.read("B", data)
+					data, bar = buffer_read("B", data)
+					data, health = buffer_read("B", data)
 					self.penaltyBar.emit([bar, health])
 				
 				elif header == AIOprotocol.PING:

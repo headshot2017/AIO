@@ -129,7 +129,7 @@ class AIOserver(object):
 		if self.evidence_limit > 255:
 			print "[warning]", "evidence_limit is higher than 255, changing to the limit"
 			self.evidence_limit = 255
-		self.ms_addr = ini.get("MasterServer", "ip", "headshot.iminecraft.se:27011").split(":")
+		self.ms_addr = ini.get("MasterServer", "ip", "aaio-ms.aceattorneyonline.com:27011").split(":")
 		if len(self.ms_addr) == 1:
 			self.ms_addr.append("27011")
 		try:

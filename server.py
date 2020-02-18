@@ -3,7 +3,7 @@ import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
 ################################
-GameVersion = "0.3.2" # you can modify this so that it matches the version you want to make your server compatible with
+GameVersion = "0.4" # you can modify this so that it matches the version you want to make your server compatible with
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
 MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
@@ -1079,6 +1079,9 @@ class AIOserver(object):
 					if not self.clients[client].ready:
 						continue
 					
+					if not self.clients[client].first_picked:
+						if self.clients[client].ClientVersion != GameVersion and AllowVersionMismatch:
+							self.sendWarning(client, "Your client version (%s) does not match the server's version (%s).\nAbnormalities might happen during gameplay." % (self.clients[client].ClientVersion, GameVersion))
 					self.clients[client].first_picked = True
 					self.setPlayerChar(client, charid)
 				

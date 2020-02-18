@@ -617,6 +617,9 @@ class AIOserver(object):
 		else:
 			self.sendBuffer(ClientID, buffer)
 			
+			if self.clients[ClientID].ready:
+				self.sendDestroy(ClientID)
+            
 			if printMsg:
 				self.econPrint("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
 			
@@ -660,6 +663,37 @@ class AIOserver(object):
 		self.econPrint("[bans] banned %s for %d min (%s) " % (self.banlist[-1][0], min+1, reason))
 		self.writeBanList()
 		
+	def sendPenaltyBar(self, bar, health, zone, ClientID=-1):
+		if not self.running:
+			print "[error]", "tried to use sendPenaltyBar() without server running"
+			return
+
+		buffer = ""
+		buffer += struct.pack("B", AIOprotocol.BARS)
+		buffer += struct.pack("B", bar)
+		buffer += struct.pack("B", health)
+		buffer += struct.pack("H", zone)
+		buff = struct.pack("I", len(buffer)+1)
+		buff += buffer
+		
+		if ClientID == -1:
+			for client in self.clients:
+				if self.clients[client].isBot():
+					continue
+				if zone == -1:
+					self.sendBuffer(client, buffer)
+				else:
+					if self.clients[client].zone == zone:
+						self.sendBuffer(client, buffer)
+		else:
+			if zone == -1:
+				return self.sendBuffer(ClientID, buffer)
+			else:
+				if self.clients[ClientID].zone != zone:
+					print "[warning]", "tried to perform sendPenaltyBar() on zone %d, to client %d but that client is in zone %d" % (zone, ClientID, self.clients[ClientID].zone)
+				else:
+					return self.sendBuffer(ClientID, buffer)
+        
 	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
 		if not self.running:
 			print "[error]", "tried to use changeMusic() without server running"
@@ -1209,6 +1243,20 @@ class AIOserver(object):
 						print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
 						self.deleteEvidence(self.clients[client].zone, ind)
 				
+				elif header == AIOprotocol.BARS: # penalty bars (AIO 0.4)
+					self.readbuffer, bar = buffer_read("B", self.readbuffer)
+					self.readbuffer, health = buffer_read("B", self.readbuffer)
+					
+					if bar > 1: # must be 0 or 1
+						print "[game]", "%s id=%d addr=%s zone=%d changed the wrong penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar)
+						continue
+					if health > 10: # must be 0 or 10
+						print "[game]", "%s id=%d addr=%s zone=%d broke the penalty machine (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, health)
+						continue
+					
+					print "[game]", "%s id=%d addr=%s zone=%d changed the penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
+					self.sendPenaltyBar(bar, health, self.clients[client].zone)
+
 				elif header == AIOprotocol.PING: #pong
 					self.clients[client].pingpong = ClientPingTime
 					self.sendPong(client)

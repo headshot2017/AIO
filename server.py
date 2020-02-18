@@ -3,7 +3,7 @@ import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
 ################################
-GameVersion = "0.4" # you can modify this so that it matches the version you want to make your server compatible with
+GameVersion = "0.4-dev" # you can modify this so that it matches the version you want to make your server compatible with
 AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
 ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
 MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
@@ -1288,7 +1288,9 @@ class AIOserver(object):
 			self.econ_tcp.listen(5)
 			self.econ_tcp.setblocking(False)
 			print "[econ]", "external admin console started on port %d" % self.econ_port
-		
+
+		if AllowVersionMismatch: print "[warning]", "AllowVersionMismatch is enabled, players with different client versions can join. chances are that things will break."
+
 		if self.publish:
 			loopMS = self.startMasterServerAdverter()
 			MSretryTick = 0

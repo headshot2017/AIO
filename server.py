@@ -156,7 +156,7 @@ class AIOserver(object):
 		
 		zonelength = int(scene_ini.get("background", "total", 1))
 		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxplayers+1)]
-		self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway")] for zone in range(1, zonelength+1)]
+		self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway"), 10, 10] for zone in range(1, zonelength+1)]
 		for i in range(len(self.zonelist)):
 			self.evidencelist.append([])
 		
@@ -672,7 +672,6 @@ class AIOserver(object):
 		buffer += struct.pack("B", AIOprotocol.BARS)
 		buffer += struct.pack("B", bar)
 		buffer += struct.pack("B", health)
-		buffer += struct.pack("H", zone)
 		buff = struct.pack("I", len(buffer)+1)
 		buff += buffer
 		
@@ -1030,8 +1029,11 @@ class AIOserver(object):
 						self.sendMusicList(client)
 					elif req == 2: #zones
 						self.sendZoneList(client)
-					elif req == 3: #evidence for current zone
+					elif req == 3: #evidence and penalty bars for current zone
 						self.sendEvidenceRequest(client)
+
+						self.sendPenaltyBar(0, self.zonelist[self.defaultzone][2], self.defaultzone, client)
+						self.sendPenaltyBar(1, self.zonelist[self.defaultzone][3], self.defaultzone, client)
 						self.clients[client].ready = True
 						self.econPrint("[game] player is ready. id=%d addr=%s" % (client, self.clients[client].ip))
 						self.sendCreate(client)
@@ -1058,17 +1060,19 @@ class AIOserver(object):
 					self.clients[client].emoting = emoting
 					self.clients[client].dir_nr = dir_nr
 				
-				elif header == AIOprotocol.SETZONE:
+				elif header == AIOprotocol.SETZONE: # change player zone
 					try:
 						self.readbuffer, zone = buffer_read("H", self.readbuffer)
 					except struct.error:
 						continue
 					
-					if not self.clients[client].ready:
+					if not self.clients[client].ready or zone >= len(self.zonelist):
 						continue
 					
 					self.setPlayerZone(client, zone)
 					self.sendEvidenceList(client, zone)
+					self.sendPenaltyBar(0, self.zonelist[zone][2], zone, client)
+					self.sendPenaltyBar(1, self.zonelist[zone][3], zone, client)
 				
 				elif header == AIOprotocol.SETCHAR:
 					self.readbuffer, charid = buffer_read("h", self.readbuffer)
@@ -1248,13 +1252,14 @@ class AIOserver(object):
 					self.readbuffer, health = buffer_read("B", self.readbuffer)
 					
 					if bar > 1: # must be 0 or 1
-						print "[game]", "%s id=%d addr=%s zone=%d changed the wrong penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar)
+						print "[game]", "%s id=%d addr=%s zone=%d tried to change penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar)
 						continue
 					if health > 10: # must be 0 or 10
-						print "[game]", "%s id=%d addr=%s zone=%d broke the penalty machine (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, health)
+						print "[game]", "%s id=%d addr=%s zone=%d broke the penalty machine %d (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
 						continue
 					
-					print "[game]", "%s id=%d addr=%s zone=%d changed the penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
+					print "[game]", "%s id=%d addr=%s zone=%d changed penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
+					self.zonelist[self.clients[client].zone][bar+2] = health
 					self.sendPenaltyBar(bar, health, self.clients[client].zone)
 
 				elif header == AIOprotocol.PING: #pong

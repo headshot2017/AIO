@@ -2147,6 +2147,7 @@ class AIOserver(object):
 			globalmsg = globalmsg.rstrip()
 			
 			self.sendOOC(ServerOOCName, "=== ANNOUNCEMENT ===\n"+globalmsg)
+			self.sendBroadcast("ANNOUNCEMENT: %s" % globalmsg)
 		
 		elif cmd == "crash":
 			if isConsole or isEcon:

@@ -9,7 +9,7 @@ class AIOplayer(object):
 	sock = None
 	ip = "0"
 	is_authed = False
-	ratelimits = [0, 0, 0, 0] #index 0 = music, index 1 = emotesound, index 2 = examine, index 3 = ooc
+	ratelimits = [0, 0, 0, 0, 0] # [music, emotesound, examine, ooc, wtce]
 	ready = False
 	can_send_request = False
 	x = 0.0

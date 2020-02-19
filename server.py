@@ -11,6 +11,7 @@ EmoteSoundRateLimit = 1 #amount of seconds to wait before allowing to use emotes
 MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
 OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
+WTCERateLimit = 10 # amount of seconds to wait before allowing another testimony button (anti spam)
 ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
 
 AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
@@ -155,7 +156,7 @@ class AIOserver(object):
 		self.maxchars = int(scene_ini.get("chars", "total", 3))
 		
 		zonelength = int(scene_ini.get("background", "total", 1))
-		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxplayers+1)]
+		self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxchars+1)]
 		self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway"), 10, 10] for zone in range(1, zonelength+1)]
 		for i in range(len(self.zonelist)):
 			self.evidencelist.append([])
@@ -692,7 +693,36 @@ class AIOserver(object):
 					print "[warning]", "tried to perform sendPenaltyBar() on zone %d, to client %d but that client is in zone %d" % (zone, ClientID, self.clients[ClientID].zone)
 				else:
 					return self.sendBuffer(ClientID, buffer)
-        
+
+	def sendWTCE(self, wtcetype, zone, ClientID=-1):
+		if not self.running:
+			print "[error]", "tried to use sendWTCE() without server running"
+			return
+
+		buffer = ""
+		buffer += struct.pack("B", AIOprotocol.WTCE)
+		buffer += struct.pack("B", wtcetype)
+		buff = struct.pack("I", len(buffer)+1)
+		buff += buffer
+		
+		if ClientID == -1:
+			for client in self.clients:
+				if self.clients[client].isBot():
+					continue
+				if zone == -1:
+					self.sendBuffer(client, buffer)
+				else:
+					if self.clients[client].zone == zone:
+						self.sendBuffer(client, buffer)
+		else:
+			if zone == -1:
+				return self.sendBuffer(ClientID, buffer)
+			else:
+				if self.clients[ClientID].zone != zone:
+					print "[warning]", "tried to perform sendWTCE() on zone %d, to client %d but that client is in zone %d" % (zone, ClientID, self.clients[ClientID].zone)
+				else:
+					return self.sendBuffer(ClientID, buffer)
+
 	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
 		if not self.running:
 			print "[error]", "tried to use changeMusic() without server running"
@@ -999,7 +1029,8 @@ class AIOserver(object):
 					self.readbuffer = "".join(temp)
 					del temp
 				self.readbuffer, header = buffer_read("B", self.readbuffer)
-				
+				#print repr(header), repr(self.readbuffer)
+
 				# commence fun... <sigh>
 				if header == AIOprotocol.CONNECT: # client sends version
 					mismatch = False
@@ -1264,6 +1295,18 @@ class AIOserver(object):
 					print "[game]", "%s id=%d addr=%s zone=%d changed penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
 					self.zonelist[self.clients[client].zone][bar+2] = health
 					self.sendPenaltyBar(bar, health, self.clients[client].zone)
+
+				elif header == AIOprotocol.WTCE: # testimony buttons (AIO 0.4)
+					self.readbuffer, wtcetype = buffer_read("B", self.readbuffer)
+
+					if wtcetype > 3: # must be between 0 and 3
+						print "[game]", "%s id=%d addr=%s zone=%d tried to use WT/CE %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, wtcetype)
+						continue
+					if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
+						continue
+
+					self.clients[client].ratelimits[4] = WTCERateLimit
+					self.sendWTCE(wtcetype, self.clients[client].zone)
 
 				elif header == AIOprotocol.PING: #pong
 					self.clients[client].pingpong = ClientPingTime

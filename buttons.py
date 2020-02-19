@@ -128,3 +128,13 @@ class PenaltyBar(QLabel):
 	def setHealth(self, health):
 		self.setPixmap(self.penaltybars[health])
 		self.health = health
+
+	def hide(self):
+		self.minusbtn.hide()
+		self.plusbtn.hide()
+		super(PenaltyBar, self).hide()
+
+	def show(self):
+		self.minusbtn.show()
+		self.plusbtn.show()
+		super(PenaltyBar, self).show()

@@ -135,6 +135,7 @@ class ClientThread(QtCore.QThread):
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
 	penaltyBar = QtCore.pyqtSignal(list)
+	WTCEMessage = QtCore.pyqtSignal(int)
 	gotPing = QtCore.pyqtSignal(int)
 	
 	def __init__(self):
@@ -264,6 +265,12 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", bar)
 			buf += struct.pack("B", health)
 			self.sendBuffer(buf)
+
+	def sendWTCE(self, wtcetype):
+		if self.connected:
+			buf = struct.pack("B", AIOprotocol.WTCE)
+			buf += struct.pack("B", wtcetype)
+			self.sendBuffer(buf)
 	
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
 		if self.connected:
@@ -331,7 +338,7 @@ class ClientThread(QtCore.QThread):
 			
 			while data:
 				data, header = buffer_read("B", data)
-				#print header, repr(data)
+				#print repr(header), repr(data)
 				
 				if header == AIOprotocol.CONNECT: #server default zone, maximum characters, MOTD...
 					data, player_id = buffer_read("I", data)
@@ -522,6 +529,10 @@ class ClientThread(QtCore.QThread):
 					data, bar = buffer_read("B", data)
 					data, health = buffer_read("B", data)
 					self.penaltyBar.emit([bar, health])
+
+				elif header == AIOprotocol.WTCE:
+					data, wtcetype = buffer_read("B", data)
+					self.WTCEMessage.emit(wtcetype)
 				
 				elif header == AIOprotocol.PING:
 					pingafter = time.time()

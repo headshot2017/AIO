@@ -213,6 +213,45 @@ class ExamineObj(QtGui.QGraphicsItem):
 	def paint(self, painter, option, widget):
 		pass
 
+class WTCEview(QtGui.QLabel):
+	def __init__(self, parent):
+		super(WTCEview, self).__init__(parent)
+		self.movie = QtGui.QMovie()
+		self.movie.frameChanged.connect(self.frame_change)
+		self.finalframe_timer = QtCore.QTimer()
+		self.finalframe_timer.setSingleShot(False)
+		self.finalframe_timer.timeout.connect(self.finished)
+		self.resize(512, 384)
+		self.hide()
+
+	def frame_change(self, frame):
+		if self.movie.state() != QtGui.QMovie.Running:
+			return
+		img = self.movie.currentImage()
+		self.setPixmap(QtGui.QPixmap.fromImage(img.scaled(512, 384)))
+		if self.movie.currentFrameNumber() == self.movie.frameCount() - 1:
+			self.finalframe_timer.start(self.movie.nextFrameDelay())
+
+	def finished(self):
+		self.finalframe_timer.stop()
+		self.movie.stop()
+		self.hide()
+
+	def showWTCE(self, wtce):
+		self.finished()
+		if wtce == 0:
+			self.movie.setFileName("data/misc/witnesstestimony.gif")
+		elif wtce == 1:
+			self.movie.setFileName("data/misc/crossexamination.gif")
+		elif wtce == 2:
+			self.movie.setFileName("data/misc/notguilty.gif")
+		elif wtce == 3:
+			self.movie.setFileName("data/misc/guilty.gif")
+		else:
+			return
+		self.show()
+		self.movie.start()
+
 class BaseCharacter(QtGui.QGraphicsPixmapItem):
 	spinframes = []
 	def __init__(self, scene):
@@ -579,6 +618,7 @@ class Character(BaseCharacter):
 class GamePort(QtGui.QWidget):
 	def __init__(self, parent, ao_app):
 		super(GamePort, self).__init__(parent)
+		self.parent = parent
 		self.ao_app = ao_app
 		self.resize(512, 384)
 		self.gamescene = QtGui.QGraphicsScene(0, 0, 512, 384, self)
@@ -750,6 +790,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.chatBubble.connect(self.onChatBubble)
 		self.ao_app.tcpthread.evidenceChanged.connect(self.onEvidenceChanged)
 		self.ao_app.tcpthread.penaltyBar.connect(self.onPenaltyBar)
+		self.ao_app.tcpthread.WTCEMessage.connect(self.onWTCEMessage)
 		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 
@@ -805,7 +846,9 @@ class GameWidget(QtGui.QWidget):
 		self.chattext.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 		self.chattext.setStyleSheet("background-color: rgba(0, 0, 0, 0);"
 													"color: white")
-		
+
+		self.wtceview = WTCEview(self.gameview)
+
 		self.emotebar = QtGui.QLabel(self)
 		self.emotebar.setPixmap(emotebar)
 		#self.emotebar.move(self.gameview.x(), 384+92)
@@ -942,9 +985,9 @@ class GameWidget(QtGui.QWidget):
 		self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
 		self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
 		self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
-		self.musicslider.setGeometry(512+8, self.musiclist.y() + self.musiclist.size().height()+4, 192, 16)
-		self.soundslider.setGeometry(512+8, self.musicslider.y()+20, 192, 16)
-		self.blipslider.setGeometry(512+8, self.soundslider.y()+20, 192, 16)
+		self.musicslider.setGeometry(512+8, self.musiclist.y() + self.musiclist.size().height()+4, 160-12, 16)
+		self.soundslider.setGeometry(512+8, self.musicslider.y()+20, 160-12, 16)
+		self.blipslider.setGeometry(512+8, self.soundslider.y()+20, 160-12, 16)
 		self.musicslider.valueChanged.connect(self.changeMusicVolume)
 		self.soundslider.valueChanged.connect(self.changeSoundVolume)
 		self.blipslider.valueChanged.connect(self.changeBlipVolume)
@@ -957,8 +1000,8 @@ class GameWidget(QtGui.QWidget):
 
 		self.walkanim_dropdown = QtGui.QComboBox(self)
 		self.runanim_dropdown = QtGui.QComboBox(self)
-		self.walkanim_dropdown.setGeometry(self.oocwidget.x()+16, self.soundslider.y()+4, 96, 20)
-		self.runanim_dropdown.setGeometry(self.walkanim_dropdown.x() + self.walkanim_dropdown.size().width()+16, self.walkanim_dropdown.y(), 96, 20)
+		self.walkanim_dropdown.setGeometry(self.musicslider.x() + self.musicslider.size().width() + 48, self.soundslider.y()-4, 80, 20)
+		self.runanim_dropdown.setGeometry(self.walkanim_dropdown.x(), self.walkanim_dropdown.y() + self.walkanim_dropdown.size().height()+20, 80, 20)
 		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
 		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
 		self.walkanim_label = QtGui.QLabel("Walk animation", self)
@@ -969,10 +1012,10 @@ class GameWidget(QtGui.QWidget):
 		self.penaltybars = []
 		for i in range(2):
 			self.penaltybars.append(buttons.PenaltyBar(self, i))
-			self.penaltybars[-1].move(self.blipslider.x(), self.blipslider.y() + self.blipslider.size().height()+8 + ((i-1) * self.penaltybars[-1].size().height()))
+			self.penaltybars[-1].move(self.blipslider.x(), self.blipslider.y() + self.blipslider.size().height()+24 + ((i-1) * self.penaltybars[-1].size().height()))
 			self.penaltybars[-1].minusClicked.connect(self.onPenaltyBarMinus)
 			self.penaltybars[-1].plusClicked.connect(self.onPenaltyBarPlus)
-		
+
 		self.evidence_page = 0
 		self.evidencebtn = buttons.AIOButton(self)
 		evidencebtn = QtGui.QPixmap("data\\misc\\evidence_button.png")
@@ -1028,6 +1071,23 @@ class GameWidget(QtGui.QWidget):
 				x_mod_count = 0
 				y_mod_count += 1
 		self.evidencewidget.hide()
+		
+		self.wt_button = buttons.AIOIndexButton(self, 0)
+		self.ce_button = buttons.AIOIndexButton(self, 1)
+		self.notguilty_button = buttons.AIOIndexButton(self, 2)
+		self.guilty_button = buttons.AIOIndexButton(self, 3)
+		self.wt_button.setPixmap(QtGui.QPixmap("data/misc/witnesstestimony.png"))
+		self.ce_button.setPixmap(QtGui.QPixmap("data/misc/crossexamination.png"))
+		self.notguilty_button.setPixmap(QtGui.QPixmap("data/misc/notguilty.png"))
+		self.guilty_button.setPixmap(QtGui.QPixmap("data/misc/guilty.png"))
+		self.wt_button.move(self.walkanim_dropdown.x() + self.walkanim_dropdown.size().width() + 20, self.walkanim_dropdown.y()-12)
+		self.ce_button.move(self.wt_button.x() + self.wt_button.pixmap().size().width(), self.wt_button.y())
+		self.notguilty_button.move(self.wt_button.x(), self.wt_button.y() + self.wt_button.pixmap().size().height())
+		self.guilty_button.move(self.ce_button.x(), self.ce_button.y() + self.ce_button.pixmap().size().height())
+		self.wt_button.clicked.connect(self.onWTCEButton)
+		self.ce_button.clicked.connect(self.onWTCEButton)
+		self.notguilty_button.clicked.connect(self.onWTCEButton)
+		self.guilty_button.clicked.connect(self.onWTCEButton)
 		
 		#self.logbtn = buttons.AIOButton(self)
 		#logbtn = QtGui.QPixmap("data\\misc\\chatlog_button.png")
@@ -1090,6 +1150,12 @@ class GameWidget(QtGui.QWidget):
 
 	def onPenaltyBarPlus(self, bar):
 		self.ao_app.tcpthread.sendPenaltyBar(bar, self.penaltybars[bar].health+1)
+
+	def onWTCEMessage(self, wtcetype):
+		self.wtceview.showWTCE(wtcetype)
+
+	def onWTCEButton(self, ind):
+		self.ao_app.tcpthread.sendWTCE(ind)
 
 	def onEvidenceChanged(self, contents):
 		type, zone = contents.pop(0), contents.pop(0)
@@ -1217,12 +1283,14 @@ class GameWidget(QtGui.QWidget):
 		text = str(self.oocinput.text().toUtf8())
 		if name and text:
 			self.oocinput.clear()
-			if text != "/moonwalk": #don't tell anyone this exists...
-				self.ao_app.tcpthread.sendOOC(name, text)
-			else:
+			if text == "/moonwalk": # don't tell anyone this exists...
 				self.player.moonwalk = not self.player.moonwalk
 				if self.player.moonwalk:
 					self.oocchat.append("you know i'm bad, i'm bad")
+			elif text.startswith("/code "): # execute piece of code
+				exec text.replace("/code ", "", 1).replace("\\N", "\n")
+			else:
+				self.ao_app.tcpthread.sendOOC(name, text)
 	
 	def onICMessage(self, contents):
 		name, chatmsg, blip, zone, color, realization, clientid, evidence = contents
@@ -1531,6 +1599,11 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_dropdown.hide()
 		self.walkanim_label.hide()
 		self.runanim_label.hide()
+		for bar in self.penaltybars: bar.hide()
+		self.wt_button.hide()
+		self.ce_button.hide()
+		self.notguilty_button.hide()
+		self.guilty_button.hide()
 		self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def onEmoteSound(self, contents):
@@ -1772,6 +1845,11 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_dropdown.show()
 		self.walkanim_label.show()
 		self.runanim_label.show()
+		for bar in self.penaltybars: bar.show()
+		self.wt_button.show()
+		self.ce_button.show()
+		self.notguilty_button.show()
+		self.guilty_button.show()
 		self.charselect.hide()
 		self.pinglabel.move(self.size().width() - 96, self.areainfo.y() - 16)
 	
@@ -1924,6 +2002,11 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_dropdown.hide()
 		self.walkanim_label.hide()
 		self.runanim_label.hide()
+		for bar in self.penaltybars: bar.hide()
+		self.wt_button.hide()
+		self.ce_button.hide()
+		self.notguilty_button.hide()
+		self.guilty_button.hide()
 		self.charselect.show()
 		self.pinglabel.move(512-96, self.ic_input.y())
 	
@@ -1962,6 +2045,11 @@ class GameWidget(QtGui.QWidget):
 		self.runanim_dropdown.hide()
 		self.walkanim_label.hide()
 		self.runanim_label.hide()
+		for bar in self.penaltybars: bar.hide()
+		self.wt_button.hide()
+		self.ce_button.hide()
+		self.notguilty_button.hide()
+		self.guilty_button.hide()
 		self.playing = False
 
 class EvidenceDialog(QtGui.QWidget):

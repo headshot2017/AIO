@@ -444,7 +444,10 @@ class Character(BaseCharacter):
 		self.wallsImage = image
 	
 	def play(self, filename, loop):
-		self.playFile = [filename, loop]
+		self.playFile = [filename, loop, False]
+
+	def playSpin(self, filename, dir):
+		self.playFile = [filename, dir, True]
 	
 	def update(self, viewX, viewY):
 		if self.isPlayer and self.charid != -1:
@@ -595,7 +598,10 @@ class Character(BaseCharacter):
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
 			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
-			super(Character, self).play(self.playFile[0], self.playFile[1])
+			if not self.playFile[2]:
+				super(Character, self).play(self.playFile[0], self.playFile[1])
+			else:
+				super(Character, self).playSpin(self.playFile[0], self.playFile[1])
 			self.playFile[0] = ""
 		else:
 			aSize = self.pixmap().size()

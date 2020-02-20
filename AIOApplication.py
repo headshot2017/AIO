@@ -35,6 +35,7 @@ class AIOApplication(QtGui.QApplication):
 	music = None
 	sound = None
 	GUIsound = None
+	WTCEsound = None
 	sndvol = 100
 	musicvol = 100
 	blipvol = 100
@@ -98,6 +99,15 @@ class AIOApplication(QtGui.QApplication):
 		self.GUIsound = BASS_StreamCreateFile(False, file, 0, 0, 0)
 		BASS_ChannelSetAttribute(self.GUIsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
 		BASS_ChannelPlay(self.GUIsound, True)
+
+	def playWTCESound(self, file):
+		if self.WTCEsound:
+			if BASS_ChannelIsActive(self.WTCEsound):
+				BASS_StreamFree(self.WTCEsound)
+		
+		self.WTCEsound = BASS_StreamCreateFile(False, file, 0, 0, 0)
+		BASS_ChannelSetAttribute(self.WTCEsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
+		BASS_ChannelPlay(self.WTCEsound, True)
 	
 	def stopMusic(self):
 		if self.music:

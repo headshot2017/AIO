@@ -1128,6 +1128,8 @@ class GameWidget(QtGui.QWidget):
 			BASS_ChannelSetAttribute(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
 		if self.ao_app.GUIsound:
 			BASS_ChannelSetAttribute(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
+		if self.ao_app.WTCEsound:
+			BASS_ChannelSetAttribute(self.ao_app.WTCEsound, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeBlipVolume(self, value):
 		#print "new blip volume"
@@ -1153,6 +1155,9 @@ class GameWidget(QtGui.QWidget):
 
 	def onWTCEMessage(self, wtcetype):
 		self.wtceview.showWTCE(wtcetype)
+		sounds = ["sfx-testimony2.wav", "sfx-testimony2.wav", "sfx-notguilty.wav", "sfx-guilty2.wav", "sfx-testimony.wav", "sfx-rebuttal.wav"]
+		if wtcetype >= 0 and wtcetype < len(sounds):
+			self.ao_app.playWTCESound("data/sounds/general/"+sounds[wtcetype])
 
 	def onWTCEButton(self, ind):
 		self.ao_app.tcpthread.sendWTCE(ind)
@@ -1680,7 +1685,7 @@ class GameWidget(QtGui.QWidget):
 		
 		if char_id > -1:
 			self.chatlog.append("<b>%s</b> changed the music to %s" % (self.ao_app.charlist[char_id], filename.replace("<", "&#60;").replace(">", "&#62;")))
-			self.broadcastObj.showText("%s changed the music to %s" % (self.ao_app.charlist[char_id], filename))
+			self.broadcastObj.showText("%s played song %s" % (self.ao_app.charlist[char_id], filename))
 		else:
 			self.chatlog.append("The music was changed to %s" % filename.replace("<", "&#60;").replace(">", "&#62;"))
 			self.broadcastObj.showText("The music was changed to %s" % filename)

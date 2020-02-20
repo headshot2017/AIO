@@ -2,6 +2,9 @@
 Investigation - Opening 2009.mp3
 Investigation - Middlegame 2009.mp3
 Investigation - Core 2009.mp3
+Investigation - Opening 2011.mp3
+Investigation - Middlegame 2011.mp3
+Investigation - Core 2011.mp3
 Investigation ~ Contradiction at the Crime Scene.mp3
 Investigation ~ Truth at the Crime Scene.mp3
 Reproducing the Scene ~ The Gentleman Thief's Secret.mp3
@@ -21,6 +24,7 @@ Annonce The Truth(JFA).mp3
 Annonce The Truth(T&T).mp3
 Annonce The Truth(AJ).mp3
 Annonce The Truth(Miles).mp3
+Annonce The Truth(AAI2).mp3
 Annonce The Truth(MLI).mp3
 <Objection>
 OBJECTION (AA).mp3
@@ -44,8 +48,10 @@ PURSUIT(T&T) - variation.mp3
 PURSUIT(AJ).mp3
 PURSUIT(DD).mp3
 114 Pursuit(Miles).mp3
+Pursuit(Miles) - variation.mp3
+PURSUIT(AAI2).mp3
+PURSUIT(AAI2) - variation.mp3
 Pursuit(MLI).mp3
-Pursuit ~ I Want to Find the Truth(Orchestra).mp3
 <Confrontation/Questioning>
 Questioning(AA-normal).mp3
 Questioning(AA-allergo).mp3
@@ -61,6 +67,9 @@ Questioning SOJ (Allegro).mp3
 Confrontation ~ Moderato 2009.mp3
 Confrontation ~ Allegro 2009.mp3
 Confrontation ~ Presto 2009.mp3
+Confrontation - Moderato 2011.mp3
+Confrontation - Allegro 2011.mp3
+Confrontation - Presto 2011.mp3
 Confrontation MLI (Moderato).mp3
 Confrontation MLI (Allegro).mp3
 <Suspense>
@@ -70,17 +79,23 @@ Hotline of Fate.mp3
 Crises of Fate.mp3
 Trifle of Fate.mp3
 <Logic>
+logic_and_trick.mp3
 Logic(AAI).mp3
 Logic and Trick (SOJ).mp3
 Logic (MLI).mp3
 Tricks and Gimmicks.mp3
-logic_and_trick.mp3
+Tricks and Baroque.mp3
+Trick Analyze.mp3
+Trick Break.mp3
+Logic Chess - Opening.mp3
+Logic Chess - Endgame.mp3
 <People>
 Speak up, Pup!.mp3
 Eccentric (2007).mp3
 Interesting People.mp3
 Noisy People.mp3
 Strange People.mp3
+Restless People.mp3
 Great Revival ~ Franziska von Karma.mp3
 Great Revival ~ Miles Edgeworth.mp3
 The Great Truth Burglar.mp3
@@ -89,14 +104,29 @@ Zinc Lablanc ~ Time is Money.mp3
 Tyrell Badd ~ The Truth Isn't Sweet.mp3
 Cammy Meele ~ Good Niiight.mp3
 Calisto Yew ~ Let Me Laugh at the Cool.mp3
+Quercus Alba - The Enemy Who Surpasses the Law.mp3
+Yatagarasu - The Gentleman Thief Who Dances in the Black Night.mp3
 Athena Cykes ~ Let's Do This!.mp3
 Godot - The Fragrance of Dark Coffee.mp3
 Luke Atmey ~ I Just Want Love.mp3
 Sebastian Debeste ~ First-Class Reasoning.mp3
 Sebastian Debeste ~ First-Class Farewell.mp3
 Justine Courtney ~ Goddess of Law.mp3
+Zheng Fa - Land of the Phoenix.mp3
+Dane Gustavia - Brandished Flavor.mp3
+Gregory Edgeworth - Defense Attorney's Knowledge.mp3
+Jeff Master - Sweet Happiness.mp3
+Katherine Hall - Sweet Dance.mp3
+John Marsh - Pointed Age.mp3
+Raymond Shields - Joking Motive.mp3
+The Great Monster Moozilla.mp3
+The Man Who Masterminds the Game.mp3
 <Misc.>
+Practically Illegal Coverups.mp3
 Forgotten Legend.mp3
+Downfall of the House of Lang.mp3
+Reminiscence - KG-8 Case.mp3
+Overture to Kidnapping.mp3
 The Kidnapped Turnabout.mp3
 EggRoll.mp3
 01_turnabout_courtroom_-_prologue.mp3
@@ -106,8 +136,8 @@ Ghost Trick - 4 Minutes Before Death.mp3
 Ghost Trick - Countdown.mp3
 Sin.mp3
 Windows Crazy Error.mp3
+PURSUIT(DS).mp3
 Wake Me Up Inside.mp3
 Danzel Curry-Ultimate.mp3
 day_and_night.xm
 METAL.MOD
-STALKER.MID

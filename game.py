@@ -816,10 +816,13 @@ class GameWidget(QtGui.QWidget):
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
 		self.ic_input = ICLineEdit(self, _ao_app)
-		self.ic_input.setGeometry(self.gameview.x(), 384, 512, 16)
+		self.ic_input.setGeometry(self.gameview.x(), 384, 512-96, 16)
 		self.ic_input.setPlaceholderText("Click here to chat")
 		self.ic_input.textChanged.connect(self.ic_typing)
 		self.ic_input.hide()
+		self.showname_input = QtGui.QLineEdit(self)
+		self.showname_input.setGeometry(self.ic_input.x() + self.ic_input.size().width(), 384, 96, 16)
+		self.showname_input.hide()
 		self.areainfo = QtGui.QLabel(self)
 		self.areainfo.setAlignment(QtCore.Qt.AlignCenter)
 		self.areainfo.setGeometry(emotebar.size().width(), self.size().height()-18, self.size().width() - emotebar.size().width(), 18)
@@ -1317,13 +1320,15 @@ class GameWidget(QtGui.QWidget):
 				self.myevidence = -1
 		
 		evidence -= 1
-		name = name.replace("<", "&lt;").replace(">", "&gt;")
+		name = name.replace("<", "&lt;").replace(">", "&gt;").decode("utf-8")
 		self.m_chatmsg = chatmsg.decode("utf-8")
 		self.m_chatClientID = clientid
-		
-		msg = "<b>%s:</b> %s" % (name, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />"))
+
+		char_id = 0 if not self.gameview.characters.has_key(clientid) else self.gameview.characters[clientid].charid
+		printname = self.ao_app.charlist[char_id] + (" ["+name+"]" if self.ao_app.charlist[char_id] != name else "")
+		msg = "<b>%s:</b> %s" % (printname, self.m_chatmsg.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />"))
 		if evidence >= 0:
-			msg += "<br /><b>"+name+"</b> presented an evidence: "
+			msg += "<br /><b>"+printname+"</b> presented an evidence: "
 			try:
 				msg += self.ao_app.evidencelist[evidence][0]
 			except:
@@ -1554,11 +1559,12 @@ class GameWidget(QtGui.QWidget):
 					self.ao_app.tcpthread.setZone(i)
 	
 	def onExaminePacket(self, contents):
-		char_id, zone, x, y = contents
-		if zone != self.player.zone:
-			return
-		
-		self.examines.append(ExamineObj(self.ao_app.charlist[char_id], x, y, self.gameview.gamescene))
+		char_id, zone, x, y, showname = contents
+		if zone != self.player.zone: return
+		showname = showname.decode("utf-8")
+
+		printname = self.ao_app.charlist[char_id] + (" ["+showname+"]" if showname else "")
+		self.examines.append(ExamineObj(printname, x, y, self.gameview.gamescene))
 	
 	def onExamineButton(self, clicked_inGame=False):
 		if self.examining:
@@ -1585,6 +1591,7 @@ class GameWidget(QtGui.QWidget):
 		self.sliderlabel2.hide()
 		self.sliderlabel3.hide()
 		self.ic_input.hide()
+		self.showname_input.hide()
 		self.areainfo.hide()
 		self.emotebar.hide()
 		self.movebtn.hide()
@@ -1678,14 +1685,14 @@ class GameWidget(QtGui.QWidget):
 		self.evidencedialog.hide()
 	
 	def onMusicChange(self, msg):
-		filename, char_id, zone = msg
-		
-		if zone != self.player.zone:
-			return
-		
+		filename, char_id, showname = msg
+		showname = showname.decode("utf-8")
+
 		if char_id > -1:
-			self.chatlog.append("<b>%s</b> changed the music to %s" % (self.ao_app.charlist[char_id], filename.replace("<", "&#60;").replace(">", "&#62;")))
-			self.broadcastObj.showText("%s played song %s" % (self.ao_app.charlist[char_id], filename))
+			name = self.ao_app.charlist[char_id] + (" ["+showname+"]" if showname else "")
+			name2 = showname if showname else self.ao_app.charlist[char_id]
+			self.chatlog.append("<b>%s</b> changed the music to %s" % (name, filename.replace("<", "&#60;").replace(">", "&#62;")))
+			self.broadcastObj.showText("%s played song %s" % (name2, filename))
 		else:
 			self.chatlog.append("The music was changed to %s" % filename.replace("<", "&#60;").replace(">", "&#62;"))
 			self.broadcastObj.showText("The music was changed to %s" % filename)
@@ -1745,6 +1752,8 @@ class GameWidget(QtGui.QWidget):
 					x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
 					self.player.moveReal(float(x), float(y))
 					self.spawned_once = True
+
+				self.showname_input.setPlaceholderText(self.ao_app.charlist[char])
 		else:
 			self.gameview.characters[client].changeChar(char)
 	
@@ -1784,7 +1793,7 @@ class GameWidget(QtGui.QWidget):
 								char.playLastFrame(fullpath)
 	
 	def onMusicClicked(self, item):
-		self.ao_app.tcpthread.sendMusicChange(item.text().toUtf8())
+		self.ao_app.tcpthread.sendMusicChange(item.text().toUtf8(), str(self.showname_input.text().toUtf8()))
 	
 	def setZone(self, ind):
 		if self.player.zone != ind:
@@ -1829,6 +1838,7 @@ class GameWidget(QtGui.QWidget):
 		
 	def hideCharSelect(self):
 		self.ic_input.show()
+		self.showname_input.show()
 		self.musicslider.show()
 		self.soundslider.show()
 		self.blipslider.show()
@@ -1870,13 +1880,15 @@ class GameWidget(QtGui.QWidget):
 	
 	def ic_return(self):
 		text = str(self.ic_input.text().toUtf8())[:256+64]
+		showname = str(self.showname_input.text().toUtf8())
+
 		if self.mychatcolor != 6: #rainbow.
 			color = getColor(self.mychatcolor).rgb()
 		else:
 			color = 691337
 
 		if text and self.finished_chat and self.ic_delay == 0:
-			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1, self.message_id)
+			self.ao_app.tcpthread.sendIC(text, self.player.blip, color, self.myrealization, self.myevidence+1, showname, self.message_id)
 			self.ic_delay = 3
 	
 	def timerEvent(self, event):
@@ -1896,7 +1908,7 @@ class GameWidget(QtGui.QWidget):
 		elif isinstance(focused_widget, QtGui.QGraphicsView):
 			if self.examining:
 				a = QtCore.QPointF(self.examiner.pos() - self.gameview.zonebackground.pos())
-				self.ao_app.tcpthread.sendExamine(a.x(), a.y())
+				self.ao_app.tcpthread.sendExamine(a.x(), a.y(), str(self.showname_input.text().toUtf8()))
 				self.onExamineButton(True)
 	
 	def updateGame(self):
@@ -2024,6 +2036,7 @@ class GameWidget(QtGui.QWidget):
 			self.gameview.deleteCharacter(i)
 		self.evidencebtn.hide()
 		self.ic_input.hide()
+		self.showname_input.hide()
 		self.areainfo.hide()
 		self.emotebar.hide()
 		self.movebtn.hide()

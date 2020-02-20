@@ -190,7 +190,7 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", type)
 			self.sendBuffer(buf)
 	
-	def sendIC(self, chatmsg, blip, color, realization, evidence, message_id):
+	def sendIC(self, chatmsg, blip, color, realization, evidence, showname, message_id):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MSCHAT)
 			buf += chatmsg+"\0"
@@ -198,6 +198,7 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("I", color)
 			buf += struct.pack("B", realization)
 			buf += struct.pack("B", evidence)
+			buf += showname+"\0"
 			buf += struct.pack("I", message_id)
 			self.sendBuffer(buf)
 	
@@ -208,17 +209,19 @@ class ClientThread(QtCore.QThread):
 			buf += chatmsg+"\0"
 			self.sendBuffer(buf)
 	
-	def sendMusicChange(self, filename):
+	def sendMusicChange(self, filename, showname):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MUSIC)
 			buf += filename+"\0"
+			buf += showname+"\0"
 			self.sendBuffer(buf)
 	
-	def sendExamine(self, x, y):
+	def sendExamine(self, x, y, showname):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.EXAMINE)
 			buf += struct.pack("f", x)
 			buf += struct.pack("f", y)
+			buf += showname+"\0"
 			self.sendBuffer(buf)
 	
 	def sendChatBubble(self, on):
@@ -416,9 +419,9 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.MUSIC: #music change
 					data, filename = buffer_read("S", data)
 					data, char_id = buffer_read("I", data)
-					data, zone = buffer_read("H", data)
+					data, showname = buffer_read("S", data)
 					
-					self.musicChange.emit([filename, char_id, zone])
+					self.musicChange.emit([filename, char_id, showname])
 					
 				elif header == AIOprotocol.CREATE: #a player joins
 					data, otherplayer = buffer_read("I", data)
@@ -473,7 +476,8 @@ class ClientThread(QtCore.QThread):
 					data, zone = buffer_read("H", data)
 					data, x = buffer_read("f", data)
 					data, y = buffer_read("f", data)
-					self.examinePacket.emit([char_id, zone, x, y])
+					data, showname = buffer_read("S", data)
+					self.examinePacket.emit([char_id, zone, x, y, showname])
 				
 				elif header == AIOprotocol.OOC:
 					data, name = buffer_read("S", data)

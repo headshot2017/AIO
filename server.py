@@ -13,6 +13,7 @@ ExamineRateLimit = 2 #same as above, but for Examine
 OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
 WTCERateLimit = 10 # amount of seconds to wait before allowing another testimony button (anti spam)
 ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
+ShowNameLength = 16 # maximum amount of characters (or letters if you're computer illiterate) a showname can have, it is trimmed down if exceeded
 
 AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
 ################################
@@ -240,7 +241,8 @@ class AIOserver(object):
 			print "[error]", "tried to use sendChat() without server running"
 			return
 		
-		self.econPrint("[chat][IC] %d,%d,%s: %s" % (clientid,zone,name, chatmsg))
+		printname = name if clientid >= self.maxplayers else self.getCharName(self.clients[clientid].CharID)
+		self.econPrint("[chat][IC] %d,%d,%s: %s" % (clientid,zone, printname, chatmsg))
 		thread.start_new_thread(self.ic_tick_thread, (chatmsg,))
 		
 		buffer = ""
@@ -723,7 +725,7 @@ class AIOserver(object):
 				else:
 					return self.sendBuffer(ClientID, buffer)
 
-	def changeMusic(self, filename, charid, zone=-1, ClientID=-1):
+	def changeMusic(self, filename, charid, showname, zone=-1, ClientID=-1):
 		if not self.running:
 			print "[error]", "tried to use changeMusic() without server running"
 			return
@@ -732,7 +734,7 @@ class AIOserver(object):
 		buffer += struct.pack("B", AIOprotocol.MUSIC)
 		buffer += filename+"\0"
 		buffer += struct.pack("I", charid)
-		buffer += struct.pack("H", zone)
+		buffer += showname+"\0"
 		buff = struct.pack("I", len(buffer)+1)
 		buff += buffer
 		
@@ -786,7 +788,7 @@ class AIOserver(object):
 			if self.clients[client].ready and not self.clients[client].isBot():
 				self.sendBuffer(client, buffer)
 	
-	def sendExamine(self, charid, zone, x, y, ClientID=-1):
+	def sendExamine(self, charid, zone, x, y, showname, ClientID=-1):
 		if not self.running:
 			print "[error]", "tried to use sendExamine() without server running"
 			return
@@ -796,6 +798,7 @@ class AIOserver(object):
 		buffer += struct.pack("H", zone)
 		buffer += struct.pack("f", x)
 		buffer += struct.pack("f", y)
+		buffer += showname+"\0"
 		buff = struct.pack("I", len(buffer)+1)
 		buff += buffer
 		
@@ -1123,14 +1126,13 @@ class AIOserver(object):
 						self.readbuffer, color = buffer_read("I", self.readbuffer)
 						self.readbuffer, realization = buffer_read("B", self.readbuffer)
 						self.readbuffer, evidence = buffer_read("B", self.readbuffer)
+						self.readbuffer, showname = buffer_read("S", self.readbuffer)
 					except struct.error:
 						continue
-					
+
 					# for old client compatibility
-					try:
-						self.readbuffer, message_id = buffer_read("I", self.readbuffer)
-					except:
-						message_id = 0
+					try: self.readbuffer, message_id = buffer_read("I", self.readbuffer)
+					except: message_id = 0
                     
 					if not self.clients[client].ready or self.clients[client].CharID == -1 or realization > 2 or (not self.ic_finished and not self.clients[client].is_authed) or ([message_id, client] in self.last_messages):
 						continue
@@ -1143,8 +1145,12 @@ class AIOserver(object):
 
 					if color == 4294901760 and not self.clients[client].is_authed: #that color number is the exact red color (of course, you can get a similar one, but still.)
 						color = 4294967295 #set to exactly white
-					
-					self.sendChat(self.getCharName(self.clients[client].CharID), chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
+
+					showname = showname[:ShowNameLength]
+					if not showname or ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+						showname = self.getCharName(self.clients[client].CharID)
+
+					self.sendChat(showname, chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
 					#print "[chat][IC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.getCharName(self.clients[client].CharID), chatmsg)
 				
 				elif header == AIOprotocol.OOC:
@@ -1187,6 +1193,7 @@ class AIOserver(object):
 					try:
 						self.readbuffer, x = buffer_read("f", self.readbuffer)
 						self.readbuffer, y = buffer_read("f", self.readbuffer)
+						self.readbuffer, showname = buffer_read("S", self.readbuffer)
 					except struct.error:
 						continue
 					
@@ -1195,12 +1202,21 @@ class AIOserver(object):
 					if self.clients[client].ratelimits[2] > 0:
 						#print "[game]", "ratelimited Examine on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
 						continue
-					
-					self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y)
+
+					showname = showname[:ShowNameLength]
+					if ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+						showname = self.getCharName(self.clients[client].CharID)
+
+					self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
 					self.clients[client].ratelimits[2] = ExamineRateLimit
 				
 				elif header == AIOprotocol.MUSIC: #music change
-					self.readbuffer, songname = buffer_read("S", self.readbuffer)
+					try:
+						self.readbuffer, songname = buffer_read("S", self.readbuffer)
+						self.readbuffer, showname = buffer_read("S", self.readbuffer)
+					except:
+						continue
+
 					if not self.clients[client].ready or self.clients[client].CharID == -1:
 						continue
 					
@@ -1212,14 +1228,18 @@ class AIOserver(object):
 					for song in self.musiclist:
 						if songname.lower() == song.lower():
 							change = True
-					
+
+					showname = showname[:ShowNameLength]
+					if ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+						showname = self.getCharName(self.clients[client].CharID)
+
 					message = "%s id=%d addr=%s zone=%d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone)
 					if change:
-						self.changeMusic(songname, self.clients[client].CharID, self.clients[client].zone)
+						self.changeMusic(songname, self.clients[client].CharID, showname)
 						print "[game]", message, "changed the music to "+songname
-						
 					else:
 						print "[game]", message, "attempted to change the music to "+songname
+
 					self.clients[client].ratelimits[0] = MusicRateLimit
 				
 				elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
@@ -1791,6 +1811,7 @@ class AIOserver(object):
 				return
 			
 			self.sendWarning(id, reason)
+			self.sendOOC(ServerOOCName, "warned user %d (%s)" % (id, self.getCharName(self.clients[id].CharID)), client)
 		
 		elif cmd == "evidence":
 			if not isConsole and not isEcon:
@@ -1898,6 +1919,7 @@ class AIOserver(object):
 				self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
 				return
 			
+			self.sendOOC(ServerOOCName, "kicked player %d (%s) (%s)" % (id, self.getCharName(self.clients[id].CharID), self.clients[id].ip), client)
 			self.kick(id, reason)
 		
 		elif cmd == "ban":
@@ -1999,7 +2021,7 @@ class AIOserver(object):
 		
 		elif cmd == "unban":
 			if not cmdargs:
-				self.sendOOC(ServerOOCName, "usage: /unban <ip>unban an IP address from the server.", client)
+				self.sendOOC(ServerOOCName, "usage: /unban <ip>\nunban an IP address from the server.", client)
 				return
 			if not isConsole and not isEcon:
 				if not self.clients[client].is_authed:
@@ -2050,13 +2072,10 @@ class AIOserver(object):
 			musicname = musicname.rstrip()
 			
 			if not isConsole and not isEcon:
-				self.changeMusic(musicname, self.clients[client].CharID, self.clients[client].zone)
+				self.changeMusic(musicname, self.clients[client].CharID, "")
 			else:
-				self.changeMusic(musicname, 0, zone)
-				if isConsole:
-					self.sendBroadcast(ServerOOCName+" played "+musicname, zone)
-				elif isEcon:
-					self.sendBroadcast("ECON USER "+str(client-10000)+" played "+musicname, zone)
+				showname = ServerOOCName if isConsole else "ECON USER %d" % (client-10000)
+				self.changeMusic(musicname, 0, showname)
 		
 		elif cmd == "status":
 			if not isConsole and not isEcon:
@@ -2156,10 +2175,7 @@ class AIOserver(object):
 			if not self.clients[client].ip.startswith("127."):
 				self.sendOOC(ServerOOCName, "you are not allowed to use this!", client)
 				return
-			if not cmdargs:
-				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
-				return
-			if cmdargs[0].lower() != "now":
+			if not cmdargs or cmdargs[0].lower() != "now":
 				self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
 				return
 			

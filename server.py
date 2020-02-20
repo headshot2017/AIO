@@ -2369,7 +2369,7 @@ class AIOserver(object):
 						al.append(" ")
 					txt ="".join(al)
 					#print "[chat][IC] -1,%d,%s: %s" % (var, "ECON USER %d" % i, txt)
-					self.sendChat("ECON USER %d" % i, txt, "male", var, 4294901760, 0, 0, 0)
+					self.sendChat("ECON USER %d" % i, txt, "male", var, 4294901760, 0, self.maxplayers+1, 0)
 	
 	def econPrint(self, text, dest=-1):
 		print text
@@ -2418,7 +2418,7 @@ class AIOserver(object):
 				
 				txt = txt.replace(str(var)+" ", "")
 				#print "[chat][IC] -1,%d,%s: %s" % (var, ServerOOCName, txt)
-				self.sendChat(ServerOOCName, txt, "male", var, 4294901760, 0, 0, 0)
+				self.sendChat(ServerOOCName, txt, "male", var, 4294901760, 0, self.maxplayers, 0)
 			
 if __name__ == "__main__":
 	server = AIOserver()

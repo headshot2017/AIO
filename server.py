@@ -202,6 +202,7 @@ class AIOserver(object):
 							self.kick(i, "You have been banned for life: %s" % bans[2])
 						return
 				
+				client.settimeout(0.1)
 				if ipaddr[0].startswith("127."): #localhost
 					self.clients[i].is_authed = True
 				self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
@@ -783,7 +784,7 @@ class AIOserver(object):
 		buffer += struct.pack("h", charid)
 		buff = struct.pack("I", len(buffer)+1)
 		buff += buffer
-		
+
 		for client in self.clients.keys():
 			if self.clients[client].ready and not self.clients[client].isBot():
 				self.sendBuffer(client, buffer)

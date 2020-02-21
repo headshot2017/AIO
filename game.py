@@ -359,7 +359,13 @@ class Character(BaseCharacter):
 	
 	def afterStop(self):
 		self.emoting = 2
-	
+
+	def collidesWithItem(self, other): # finally no one will get stuck on that fountain while spazzing erratically
+		self.setPos(self.x() + self.hspeed, self.y() + self.vspeed)
+		collides = super(Character, self).collidesWithItem(other)
+		self.setPos(self.x() - self.hspeed, self.y() - self.vspeed)
+		return collides
+
 	def changeChar(self, newcharid):
 		self.charid = newcharid
 		if newcharid == -1:
@@ -740,9 +746,9 @@ class GamePort(QtGui.QWidget):
 		
 		player_id = self.ao_app.player_id
 		mychar = self.characters[player_id]
-		if mychar.collidesWithItem(self.zonewalls) and mychar.isPlayer:
-				mychar.xx = mychar.xprevious2
-				mychar.yy = mychar.yprevious2
+		if mychar.collidesWithItem(self.zonewalls) and mychar.isPlayer: # good lord why
+			mychar.xx = mychar.xprevious
+			mychar.yy = mychar.yprevious
 		
 		for char in self.characters.values():
 			char.setZValue(char.yy  - (char.pixmap().size().height()*2) + (char.maxheight*0.75))

@@ -351,7 +351,9 @@ class ClientThread(QtCore.QThread):
 			
 			while data:
 				data, header = buffer_read("B", data)
-				#print repr(header), repr(data)
+
+				#for a in dir(AIOprotocol):
+					#if getattr(AIOprotocol, a) == header and not "EV_" in a and not a in ("SOUTH", "SOUTHWEST", "SOUTHEAST", "EAST", "NORTH", "NORTHWEST", "NORTHEAST", "WEST"): print repr(a), repr(data)
 				
 				if header == AIOprotocol.CONNECT: #server default zone, maximum characters, MOTD...
 					data, player_id = buffer_read("I", data)

@@ -849,7 +849,7 @@ class GameWidget(QtGui.QWidget):
 		
 		self.chatname = QtGui.QLabel(self.chatbox)
 		self.chatname.setStyleSheet("color: white")
-		self.chatname.move(4, 3)
+		self.chatname.move(4, 2)
 		self.chatname.resize(256-4, 12)
 		
 		self.chattext = QtGui.QTextEdit(self.chatbox)

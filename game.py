@@ -281,8 +281,9 @@ class BaseCharacter(QtGui.QGraphicsPixmapItem):
 	
 	def playSpin(self, filename, dir):
 		self.stop()
-		self.movie.setFileName(filename)
-		self.setPixmap(self.spinframes[dir])
+		if self.spinframes:
+			self.movie.setFileName(filename)
+			self.setPixmap(self.spinframes[dir])
 	
 	def setSpin(self, image):
 		self.spinframe.setFileName(image)

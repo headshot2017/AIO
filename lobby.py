@@ -143,6 +143,9 @@ class lobby(QtGui.QWidget):
 		self.newslabel.move(self.newstext.x(), self.newstext.y() - 20)
 		self.newstext.hide()
 		self.newslabel.hide()
+
+		if os.path.exists("data/aaio_news.txt"):
+			self.newstext.setText(open("data/aaio_news.txt").read())
 		
 		self.addtofav.clicked.connect(self.add_to_favorites)
 		self.connectbtn.clicked.connect(self.connectClicked)

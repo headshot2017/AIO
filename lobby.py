@@ -178,7 +178,7 @@ class lobby(QtGui.QWidget):
 		self.msthread.start()
 		self.servers = []
 		try:
-			self.favorites = [line.rstrip("\n").split(":") for line in open("data\\serverlist.txt")]
+			self.favorites = [line.rstrip("\n").split(":") for line in open("data/serverlist.txt")]
 		except IOError:
 			self.favorites = [["localhost", "27010", "your server, port 27010 (serverlist.txt not found)", "to fix this, create an empty text file on the \"data\" folder named \"serverlist\"."]]
 		
@@ -268,7 +268,7 @@ class lobby(QtGui.QWidget):
 				return QtGui.QMessageBox.information(self, "uh", "That server already exists in your favorites, named \"%s\"" % fav[2])
 		
 		self.favorites.append([server[2], server[3], server[0], server[1]])
-		with open("serverlist.txt", "a") as file:
+		with open("data/serverlist.txt", "a") as file:
 			file.write(server[2]+":"+str(server[3])+":"+server[0]+":"+server[1]+"\n")
 	
 	def refresh(self):

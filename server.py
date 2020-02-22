@@ -1115,7 +1115,8 @@ class AIOserver(object):
                         self.sendPenaltyBar(1, self.zonelist[zone][3], zone, client)
                     
                     elif header == AIOprotocol.SETCHAR:
-                        self.readbuffer, charid = buffer_read("h", self.readbuffer)
+                        try:
+                            self.readbuffer, charid = buffer_read("h", self.readbuffer)
                         if not self.clients[client].ready:
                             continue
                         
@@ -1249,7 +1250,10 @@ class AIOserver(object):
                         self.clients[client].ratelimits[0] = MusicRateLimit
                     
                     elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
-                        self.readbuffer, on = buffer_read("B", self.readbuffer)
+                        try:
+                            self.readbuffer, on = buffer_read("B", self.readbuffer)
+                        except struct.error: continue
+                        
                         if not self.clients[client].ready or self.clients[client].CharID == -1:
                             continue
                         
@@ -1308,8 +1312,10 @@ class AIOserver(object):
                             self.deleteEvidence(self.clients[client].zone, ind)
                     
                     elif header == AIOprotocol.BARS: # penalty bars (AIO 0.4)
-                        self.readbuffer, bar = buffer_read("B", self.readbuffer)
-                        self.readbuffer, health = buffer_read("B", self.readbuffer)
+                        try:
+                            self.readbuffer, bar = buffer_read("B", self.readbuffer)
+                            self.readbuffer, health = buffer_read("B", self.readbuffer)
+                        except struct.error: continue
                         
                         if bar > 1: # must be 0 or 1
                             print "[game]", "%s id=%d addr=%s zone=%d tried to change penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar)
@@ -1323,7 +1329,9 @@ class AIOserver(object):
                         self.sendPenaltyBar(bar, health, self.clients[client].zone)
 
                     elif header == AIOprotocol.WTCE: # testimony buttons (AIO 0.4)
-                        self.readbuffer, wtcetype = buffer_read("B", self.readbuffer)
+                        try:
+                            self.readbuffer, wtcetype = buffer_read("B", self.readbuffer)
+                        except struct.error: continue
 
                         if wtcetype > 3: # must be between 0 and 3
                             print "[game]", "%s id=%d addr=%s zone=%d tried to use WT/CE %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, wtcetype)

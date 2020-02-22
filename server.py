@@ -1117,8 +1117,9 @@ class AIOserver(object):
                     elif header == AIOprotocol.SETCHAR:
                         try:
                             self.readbuffer, charid = buffer_read("h", self.readbuffer)
-                        if not self.clients[client].ready:
+                        except struct.error:
                             continue
+                        if not self.clients[client].ready or charid >= len(self.charlist): continue
                         
                         if not self.clients[client].first_picked:
                             if self.clients[client].ClientVersion != GameVersion and AllowVersionMismatch:
@@ -2163,7 +2164,7 @@ if __name__ == "__main__":
         
     except KeyboardInterrupt: # manual interruption
         for i in server.clients.keys():
-            server.kick(i, "\n\n=== SERVER CLOSED ==="), False, True)
+            server.kick(i, "\n\n=== SERVER CLOSED ===", False, True)
         server.tcp.close()
         
     except Exception as e: #server crashed

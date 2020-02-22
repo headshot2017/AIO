@@ -1720,7 +1720,7 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.characters[player].zone = zone
 	
 	def onPlayerDestroy(self, player):
-		self.gameview.deleteCharacter(player)
+		if player in self.gameview.characters: self.gameview.deleteCharacter(player)
 
 	def onPlayerZone(self, contents):
 		client, zone = contents

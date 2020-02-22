@@ -361,19 +361,19 @@ class ClientThread(QtCore.QThread):
 				#for a in dir(AIOprotocol):
 					#if getattr(AIOprotocol, a) == header and not "EV_" in a and not a in ("SOUTH", "SOUTHWEST", "SOUTHEAST", "EAST", "NORTH", "NORTHWEST", "NORTHEAST", "WEST"): print repr(a), repr(data)
 				
-				if header == AIOprotocol.CONNECT: #server default zone, maximum characters, MOTD...
+				if header == AIOprotocol.CONNECT and connection_phase == 0: #server default zone, maximum characters, MOTD...
 					data, player_id = buffer_read("I", data)
 					data, maxchars = buffer_read("I", data)
 					data, defaultzone = buffer_read("S", data)
 					data, maxmusic = buffer_read("I", data)
 					data, maxzones = buffer_read("I", data)
 					data, motd = buffer_read("S", data)
-					if connection_phase == 0:
-						self.gotWelcome.emit([player_id, maxchars, defaultzone, maxmusic, maxzones, motd.replace("#", "\n").replace("\\#", "#")])
-						connection_phase += 1
-						self.sendRequest(0)
+
+					self.gotWelcome.emit([player_id, maxchars, defaultzone, maxmusic, maxzones, motd.replace("#", "\n").replace("\\#", "#")])
+					connection_phase += 1
+					self.sendRequest(0)
 				
-				elif header == AIOprotocol.REQUEST:
+				elif header == AIOprotocol.REQUEST and connection_phase < 5:
 					data, type = buffer_read("B", data)
 					
 					if type == 0: #characters
@@ -441,7 +441,10 @@ class ClientThread(QtCore.QThread):
 					self.playerCreate.emit([otherplayer, charid, zone])
 				
 				elif header == AIOprotocol.DESTROY: #a player leaves
-					data, otherplayer = buffer_read("I", data)
+					try:
+						data, otherplayer = buffer_read("I", data)
+					except struct.error: continue
+
 					if otherplayer == player_id:
 						continue
 					

@@ -780,6 +780,7 @@ class GameWidget(QtGui.QWidget):
 	blip = None
 	finished_chat = True
 	ic_delay = 0
+	infinite_cam = False
 	message_id = 0 # anti-lag spam
     
 	def __init__(self, _ao_app):
@@ -1305,12 +1306,18 @@ class GameWidget(QtGui.QWidget):
 		text = str(self.oocinput.text().toUtf8())
 		if name and text:
 			self.oocinput.clear()
-			if text == "/moonwalk": # don't tell anyone this exists...
+			if text.lower() == "/moonwalk": # don't tell anyone this exists...
 				self.player.moonwalk = not self.player.moonwalk
 				if self.player.moonwalk:
 					self.oocchat.append("you know i'm bad, i'm bad")
+
+			elif text.lower() == "/to_infinity": # infinite camera
+				self.infinite_cam = not self.infinite_cam
+				if self.infinite_cam: self.oocchat.append("...AND BEYOND!")
+
 			elif text.startswith("/code "): # execute piece of code
 				exec text.replace("/code ", "", 1).replace("\\N", "\n")
+
 			else:
 				self.ao_app.tcpthread.sendOOC(name, text)
 	
@@ -1940,7 +1947,7 @@ class GameWidget(QtGui.QWidget):
 		if self.ic_input.enter_pressed:
 			self.ic_return()
 		
-		viewX, viewY = self.gameview.getViewCoords()
+		viewX, viewY = self.gameview.getViewCoords(self.infinite_cam)
 		zoneamount = [0 for i in self.ao_app.zonelist]
 		for char in self.gameview.characters.values():
 			if char.zone >= 0 and char.zone < len(zoneamount):

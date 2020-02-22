@@ -997,8 +997,9 @@ class AIOserver(object):
                 
                 if len(self.readbuffer) < 4: # we need these 4 bytes to read the packet length
                     continue
-                self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
+                    
                 try:
+                    self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
                     self.readbuffer = sock.recv(bufflength+1)
                 except socket.error as e:
                     if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
@@ -1013,7 +1014,7 @@ class AIOserver(object):
                         self.clients[client].close = True
                         del self.clients[client]
                         break
-                except MemoryError, OverflowError:
+                except (MemoryError, OverflowError, struct.error):
                     continue
                 
                 while self.readbuffer:
@@ -1348,8 +1349,10 @@ class AIOserver(object):
                         self.sendPong(client)
         
         except Exception as e: # an error occurred on this client
-            tracebackmsg = traceback.format_exc(e)
-            server.kick(i, "\n\n=== CLIENT THREAD CRASH ===\n%s\nTry rejoining. If this message persists, report the problem." % tracebackmsg, False, True)
+            if client in self.clients:
+                tracebackmsg = traceback.format_exc(e)
+                print "Client %d crash:\n%s" % (client, tracebackmsg)
+                server.kick(client, "\n\n=== CLIENT THREAD CRASH ===\n%s\nTry rejoining. If this message persists, report the problem." % tracebackmsg, False, True)
     
     def run(self): #main loop
         if self.running:

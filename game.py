@@ -455,6 +455,8 @@ class Character(BaseCharacter):
 
 	def playSpin(self, filename, dir):
 		self.playFile = [filename, dir, True]
+		self.emoting = 0
+		self.currentemote = -1
 	
 	def update(self, viewX, viewY):
 		if self.isPlayer and self.charid != -1:

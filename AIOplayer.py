@@ -9,7 +9,7 @@ class AIOplayer(object):
 	sock = None
 	ip = "0"
 	is_authed = False
-	ratelimits = [0, 0, 0, 0, 0] # [music, emotesound, examine, ooc, wtce]
+	ratelimits = [] # [music, emotesound, examine, ooc, wtce]
 	ready = False
 	can_send_request = False
 	x = 0.0
@@ -28,22 +28,18 @@ class AIOplayer(object):
 	pingpong = 0
 
 	def __init__(self, sock, ip):
+		self.ratelimits = [0, 0, 0, 0, 0]
 		self.sock = sock
 		self.ip = ip
-		athread = thread.start_new_thread(self.player_thread, ())
 	
 	def __del__(self):
 		self.close = True
 	
 	def player_thread(self):
-		while True:
-			if self.close:
-				thread.exit()
-
-			for i in range(len(self.ratelimits)):
-				if self.ratelimits[i] > 0: self.ratelimits[i] -= 0.1
-			if self.pingpong > 0: self.pingpong -= 0.1
-			if not self.isBot(): time.sleep(0.1)
+		for i in range(len(self.ratelimits)):
+			if self.ratelimits[i] > 0: self.ratelimits[i] -= 0.1
+		if self.pingpong > 0: self.pingpong -= 0.1
+		#if not self.isBot(): time.sleep(0.1)
 	
 	def isBot(self):
 		return not bool(self.sock)

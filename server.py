@@ -958,6 +958,8 @@ class AIOserver(object):
                 if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
                     return
 
+                self.clients[client].player_thread()
+
                 if self.clients[client].ready and len(self.clients) > 1:
                     if self.clients[client].isBot():
                         self.sendBotMovement(client)

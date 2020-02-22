@@ -920,7 +920,10 @@ class GameWidget(QtGui.QWidget):
 		self.realizationbtn.clicked.connect(self.onRealizationButton)
 		self.realizationbtn.hide()
 		
-		
+		self.emotemenu = QtGui.QMenu()
+		self.emotemenuActions = [self.emotemenu.addAction("Play"), self.emotemenu.addAction("Play on chat")]
+		self.emote_on_chat = -1
+
 		self.emotebuttons = []
 		spacing = 2
 		x_mod_count = y_mod_count = 0
@@ -936,6 +939,7 @@ class GameWidget(QtGui.QWidget):
 			self.emotebuttons.append(buttons.AIOIndexButton(self.emotebar, i))
 			self.emotebuttons[i].setGeometry(left+x_pos, top+y_pos, 40, 40)
 			self.emotebuttons[i].clicked.connect(self.onEmoteClicked)
+			self.emotebuttons[i].rightClicked.connect(self.onEmoteRightClicked)
 			self.emotebuttons[i].show()
 			x_mod_count += 1
 			if x_mod_count == columns:
@@ -1321,13 +1325,12 @@ class GameWidget(QtGui.QWidget):
 		if clientid == self.ao_app.player_id: # your message arrived.
 			self.message_id = random.randint(100000000, 999999999)
 			self.ic_input.clear()
-			if self.chatbubbletimer.isActive():
-				self.chatbubbletimer.stop()
+			if self.chatbubbletimer.isActive(): self.chatbubbletimer.stop()
 			if self.myrealization != 0:
 				self.myrealization = 0
 				self.realizationbtn.setPixmap(self.realizationbtn_off)
-			if self.myevidence >= 0:
-				self.myevidence = -1
+			if self.myevidence >= 0: self.myevidence = -1
+			if self.emote_on_chat >= 0: self.onEmoteClicked(self.emote_on_chat)
 		
 		evidence -= 1
 		name = name.replace("<", "&lt;").replace(">", "&gt;").decode("utf-8")
@@ -1631,8 +1634,18 @@ class GameWidget(QtGui.QWidget):
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
 		self.aSound = ["data\\sounds\\general\\"+filename+".wav", delay, zone]
+
+	def onEmoteRightClicked(self, ind):
+		selection = self.emotemenu.exec_(QtGui.QCursor.pos())
+		if selection:
+			if selection == self.emotemenu.actions()[0]: # play normally
+				self.onEmoteClicked(ind)
+			else: # play on chat
+				self.emote_on_chat = ind
 	
 	def onEmoteClicked(self, ind):
+		self.emote_on_chat = -1
+
 		real_ind = ind + self.current_emote_page * self.max_emotes_on_page
 		self.player.emoting = 1
 		self.player.currentemote = real_ind

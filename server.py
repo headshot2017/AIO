@@ -1024,11 +1024,15 @@ class AIOserver(object):
                         del temp[0]
                         self.readbuffer = "".join(temp)
                         del temp
-                    self.readbuffer, header = buffer_read("B", self.readbuffer)
+                    
+                    try:
+                        self.readbuffer, header = buffer_read("B", self.readbuffer)
+                    except struct.error: # wtf?
+                        continue
                     #print repr(header), repr(self.readbuffer)
 
                     # commence fun... <sigh>
-                    if header == AIOprotocol.CONNECT: # client sends version
+                    if header == AIOprotocol.CONNECT and self.clients[client].ClientVersion == "???": # client sends version
                         mismatch = False
                         
                         try:
@@ -1049,7 +1053,7 @@ class AIOserver(object):
                         self.clients[client].can_send_request = True
                         self.sendWelcome(client)
                     
-                    elif header == AIOprotocol.REQUEST: #get character, music and zone lists
+                    elif header == AIOprotocol.REQUEST and not self.clients[client].ready: #get character, music and zone lists
                         if not self.clients[client].can_send_request:
                             self.kick(client, "your client tried to send a character/music/zone list request first before sending the client version to the server")
                             break

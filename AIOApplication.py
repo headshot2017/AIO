@@ -39,6 +39,12 @@ class AIOApplication(QtGui.QApplication):
 	sndvol = 100
 	musicvol = 100
 	blipvol = 100
+	controls = {"up": [QtCore.Qt.Key_W, QtCore.Qt.Key_Up],
+                "down": [QtCore.Qt.Key_S, QtCore.Qt.Key_Down],
+                "left": [QtCore.Qt.Key_A, QtCore.Qt.Key_Left],
+                "right": [QtCore.Qt.Key_D, QtCore.Qt.Key_Right],
+                "run": [QtCore.Qt.Key_Shift, -1]}
+    
 	def __init__(self, argv=[]):
 		super(AIOApplication, self).__init__(argv)
 		self.tcpthread = ClientThread()

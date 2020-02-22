@@ -460,10 +460,15 @@ class Character(BaseCharacter):
 		if self.isPlayer and self.charid != -1:
 			newsprite = ""
 			currsprite = os.path.basename(str(self.movie.fileName()))
-			self.run = QtCore.Qt.Key_Shift in self.pressed_keys
+			self.run = self.ao_app.controls["run"][0] in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
-			
-			if (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
+
+			up = self.ao_app.controls["up"]
+			down = self.ao_app.controls["down"]
+			left = self.ao_app.controls["left"]
+			right = self.ao_app.controls["right"]
+
+			if (up[0] in self.pressed_keys and right[0] in self.pressed_keys) or (up[1] in self.pressed_keys and right[1] in self.pressed_keys):
 				self.vspeed = -self.runspd if self.run else -self.walkspd
 				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
@@ -478,7 +483,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif (QtCore.Qt.Key_W in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Up in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
+			elif (up[0] in self.pressed_keys and left[0] in self.pressed_keys) or (up[1] in self.pressed_keys and left[1] in self.pressed_keys):
 				self.vspeed = -self.runspd if self.run else -self.walkspd
 				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
@@ -493,7 +498,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_D in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Right in self.pressed_keys):
+			elif (down[0] in self.pressed_keys and right[0] in self.pressed_keys) or (down[1] in self.pressed_keys and right[1] in self.pressed_keys):
 				self.vspeed = self.runspd if self.run else self.walkspd
 				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
@@ -508,7 +513,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif (QtCore.Qt.Key_S in self.pressed_keys and QtCore.Qt.Key_A in self.pressed_keys) or (QtCore.Qt.Key_Down in self.pressed_keys and QtCore.Qt.Key_Left in self.pressed_keys):
+			elif (down[0] in self.pressed_keys and left[0] in self.pressed_keys) or (down[1] in self.pressed_keys and left[1] in self.pressed_keys):
 				self.vspeed = self.runspd if self.run else self.walkspd
 				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
@@ -523,7 +528,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif QtCore.Qt.Key_W in self.pressed_keys or QtCore.Qt.Key_Up in self.pressed_keys:
+			elif up[0] in self.pressed_keys or up[1] in self.pressed_keys:
 				self.vspeed = -self.runspd if self.run else -self.walkspd
 				self.hspeed = 0
 				self.emoting = 0
@@ -538,7 +543,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif QtCore.Qt.Key_S in self.pressed_keys or QtCore.Qt.Key_Down in self.pressed_keys:
+			elif down[0] in self.pressed_keys or down[1] in self.pressed_keys:
 				self.vspeed = self.runspd if self.run else self.walkspd
 				self.hspeed = 0
 				self.emoting = 0
@@ -553,7 +558,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif QtCore.Qt.Key_A in self.pressed_keys or QtCore.Qt.Key_Left in self.pressed_keys:
+			elif left[0] in self.pressed_keys or left[1] in self.pressed_keys:
 				self.vspeed = 0
 				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
@@ -568,7 +573,7 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
 				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
 			
-			elif QtCore.Qt.Key_D in self.pressed_keys or QtCore.Qt.Key_Right in self.pressed_keys:
+			elif right[0] in self.pressed_keys or right[1] in self.pressed_keys:
 				self.vspeed = 0
 				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
@@ -695,14 +700,6 @@ class GamePort(QtGui.QWidget):
 					except:
 						pass
 		return super(GamePort, self).eventFilter(source, event)
-	
-	"""
-	def keyPressEvent(self, event):
-		self.characters[self.ao_app.player_id].keyPressEvent(event)
-	
-	def keyReleaseEvent(self, event):
-		self.characters[self.ao_app.player_id].keyReleaseEvent(event)
-	"""
 	
 	def initCharacter(self, ind):
 		self.characters[ind] = Character(ao_app=self.ao_app, scene=self.gamescene)

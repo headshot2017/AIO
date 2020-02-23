@@ -1,7 +1,11 @@
 from PyQt4 import QtCore, QtGui
 from os import path
-from pybass import *
 import ctypes, ini, sys
+
+if not path.exists("bass.dll"):
+	ctypes.windll.user32.MessageBoxA(0, "bass.dll is missing on the game folder.\nthis file is required for audio playback.\ndid you extract all the game files correctly?", "unable to launch game", 0)
+	sys.exit(1)
+from pybass import *
 
 from AIOApplication import AIOApplication
 

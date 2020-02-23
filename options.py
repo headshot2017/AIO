@@ -108,7 +108,13 @@ class Options(QtGui.QWidget):
         for b in self.left_buttons: b.clicked.connect(partial(self.changeBind, b, "left", self.left_buttons.index(b)))
         for b in self.right_buttons: b.clicked.connect(partial(self.changeBind, b, "right", self.right_buttons.index(b)))
         self.run_button.clicked.connect(partial(self.changeBind, self.run_button, "run", 0))
-        
+
+        for i in range(len(self.up_buttons)): ao_app.controls["up"][i] = ini.read_ini_int("aaio.ini", "Controls", "up%d"%(i+1), ao_app.controls["up"][i])
+        for i in range(len(self.down_buttons)): ao_app.controls["down"][i] = ini.read_ini_int("aaio.ini", "Controls", "down%d"%(i+1), ao_app.controls["down"][i])
+        for i in range(len(self.left_buttons)): ao_app.controls["left"][i] = ini.read_ini_int("aaio.ini", "Controls", "left%d"%(i+1), ao_app.controls["left"][i])
+        for i in range(len(self.right_buttons)): ao_app.controls["right"][i] = ini.read_ini_int("aaio.ini", "Controls", "right%d"%(i+1), ao_app.controls["right"][i])
+        ao_app.controls["run"][0] = ini.read_ini_int("aaio.ini", "Controls", "run", ao_app.controls["run"][0])
+
         up_layout.addWidget(up_label)
         for b in self.up_buttons: up_layout.addWidget(b)
         down_layout.addWidget(down_label)

@@ -215,7 +215,7 @@ class Options(QtGui.QWidget):
             
         else:
             self.defaultoocname.setText("")
-            self.chatbox_dropdown.setCurrentIndex(0)
+            self.chatboximage_dropdown.setCurrentIndex(0)
             self.ms_lineedit.setText("aaio-ms.aceattorneyonline.com:27011")
             self.device_list.setCurrentIndex(BASS_GetDevice())
             self.musicslider.setValue(100)

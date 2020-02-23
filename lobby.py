@@ -168,7 +168,7 @@ class lobby(QtGui.QWidget):
 		self.optionsgui = options.Options(_ao_app)
 		self.optionsgui.fileSaved.connect(self.onOptionsSave)
 		
-		a = ini.read_ini("aaio.ini", "MasterServer", "IP").split(":")
+		a = ini.read_ini("aaio.ini", "MasterServer", "IP", "aaio-ms.aceattorneyonline.com:27011").split(":")
 		ip = a[0]
 		try:
 			port = int(a[1])

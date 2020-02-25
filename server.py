@@ -1246,7 +1246,7 @@ class AIOserver(object):
 
                         message = "%s id=%d addr=%s zone=%d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone)
                         if change:
-                            self.changeMusic(songname, self.clients[client].CharID, showname)
+                            self.changeMusic(songname, self.clients[client].CharID, showname, self.clients[client].zone)
                             print "[game]", message, "changed the music to "+songname
                         else:
                             print "[game]", message, "attempted to change the music to "+songname
@@ -1797,10 +1797,10 @@ class AIOserver(object):
             musicname = musicname.rstrip()
             
             if not isConsole and not isEcon:
-                self.changeMusic(musicname, self.clients[client].CharID, "")
+                self.changeMusic(musicname, self.clients[client].CharID, "", self.clients[client].zone)
             else:
                 showname = ServerOOCName if isConsole else "ECON USER %d" % (client-10000)
-                self.changeMusic(musicname, 0, showname)
+                self.changeMusic(musicname, 0, showname, zone)
         
         elif cmd == "status":
             if not isConsole and not isEcon:

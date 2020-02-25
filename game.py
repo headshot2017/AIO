@@ -461,7 +461,7 @@ class Character(BaseCharacter):
 	def update(self, viewX, viewY):
 		if self.isPlayer and self.charid != -1:
 			newsprite = ""
-			currsprite = os.path.basename(str(self.movie.fileName()))
+			currsprite = os.path.basename(str(self.movie.fileName().toUtf8()))
 			self.run = self.ao_app.controls["run"][0] in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
 

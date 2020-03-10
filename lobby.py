@@ -105,21 +105,21 @@ class lobby(QtGui.QWidget):
 		self.joinipaddress = buttons.AIOButton(self)
 		self.optionsbtn = buttons.AIOButton(self)
 		
-		self.addtofav.setPixmap(QtGui.QPixmap("data\\misc\\add_to_favorites.png"))
+		self.addtofav.setPixmap(QtGui.QPixmap("data/misc/add_to_favorites.png"))
 		self.addtofav.move(640-16, desc_y+desc_h+4)
-		self.connectbtn.setPixmap(QtGui.QPixmap("data\\misc\\connect_button.png"))
+		self.connectbtn.setPixmap(QtGui.QPixmap("data/misc/connect_button.png"))
 		self.connectbtn.move(640-16, desc_y+desc_h+4+48)
-		self.refreshbtn.setPixmap(QtGui.QPixmap("data\\misc\\refresh.png"))
+		self.refreshbtn.setPixmap(QtGui.QPixmap("data/misc/refresh.png"))
 		self.refreshbtn.move((self.serverlistwidget.x()+self.serverlistwidget.size().width())/2 - 32, self.serverlistwidget.y()+self.serverlistwidget.size().height()+16)
-		self.allservers.setPixmap(QtGui.QPixmap("data\\misc\\all_servers.png"))
+		self.allservers.setPixmap(QtGui.QPixmap("data/misc/all_servers.png"))
 		self.allservers.move(self.refreshbtn.x() - 128 - 8, self.refreshbtn.y() + 64)
-		self.favoritesbtn.setPixmap(QtGui.QPixmap("data\\misc\\favorites.png"))
+		self.favoritesbtn.setPixmap(QtGui.QPixmap("data/misc/favorites.png"))
 		self.favoritesbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
-		self.newsbtn.setPixmap(QtGui.QPixmap("data\\misc\\news_button.png"))
+		self.newsbtn.setPixmap(QtGui.QPixmap("data/misc/news_button.png"))
 		self.newsbtn.move(self.refreshbtn.x(), self.favoritesbtn.y() + 32)
-		self.joinipaddress.setPixmap(QtGui.QPixmap("data\\misc\\joinip_button.png"))
+		self.joinipaddress.setPixmap(QtGui.QPixmap("data/misc/joinip_button.png"))
 		self.joinipaddress.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
-		self.optionsbtn.setPixmap(QtGui.QPixmap("data\\misc\\options_button.png"))
+		self.optionsbtn.setPixmap(QtGui.QPixmap("data/misc/options_button.png"))
 		self.optionsbtn.move(8, self.size().height()-40)
 		
 		self.description = QtGui.QTextEdit(self)
@@ -194,7 +194,7 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 	
 	def onOptionsSave(self):
-		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data\\misc\\"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
+		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
 		
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)

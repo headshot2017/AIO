@@ -80,7 +80,7 @@ class Broadcast(QtGui.QGraphicsItem):
 	def __init__(self, scene):
 		super(Broadcast, self).__init__(scene=scene)
 		self.pixmap = QtGui.QGraphicsPixmapItem(self)
-		self.orig_pixmap = QtGui.QPixmap("data\\misc\\broadcast.png")
+		self.orig_pixmap = QtGui.QPixmap("data/misc/broadcast.png")
 		self.pixmap.setPixmap(self.orig_pixmap)
 		self.text = QtGui.QGraphicsSimpleTextItem(self)
 		
@@ -353,9 +353,9 @@ class Character(BaseCharacter):
 	def setChatBubble(self, value):
 		self.chatbubble = value
 		if value == 2:
-			chatbubbl = QtGui.QImage("data\\misc\\chatbubble_green.png")
+			chatbubbl = QtGui.QImage("data/misc/chatbubble_green.png")
 		else:
-			chatbubbl = QtGui.QImage("data\\misc\\chatbubble.png")
+			chatbubbl = QtGui.QImage("data/misc/chatbubble.png")
 		self.chatbubblepix.setPixmap(QtGui.QPixmap.fromImage(chatbubbl.scaled(chatbubbl.width()*2, chatbubbl.height()*2)))
 	
 	def afterStop(self):
@@ -375,13 +375,13 @@ class Character(BaseCharacter):
 			
 		self.setOpacity(1)
 		
-		inipath = "data\\characters\\"+self.ao_app.charlist[newcharid]+"\\char.ini"
+		inipath = "data/characters/"+self.ao_app.charlist[newcharid]+"/char.ini"
 		
 		self.charprefix = ini.read_ini(inipath, "Options", "imgprefix")
 		if self.charprefix:
 			self.charprefix += "-"
 		
-		imgsize = QtGui.QPixmap("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\"+self.charprefix+"spin.gif").size()
+		imgsize = QtGui.QPixmap("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif").size()
 		self.scale = ini.read_ini_float(inipath, "Options", "scale", 1.0)
 		self.setScale(self.scale*2)
 		
@@ -392,7 +392,7 @@ class Character(BaseCharacter):
 		self.maxheight = imgsize.height()*(self.scale*2)
 		self.translate(0, -self.maxheight/4)
 		self.translated = True
-		self.setSpin("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\"+self.charprefix+"spin.gif")
+		self.setSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif")
 		
 		if not self.isPlayer:
 			return
@@ -422,7 +422,7 @@ class Character(BaseCharacter):
 			self.emotes[3].append(ini.read_ini(inipath, "SoundN", str(i+1)).split("#"))
 			self.emotes[4].append(ini.read_ini_int(inipath, "SoundT", str(i+1)))
 		
-		self.playSpin("data\\characters\\"+self.ao_app.charlist[newcharid]+"\\spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
+		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
 	
 	def keyPressEvent(self, event):
 		if self.isPlayer:
@@ -483,7 +483,7 @@ class Character(BaseCharacter):
 					dirname = "northeast"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (up[0] in self.pressed_keys and left[0] in self.pressed_keys) or (up[1] in self.pressed_keys and left[1] in self.pressed_keys):
 				self.vspeed = -self.runspd if self.run else -self.walkspd
@@ -498,7 +498,7 @@ class Character(BaseCharacter):
 					dirname = "northwest"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and right[0] in self.pressed_keys) or (down[1] in self.pressed_keys and right[1] in self.pressed_keys):
 				self.vspeed = self.runspd if self.run else self.walkspd
@@ -513,7 +513,7 @@ class Character(BaseCharacter):
 					dirname = "southeast"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and left[0] in self.pressed_keys) or (down[1] in self.pressed_keys and left[1] in self.pressed_keys):
 				self.vspeed = self.runspd if self.run else self.walkspd
@@ -528,7 +528,7 @@ class Character(BaseCharacter):
 					dirname = "southwest"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif up[0] in self.pressed_keys or up[1] in self.pressed_keys:
 				self.vspeed = -self.runspd if self.run else -self.walkspd
@@ -543,7 +543,7 @@ class Character(BaseCharacter):
 					dirname = "north"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif down[0] in self.pressed_keys or down[1] in self.pressed_keys:
 				self.vspeed = self.runspd if self.run else self.walkspd
@@ -558,7 +558,7 @@ class Character(BaseCharacter):
 					dirname = "south"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif left[0] in self.pressed_keys or left[1] in self.pressed_keys:
 				self.vspeed = 0
@@ -573,7 +573,7 @@ class Character(BaseCharacter):
 					dirname = "west"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif right[0] in self.pressed_keys or right[1] in self.pressed_keys:
 				self.vspeed = 0
@@ -588,20 +588,20 @@ class Character(BaseCharacter):
 					dirname = "east"
 				self.dir_nr = dirnr
 				newsprite = self.charprefix+self.walkanims[0][anim]+dirname+".gif"
-				self.sprite = self.ao_app.charlist[self.charid]+"\\"+self.walkanims[0][anim]+dirname+".gif"
+				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			else:
 				self.hspeed = 0
 				self.vspeed = 0
 				newsprite = self.charprefix+"spin.gif"
 				if self.emoting == 0 and self.currentemote == -1:
-					self.sprite = self.ao_app.charlist[self.charid]+"\\spin.gif"
+					self.sprite = self.ao_app.charlist[self.charid]+"/spin.gif"
 			
 			if currsprite != newsprite and self.emoting == 0 and self.currentemote == -1:
 				if self.hspeed == 0 and self.vspeed == 0:
-					self.playSpin("data\\characters\\"+self.ao_app.charlist[self.charid]+"\\"+newsprite, self.dir_nr)
+					self.playSpin("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, self.dir_nr)
 				else:
-					self.play("data\\characters\\"+self.ao_app.charlist[self.charid]+"\\"+newsprite, True)
+					self.play("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, True)
 				
 			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
@@ -684,7 +684,7 @@ class GamePort(QtGui.QWidget):
 					player.dir_nr = AIOprotocol.SOUTH
 				elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
 					player.dir_nr = AIOprotocol.NORTH
-				player.playSpin("data\\characters\\"+self.ao_app.charlist[player.charid]+"\\"+player.charprefix+"spin.gif", player.dir_nr)
+				player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
 			
 		super(GamePort, self).mousePressEvent(event)
 	
@@ -807,7 +807,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 
-		emotebar = QtGui.QPixmap("data\\misc\\emote_bar.png")
+		emotebar = QtGui.QPixmap("data/misc/emote_bar.png")
 		
 		self.aSound = ["", -1, 0] #filename, delay, zone
 		self.mychatcolor = 0
@@ -844,7 +844,7 @@ class GameWidget(QtGui.QWidget):
 		self.areainfo.hide()
 		
 		self.chatbox = QtGui.QLabel(self)
-		chatbox = QtGui.QPixmap("data\\misc\\"+ini.read_ini("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
+		chatbox = QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
 		self.chatbox.setPixmap(chatbox)
 		self.chatbox.move(self.gameview.x() + (self.gameview.size().width()/2) - (chatbox.size().width()/2), 384-chatbox.size().height())
 		
@@ -875,20 +875,20 @@ class GameWidget(QtGui.QWidget):
 		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
 		
 		self.prevemotepage = buttons.AIOButton(self)
-		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_left.png").scaled(40, 40)))
+		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data/misc/arrow_left.png").scaled(40, 40)))
 		self.prevemotepage.move(8, self.emotebar.y()-20+emotebar.size().height())
 		self.prevemotepage.clicked.connect(self.onPrevEmotePage)
 		self.nextemotepage = buttons.AIOButton(self)
-		self.nextemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data\\misc\\arrow_right.png").scaled(40, 40)))
+		self.nextemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data/misc/arrow_right.png").scaled(40, 40)))
 		self.nextemotepage.move(512-40-8, self.emotebar.y()-20+emotebar.size().height())
 		self.nextemotepage.clicked.connect(self.onNextEmotePage)
 		
-		movebtn = QtGui.QPixmap("data\\misc\\move_button.png")
-		switchbtn = QtGui.QPixmap("data\\misc\\switch_button.png")
-		examinebtn = QtGui.QPixmap("data\\misc\\examine_button.png")
-		textcolorbtn = QtGui.QPixmap("data\\misc\\textcolor_button.png")
-		self.realizationbtn_off = QtGui.QPixmap("data\\misc\\realization.png")
-		self.realizationbtn_on = QtGui.QPixmap("data\\misc\\realization_pressed.png")
+		movebtn = QtGui.QPixmap("data/misc/move_button.png")
+		switchbtn = QtGui.QPixmap("data/misc/switch_button.png")
+		examinebtn = QtGui.QPixmap("data/misc/examine_button.png")
+		textcolorbtn = QtGui.QPixmap("data/misc/textcolor_button.png")
+		self.realizationbtn_off = QtGui.QPixmap("data/misc/realization.png")
+		self.realizationbtn_on = QtGui.QPixmap("data/misc/realization_pressed.png")
 		self.movemenu = QtGui.QMenu()
 		self.movebtn = buttons.AIOButton(self)
 		self.movebtn.setPixmap(movebtn)
@@ -950,7 +950,7 @@ class GameWidget(QtGui.QWidget):
 				y_mod_count += 1
 		
 		#self.musicbtn = buttons.AIOButton(self)
-		#musicbtn = QtGui.QPixmap("data\\misc\\music_button.png")
+		#musicbtn = QtGui.QPixmap("data/misc/music_button.png")
 		#self.musicbtn.setPixmap(musicbtn)
 		#self.musicbtn.move(512-musicbtn.size().width(), 640-musicbtn.size().height())
 		#self.musicbtn.clicked.connect(self.toggleMusicList)
@@ -962,7 +962,7 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.setReadOnly(True)
 		
 		#self.oocbtn = buttons.AIOButton(self)
-		#oocbtn = QtGui.QPixmap("data\\misc\\ooc_button.png")
+		#oocbtn = QtGui.QPixmap("data/misc/ooc_button.png")
 		#self.oocbtn.setPixmap(oocbtn)
 		#self.oocbtn.move(0, 640-oocbtn.size().height())
 		#self.oocbtn.clicked.connect(self.onOOCButton)
@@ -1038,7 +1038,7 @@ class GameWidget(QtGui.QWidget):
 
 		self.evidence_page = 0
 		self.evidencebtn = buttons.AIOButton(self)
-		evidencebtn = QtGui.QPixmap("data\\misc\\evidence_button.png")
+		evidencebtn = QtGui.QPixmap("data/misc/evidence_button.png")
 		self.evidencebtn.setPixmap(evidencebtn)
 		self.evidencebtn.move(self.oocwidget.x() - (evidencebtn.size().width() / 2), self.areainfo.y()-evidencebtn.size().height())
 		self.evidencebtn.clicked.connect(self.onEvidenceButton)
@@ -1047,7 +1047,7 @@ class GameWidget(QtGui.QWidget):
 		self.evidencewidget.setGeometry((self.size().width() - (512-64))/2, (self.size().height() - (640-256))/2, 512-64, 640-256)
 		self.evidencewidget.setStyleSheet("background-color: rgb(45, 58, 66)")
 		self.evidencenamelabel = QtGui.QLabel(self.evidencewidget)
-		evidencenamelabel = QtGui.QPixmap("data\\misc\\evidence_name.png")
+		evidencenamelabel = QtGui.QPixmap("data/misc/evidence_name.png")
 		self.evidencenamelabel.setPixmap(evidencenamelabel)
 		self.evidencenamelabel.move((self.evidencewidget.size().width() - evidencenamelabel.size().width())/2, 0)
 		self.evidencename = QtGui.QLabel(self.evidencenamelabel)
@@ -1056,8 +1056,8 @@ class GameWidget(QtGui.QWidget):
 		self.evidencename.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+getColor(3).name())
 		self.evidencenextpage = buttons.AIOButton(self.evidencewidget)
 		self.evidenceprevpage = buttons.AIOButton(self.evidencewidget)
-		rightarrow = QtGui.QPixmap("data\\misc\\arrow_right.png")
-		leftarrow = QtGui.QPixmap("data\\misc\\arrow_left.png")
+		rightarrow = QtGui.QPixmap("data/misc/arrow_right.png")
+		leftarrow = QtGui.QPixmap("data/misc/arrow_left.png")
 		self.evidencenextpage.setPixmap(rightarrow)
 		self.evidencenextpage.move(self.evidencewidget.size().width() - rightarrow.size().width() - 8, self.evidencewidget.size().height() - rightarrow.size().height() - 8)
 		self.evidencenextpage.clicked.connect(self.onNextEvidencePage)
@@ -1110,7 +1110,7 @@ class GameWidget(QtGui.QWidget):
 		self.guilty_button.clicked.connect(self.onWTCEButton)
 		
 		#self.logbtn = buttons.AIOButton(self)
-		#logbtn = QtGui.QPixmap("data\\misc\\chatlog_button.png")
+		#logbtn = QtGui.QPixmap("data/misc/chatlog_button.png")
 		#self.logbtn.setPixmap(logbtn)
 		#self.logbtn.move(self.gameview.x() + self.gameview.size().width() - logbtn.size().width(), 384-logbtn.size().height())
 		#self.logbtn.clicked.connect(self.onLogButton)
@@ -1124,8 +1124,8 @@ class GameWidget(QtGui.QWidget):
 		self.examines = []
 		self.examining = False
 		self.spawned_once = False
-		self.realizationsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-realization.wav", 0, 0, 0)
-		self.lightbulbsnd = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-lightbulb.wav", 0, 0, 0)
+		self.realizationsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-realization.wav", 0, 0, 0)
+		self.lightbulbsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-lightbulb.wav", 0, 0, 0)
 	
 	def changeWalkAnim(self, ind):
 		self.player.walkanims[2] = ind
@@ -1158,7 +1158,7 @@ class GameWidget(QtGui.QWidget):
 			BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def onPresentButton(self, ind):
-		self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip2.wav")
+		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip2.wav")
 		self.myevidence = ind
 		self.evidencewidget.hide()
 		self.evidencedialog.hide()
@@ -1230,14 +1230,14 @@ class GameWidget(QtGui.QWidget):
 			n_real_evidence = n_evidence + self.evidence_page * self.max_evidence_on_page
 			
 			if n_real_evidence == total_evidence - 1:
-				self.evidencebuttons[n_evidence].setPixmap(QtGui.QPixmap("data\\misc\\add_evidence.png"))
+				self.evidencebuttons[n_evidence].setPixmap(QtGui.QPixmap("data/misc/add_evidence.png"))
 				self.evidencebuttons[n_evidence].isAddButton = True
 			else:
-				final_file = "data\\evidence\\"+self.ao_app.evidencelist[n_real_evidence][2]
+				final_file = "data/evidence/"+self.ao_app.evidencelist[n_real_evidence][2]
 				if os.path.exists(final_file):
 					self.evidencebuttons[n_evidence].setPixmap(QtGui.QPixmap(final_file))
 				else:
-					self.evidencebuttons[n_evidence].setPixmap(QtGui.QPixmap("data\\evidence\\unknown.png"))
+					self.evidencebuttons[n_evidence].setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
 				self.evidencebuttons[n_evidence].isAddButton = False
 			self.evidencebuttons[n_evidence].show()
 	
@@ -1251,7 +1251,7 @@ class GameWidget(QtGui.QWidget):
 	
 	def onEvidenceClicked(self, ind):
 		real_ind = ind + self.evidence_page * self.max_evidence_on_page
-		self.ao_app.playGUISound("data\\sounds\\general\\sfx-evidenceshoop.wav")
+		self.ao_app.playGUISound("data/sounds/general/sfx-evidenceshoop.wav")
 		if not self.evidencebuttons[ind].isAddButton:
 			self.evidencedialog.showEvidence([real_ind] + self.ao_app.evidencelist[real_ind])
 		else:
@@ -1263,7 +1263,7 @@ class GameWidget(QtGui.QWidget):
 			self.evidencename.setText(self.ao_app.evidencelist[real_ind][0])
 		else:
 			self.evidencename.setText("Add evidence...")
-		self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip.wav")
+		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip.wav")
 	
 	def onEvidenceButton(self):
 		self.evidencewidget.setVisible(not self.evidencewidget.isVisible())
@@ -1357,12 +1357,12 @@ class GameWidget(QtGui.QWidget):
 				msg += "NULL (%d)" % evidence
 			
 			try:
-				filename = "data\\evidence\\"+self.ao_app.evidencelist[evidence][2]
+				filename = "data/evidence/"+self.ao_app.evidencelist[evidence][2]
 			except:
-				filename = "data\\evidence\\unknown.png"
+				filename = "data/evidence/unknown.png"
 			
 			if not os.path.exists(filename):
-				filename = "data\\evidence\\unknown.png"
+				filename = "data/evidence/unknown.png"
 			
 			self.evidenceanim.showAnim(filename)
 		else:
@@ -1375,7 +1375,7 @@ class GameWidget(QtGui.QWidget):
 		
 		if self.blip:
 			BASS_StreamFree(self.blip)
-		self.blip = BASS_StreamCreateFile(False, "data\\sounds\\general\\sfx-blip"+blip+".wav", 0, 0, 0)
+		self.blip = BASS_StreamCreateFile(False, "data/sounds/general/sfx-blip"+blip+".wav", 0, 0, 0)
 		BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, self.ao_app.blipvol / 100.0)
 		
 		self.chattext.clear()
@@ -1591,13 +1591,13 @@ class GameWidget(QtGui.QWidget):
 	def onExamineButton(self, clicked_inGame=False):
 		if self.examining:
 			if not clicked_inGame:
-				self.ao_app.playGUISound("data\\sounds\\general\\sfx-cancel.wav")
+				self.ao_app.playGUISound("data/sounds/general/sfx-cancel.wav")
 			else:
-				self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip2.wav")
+				self.ao_app.playGUISound("data/sounds/general/sfx-selectblip2.wav")
 			self.gameview.gamescene.removeItem(self.examiner)
 			del self.examiner
 		else:
-			self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip2.wav")
+			self.ao_app.playGUISound("data/sounds/general/sfx-selectblip2.wav")
 			self.examiner = ExamineCross(self.gameview, self.gameview.gamescene)
 		self.examining = not self.examining
 	
@@ -1642,7 +1642,7 @@ class GameWidget(QtGui.QWidget):
 	
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
-		self.aSound = ["data\\sounds\\general\\"+filename+".wav", delay, zone]
+		self.aSound = ["data/sounds/general/"+filename+".wav", delay, zone]
 
 	def onEmoteRightClicked(self, ind):
 		selection = self.emotemenu.exec_(QtGui.QCursor.pos())
@@ -1673,8 +1673,8 @@ class GameWidget(QtGui.QWidget):
 		
 		if not found_dir:
 			found_dir = getCompactDirection(self.player.dir_nr)
-		filename = "data\\characters\\"+self.ao_app.charlist[self.player.charid]+"\\"+self.player.charprefix+emote+found_dir+".gif"
-		self.player.sprite = self.ao_app.charlist[self.player.charid]+"\\"+emote+found_dir+".gif"
+		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
+		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
 		
 		if sound:
 			self.onEmoteSound([self.player.charid, sound, sound_delay, self.player.zone])
@@ -1686,7 +1686,7 @@ class GameWidget(QtGui.QWidget):
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
 		
-		total_emotes = ini.read_ini_int("data\\characters\\"+self.ao_app.charlist[self.player.charid]+"\\char.ini", "Emotions", "total")
+		total_emotes = ini.read_ini_int("data/characters/"+self.ao_app.charlist[self.player.charid]+"/char.ini", "Emotions", "total")
 		for button in self.emotebuttons:
 			button.hide()
 		
@@ -1706,7 +1706,7 @@ class GameWidget(QtGui.QWidget):
 			self.prevemotepage.show()
 		for n_emote in range(emotes_on_page):
 			n_real_emote = n_emote + self.current_emote_page * self.max_emotes_on_page
-			self.emotebuttons[n_emote].setPixmap(QtGui.QPixmap("data\\characters\\"+self.ao_app.charlist[self.player.charid]+"\\buttons\\"+str(n_real_emote+1)+".png"))
+			self.emotebuttons[n_emote].setPixmap(QtGui.QPixmap("data/characters/"+self.ao_app.charlist[self.player.charid]+"/buttons/"+str(n_real_emote+1)+".png"))
 			self.emotebuttons[n_emote].show()
 	
 	def toggleMusicList(self):
@@ -1780,7 +1780,7 @@ class GameWidget(QtGui.QWidget):
 				self.set_emote_page()
 				self.hideCharSelect()
 				if not self.spawned_once:
-					inipath = "data\\zones\\"+self.ao_app.zonelist[self.player.zone][0]+".ini"
+					inipath = "data/zones/"+self.ao_app.zonelist[self.player.zone][0]+".ini"
 					x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
 					self.player.moveReal(float(x), float(y))
 					self.spawned_once = True
@@ -1809,10 +1809,10 @@ class GameWidget(QtGui.QWidget):
 					aSprite = sprite.split("\\")
 					if len(aSprite) < 2:
 						continue
-					oldpath = char.movie.fileName().replace("/", "\\")
-					fullpath = "data\\characters\\"+aSprite[0]+"\\"+char.charprefix+aSprite[1]
+					oldpath = char.movie.fileName()
+					fullpath = "data/characters/"+aSprite[0]+"/"+char.charprefix+aSprite[1]
 					if not os.path.exists(fullpath):
-						fullpath = "data\\misc\\error.gif"
+						fullpath = "data/misc/error.gif"
 
 					if oldpath != fullpath or char.dir_nr != dir_nr: # "The other player's game sometimes fails to show the right direction the character's looking at." fixed
 						char.dir_nr = dir_nr
@@ -1833,7 +1833,7 @@ class GameWidget(QtGui.QWidget):
 				self.evidenceanim.hideAnim()
 		
 		self.player.zone = ind
-		zone = "data\\zones\\"+self.ao_app.zonelist[ind][0]
+		zone = "data/zones/"+self.ao_app.zonelist[ind][0]
 		self.gameview.setBackground(zone+".gif")
 		
 		for examine in self.examines:
@@ -2007,7 +2007,7 @@ class GameWidget(QtGui.QWidget):
 			item = QtGui.QListWidgetItem()
 			item.setFont(aFont)
 			item.setText(music)
-			if os.path.exists("data\\sounds\\music\\"+music):
+			if os.path.exists("data/sounds/music/"+music):
 				item.setBackgroundColor(QtGui.QColor(128, 255, 128))
 			else:
 				item.setBackgroundColor(QtGui.QColor(255, 96, 96))
@@ -2111,7 +2111,7 @@ class EvidenceDialog(QtGui.QWidget):
 		self.setGeometry((parent.size().width() - (512-64))/2, (parent.size().height() - (640-256))/2, 512-64, 640-256)
 		
 		self.evidencenamelabel = QtGui.QLabel(self)
-		evidencenamelabel = QtGui.QPixmap("data\\misc\\evidence_name.png")
+		evidencenamelabel = QtGui.QPixmap("data/misc/evidence_name.png")
 		self.evidencenamelabel.setPixmap(evidencenamelabel)
 		self.evidencenamelabel.move((self.size().width() - evidencenamelabel.size().width())/2, 0)
 		self.evidencename = QtGui.QLineEdit(self.evidencenamelabel)
@@ -2131,33 +2131,33 @@ class EvidenceDialog(QtGui.QWidget):
 		self.evidencedesc.textChanged.connect(self.changesMade)
 		
 		self.evidenceclose = buttons.AIOButton(self)
-		evidenceclose = QtGui.QPixmap("data\\misc\\evidence_x.png")
+		evidenceclose = QtGui.QPixmap("data/misc/evidence_x.png")
 		self.evidenceclose.setPixmap(evidenceclose)
 		self.evidenceclose.move(self.size().width()-evidenceclose.size().width()-8, 8)
 		self.evidenceclose.clicked.connect(self.closeDialog)
 		
 		self.savechanges = buttons.AIOButton(self)
-		savebtn = QtGui.QPixmap("data\\misc\\save_button.png")
+		savebtn = QtGui.QPixmap("data/misc/save_button.png")
 		self.savechanges.setPixmap(savebtn)
 		self.savechanges.move(self.evidencedesc.x()+8, self.evidencedesc.y()+self.evidencedesc.size().height()+16)
 		self.savechanges.clicked.connect(self.saveChanges)
 		self.savechanges.hide()
 		
 		self.deletebtn = buttons.AIOButton(self)
-		deletebtn = QtGui.QPixmap("data\\misc\\delete_button.png")
+		deletebtn = QtGui.QPixmap("data/misc/delete_button.png")
 		self.deletebtn.setPixmap(deletebtn)
 		self.deletebtn.move(self.evidencedesc.x() + self.evidencedesc.size().width() - deletebtn.size().width() - 8, self.savechanges.y())
 		self.deletebtn.clicked.connect(self.deleteEvidence)
 		self.deletebtn.hide()
 		
 		self.presentbtn = buttons.AIOButton(self)
-		presentbtn = QtGui.QPixmap("data\\misc\\present_button.png")
+		presentbtn = QtGui.QPixmap("data/misc/present_button.png")
 		self.presentbtn.setPixmap(presentbtn)
 		self.presentbtn.move((self.evidencenamelabel.x() + evidencenamelabel.size().width())/2, self.evidencenamelabel.y() + evidencenamelabel.size().height())
 		self.presentbtn.clicked.connect(self.onPresentButton)
 		self.presentbtn.hide()
 		
-		imgfiles = os.listdir("data\\evidence")
+		imgfiles = os.listdir("data/evidence")
 		self.imgfiles = []
 		for file in imgfiles:
 			if file.lower().endswith(".png") and file.lower() != "unknown.png":
@@ -2181,7 +2181,7 @@ class EvidenceDialog(QtGui.QWidget):
 	
 	def closeDialog(self, playSnd=True):
 		if playSnd:
-			self.ao_app.playGUISound("data\\sounds\\general\\sfx-cancel.wav")
+			self.ao_app.playGUISound("data/sounds/general/sfx-cancel.wav")
 		self.savechanges.hide()
 		self.deletebtn.hide()
 		self.hide()
@@ -2193,10 +2193,10 @@ class EvidenceDialog(QtGui.QWidget):
 		self.changesMade()
 		image = self.imgfiles[ind]
 		
-		if os.path.exists("data\\evidence\\"+image):
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data\\evidence\\"+image))
+		if os.path.exists("data/evidence/"+image):
+			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/"+image))
 		else:
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data\\evidence\\unknown.png"))
+			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
 	
 	def saveChanges(self):
 		name, desc, image = str(self.evidencename.text().toUtf8()), str(self.evidencedesc.toPlainText().toUtf8()), self.imgfiles[self.evidencepicdropdown.currentIndex()]
@@ -2218,10 +2218,10 @@ class EvidenceDialog(QtGui.QWidget):
 		self.evidencename.setText(name)
 		self.evidencedesc.setText(desc)
 		
-		if os.path.exists("data\\evidence\\"+image):
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data\\evidence\\"+image))
+		if os.path.exists("data/evidence/"+image):
+			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/"+image))
 		else:
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data\\evidence\\unknown.png"))
+			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
 		
 		if image in self.imgfiles:
 			self.evidencepicdropdown.setCurrentIndex(self.imgfiles.index(image))
@@ -2274,7 +2274,7 @@ class EvidenceAnim(QtGui.QLabel):
 	
 	def showAnim(self, image):
 		self.setPixmap(QtGui.QPixmap(image))
-		self.ao_app.playGUISound("data\\sounds\\general\\sfx-evidenceshoop.wav")
+		self.ao_app.playGUISound("data/sounds/general/sfx-evidenceshoop.wav")
 		self.show()
 		self.animType = 0
 		self.animTimer.start(35)

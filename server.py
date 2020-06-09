@@ -1520,7 +1520,7 @@ class AIOserver(object):
             client, ipaddr = self.econ_tcp.accept()
             client.setblocking(False)
             print "[econ]", "%s connected." % ipaddr[0]
-            client.send("Enter password:\n> ")
+            client.send("Enter password:\r\n> ")
             for i in range(500):
                 if not self.econ_clients.has_key(i):
                     self.econ_clients[i] = [client, ipaddr[0], ECONSTATE_CONNECTED, ECONCLIENT_LF, 0]
@@ -1554,7 +1554,10 @@ class AIOserver(object):
                 continue
             
             if not data.endswith("\n"): #windows telnet client identification. on enter key, it sends "\r\n".
-                self.econTemp += data
+                if data != "\b":
+                    self.econTemp += data
+                else:
+                    self.econTemp = self.econTemp[:-1]
                 continue
             elif data == "\r\n":
                 client[3] = ECONCLIENT_CRLF

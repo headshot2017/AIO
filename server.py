@@ -2,41 +2,9 @@ import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback
 import AIOprotocol
 from AIOplayer import AIOplayer, AIObot
 
-################################
-GameVersion = "0.4" # you can modify this so that it matches the version you want to make your server compatible with
-AllowVersionMismatch = False # change this to 'True' (case-sensitive) to allow clients with a different version than your server to join (could raise problems)
-ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
-MaxLoginFails = 3 # this amount of consecutive fails on the /login command or ECON password will kick the user
-EmoteSoundRateLimit = 1 #amount of seconds to wait before allowing to use emotes with sound again
-MusicRateLimit = 3 #same as above, to prevent spam, but for music
-ExamineRateLimit = 2 #same as above, but for Examine
-OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
-WTCERateLimit = 10 # amount of seconds to wait before allowing another testimony button (anti spam)
-ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
-ShowNameLength = 16 # maximum amount of characters (or letters if you're computer illiterate) a showname can have, it is trimmed down if exceeded
-
-AllowBot = True # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
-################################
-
-############CONSTANTS#############
-ECONSTATE_CONNECTED = 0
-ECONSTATE_AUTHED = 1
-ECONCLIENT_CRLF = 0
-ECONCLIENT_LF = 1
-MASTER_WAITINGSUCCESS = 0
-MASTER_PUBLISHED = 1
-################################
-
-def plural(text, value):
-    print text, value
-    return text+"s" if value != 1 else text
-
-def isNumber(text):
-    try:
-        int(text)
-        return True
-    except:
-        return False
+sys.path.append("./server/")
+import _commands as Commands
+from server_vars import *
 
 def string_unpack(buf):
     unpacked = buf.split("\0")[0]
@@ -70,7 +38,7 @@ def versionToInt(ver):
         patch = "0"
     
     try:
-        return int(minor+major+patch)
+        return int(major+minor+patch)
     except:
         return int(major+minor+"0")
 
@@ -102,6 +70,11 @@ class AIOserver(object):
     MSstate = -1
     MStick = -1
     ic_finished = True
+    
+    
+    ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
+    
+    
     def __init__(self):
         global AllowBot
         if AllowBot and not os.path.exists("data/characters"):
@@ -190,16 +163,16 @@ class AIOserver(object):
         for i in range(self.maxplayers):
             if not self.clients.has_key(i):
                 self.econPrint("[game] incoming connection from %s (%d)" % (ipaddr[0], i))
-                self.clients[i] = AIOplayer(client, ipaddr[0])
+                self.clients[i] = AIOplayer(client, ipaddr[0], i)
                 
                 for bans in self.banlist:
                     if bans[0] == ipaddr[0]:
                         if bans[1] > 0:
                             min = abs(time.time() - bans[1]) / 60
                             mintext = plural("minute", int(min+1))
-                            self.kick(i, "You have been banned for %d %s: %s" % (min+1, mintext, bans[2]))
+                            self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, bans[2], self.banlist.index(bans)))
                         else:
-                            self.kick(i, "You have been banned for life: %s" % bans[2])
+                            self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (bans[2], self.banlist.index(bans)))
                         return
                 
                 client.settimeout(0.1)
@@ -636,27 +609,29 @@ class AIOserver(object):
         else:
             min = 0
         mintext = plural("minute", int(min+1))
-        
+
         if type(ClientID) == str:
             if "." in ClientID: # if it's an ip address
-                for i in self.clients.keys(): #let's check if a player with that IP is playing here
-                    if self.clients[i].ip == ClientID: #lol bad hiding spot found
+                for i in self.clients.keys(): # kick all players that match this IP
+                    if self.clients[i].ip == ClientID: # found a player
                         if length > 0:
-                            self.kick(i, "You have been banned for %d %s: %s" % (min+1, mintext, reason))
+                            self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)))
                         else:
-                            self.kick(i, "You have been banned for life: %s" % reason)
-                        break
+                            self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)))
                 self.banlist.append([ClientID, length, reason])
         
-        else: #if it isn't an ip...
+        else: # if it isn't an ip...
             self.banlist.append([self.clients[ClientID].ip, length, reason])
-            if length > 0:
-                self.kick(ClientID, "You have been banned for %d %s: %s" % (min+1, mintext, reason))
-            else:
-                self.kick(ClientID, "You have been banned for life: %s" % reason)
+            for i in self.clients.keys(): # kick all players that match the banned ID
+                if self.clients[i].ip == self.clients[ClientID].ip: # found a player
+                    if length > 0:
+                        self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)))
+                    else:
+                        self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)-1))
         
-        self.econPrint("[bans] banned %s for %d min (%s) " % (self.banlist[-1][0], min+1, reason))
+        self.econPrint("[bans] banned %s for %d min (%s)" % (self.banlist[-1][0], min+1, reason))
         self.writeBanList()
+        return len(self.banlist)-1
         
     def sendPenaltyBar(self, bar, health, zone, ClientID=-1):
         if not self.running:
@@ -978,7 +953,7 @@ class AIOserver(object):
                     else:
                         if self.clients[client].ready:
                             self.sendDestroy(client)
-                        print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+                        self.econPrint("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
                         self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                         self.clients[client].close = True
                         del self.clients[client]
@@ -989,7 +964,7 @@ class AIOserver(object):
                 if not self.readbuffer or self.clients[client].pingpong <= 0:
                     if self.clients[client].ready:
                         self.sendDestroy(client)
-                    print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+                    self.econPrint("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
                     self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                     self.clients[client].close = True
                     del self.clients[client]
@@ -1011,7 +986,7 @@ class AIOserver(object):
                             self.sendDestroy(client)
                         try: sock.close()
                         except: pass
-                        print "[game]", "client %d (%s) disconnected." % (client, self.clients[client].ip)
+                        self.econPrint("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
                         self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                         self.clients[client].close = True
                         del self.clients[client]
@@ -1158,7 +1133,7 @@ class AIOserver(object):
                             color = 4294967295 #set to exactly white
 
                         showname = showname[:ShowNameLength]
-                        if not showname or ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+                        if not showname or self.ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendChat(showname, chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
@@ -1177,7 +1152,7 @@ class AIOserver(object):
                             continue
 
                         fail = False
-                        if not name or name.lower().endswith(ServerOOCName.lower()) or name.lower().startswith(ServerOOCName.lower()):
+                        if not name or name.lower().endswith(self.ServerOOCName.lower()) or name.lower().startswith(self.ServerOOCName.lower()):
                             fail = True
                         for client2 in self.clients.values():
                             if client2 == self.clients[client]:
@@ -1189,7 +1164,7 @@ class AIOserver(object):
                             self.clients[client].OOCname = name
                         
                         if not self.clients[client].OOCname:
-                            self.sendOOC(ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
+                            self.sendOOC(self.ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
                         else:
                             self.clients[client].ratelimits[3] = OOCRateLimit
                             if chatmsg[0] != "/":
@@ -1215,7 +1190,7 @@ class AIOserver(object):
                             continue
 
                         showname = showname[:ShowNameLength]
-                        if ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+                        if self.ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
@@ -1241,15 +1216,15 @@ class AIOserver(object):
                                 change = True
 
                         showname = showname[:ShowNameLength]
-                        if ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
+                        if self.ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
                             showname = self.getCharName(self.clients[client].CharID)
 
                         message = "%s id=%d addr=%s zone=%d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone)
                         if change:
                             self.changeMusic(songname, self.clients[client].CharID, showname, self.clients[client].zone)
-                            print "[game]", message, "changed the music to "+songname
+                            self.econPrint("[game] %s changed the music to %s" % (message, songname))
                         else:
-                            print "[game]", message, "attempted to change the music to "+songname
+                            self.econPrint("[game] %s attempted to the music to %s" % (message, songname))
 
                         self.clients[client].ratelimits[0] = MusicRateLimit
                     
@@ -1422,61 +1397,79 @@ class AIOserver(object):
         isConsole = client == -1
         isEcon = client >= 10000
         
-        if cmd == "cmdlist":
-            self.sendOOC(ServerOOCName, "announce, cmdlist, evidence, g, gm, kick, ban, unban, login, need, play, setzone, status, switch, warn", client)
+        consoleUser = isConsole and 1 or isEcon and 2 or 0
+        
+        func = None
+        if hasattr(Commands, "ooc_cmd_"+cmd):
+            func = getattr(Commands, "ooc_cmd_"+cmd)
+        elif hasattr(Commands, "ooc_hiddencmd_"+cmd):
+            func = getattr(Commands, "ooc_hiddencmd_"+cmd)
+        else:
+            self.sendOOC(self.ServerOOCName, "Unknown command '%s'. Try /help" % cmd, client)
+            return
+
+        try:
+            message = func(self, client-10000 if isEcon else client, consoleUser, cmdargs)
+        except:
+            message = traceback.format_exc()+"\nAn error occurred while executing command /%s. See above." % cmd
+
+        if message: self.sendOOC(server.ServerOOCName, message, client)
+        
+        """if cmd == "cmdlist":
+            self.sendOOC(self.ServerOOCName, "announce, cmdlist, evidence, g, gm, kick, ban, unban, login, need, play, setzone, status, switch, warn", client)
         
         elif cmd == "setzone":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /setzone <client_id> <zone_id>\nto find your target, type /status and search for the id.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /setzone <client_id> <zone_id>\nto find your target, type /status and search for the id.", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             try:
                 id = int(cmdargs[0])
             except:
-                self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
                 return
             
             if len(cmdargs) == 1:
-                self.sendOOC(ServerOOCName, "missing zone_id argument. to find out the zone ID, click the \"Move\" button ingame.")
+                self.sendOOC(self.ServerOOCName, "missing zone_id argument. to find out the zone ID, click the \"Move\" button ingame.")
                 return
             
             try:
                 zone = int(cmdargs[1])
             except:
-                self.sendOOC(ServerOOCName, "invalid zone ID "+cmdargs[1]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid zone ID "+cmdargs[1]+".", client)
                 return
             
             if not self.clients.has_key(id):
-                self.sendOOC(ServerOOCName, "that client doesn't exist", client)
+                self.sendOOC(self.ServerOOCName, "that client doesn't exist", client)
                 return
             if zone < 0 or zone >= len(self.zonelist):
-                self.sendOOC(ServerOOCName, "zone ID %d out of bounds" % zone, client)
+                self.sendOOC(self.ServerOOCName, "zone ID %d out of bounds" % zone, client)
                 return
             
             self.setPlayerZone(id, zone)
-            self.sendOOC(ServerOOCName, "moved client %d to zone %d (%s)" % (id, zone, self.zonelist[zone][1]), client)
+            self.sendOOC(self.ServerOOCName, "moved client %d to zone %d (%s)" % (id, zone, self.zonelist[zone][1]), client)
         
         elif cmd == "switch":
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.\nif you're trying to change your character ingame, just click the Switch button.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.\nif you're trying to change your character ingame, just click the Switch button.", client)
                     return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /switch <client_id> <character_name>\nto find your target, type /status and search for the id.\nto move someone to the character selection screen, use \"-1\" as the character_name.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /switch <client_id> <character_name>\nto find your target, type /status and search for the id.\nto move someone to the character selection screen, use \"-1\" as the character_name.", client)
                 return
             
             try:
                 id = int(cmdargs[0])
             except:
-                self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
                 return
             
             if len(cmdargs) == 1:
-                self.sendOOC(ServerOOCName, "missing character_name argument. the character list is as follows:\n"+str(self.charlist), client)
+                self.sendOOC(self.ServerOOCName, "missing character_name argument. the character list is as follows:\n"+str(self.charlist), client)
                 return
             
             charname = ""
@@ -1485,7 +1478,7 @@ class AIOserver(object):
             charname = charname.rstrip()
             
             if not self.clients.has_key(id):
-                self.sendOOC(ServerOOCName, "that client doesn't exist", client)
+                self.sendOOC(self.ServerOOCName, "that client doesn't exist", client)
                 return
             
             success = False
@@ -1493,30 +1486,30 @@ class AIOserver(object):
                 for i in range(len(self.charlist)):
                     if charname.lower() == self.charlist[i].lower():
                         self.setPlayerChar(id, i)
-                        self.sendOOC(ServerOOCName, "client %d is now %s." % (id, self.charlist[i]), client)
+                        self.sendOOC(self.ServerOOCName, "client %d is now %s." % (id, self.charlist[i]), client)
                         success = True
                         break
             else:
                 self.setPlayerChar(id, -1)
-                self.sendOOC(ServerOOCName, "moved client %d to the character selection screen." % id, client)
+                self.sendOOC(self.ServerOOCName, "moved client %d to the character selection screen." % id, client)
                 success = True
             
             if not success:
-                self.sendOOC(ServerOOCName, "the character \"%s\" doesn't exist. the character list is as follows:\n%s" % (charname, str(self.charlist)), client)
+                self.sendOOC(self.ServerOOCName, "the character \"%s\" doesn't exist. the character list is as follows:\n%s" % (charname, str(self.charlist)), client)
             
         elif cmd == "warn":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /warn <id> [message]\nto find your target, type /status and search for the id.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /warn <id> [message]\nto find your target, type /status and search for the id.", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             try:
                 id = int(cmdargs[0])
             except:
-                self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
                 return
             
             reason = ""
@@ -1525,32 +1518,32 @@ class AIOserver(object):
                     reason += cmdargs[i]+" "
                 reason = reason.rstrip()
             else:
-                self.sendOOC(ServerOOCName, "the warning message can not be left empty.", client)
+                self.sendOOC(self.ServerOOCName, "the warning message can not be left empty.", client)
                 return
             
             if not self.clients.has_key(id):
-                self.sendOOC(ServerOOCName, "that client doesn't exist lol", client)
+                self.sendOOC(self.ServerOOCName, "that client doesn't exist lol", client)
                 return
             if self.clients[id].isBot():
-                self.sendOOC(ServerOOCName, "what's the point in warning a bot??", client)
+                self.sendOOC(self.ServerOOCName, "what's the point in warning a bot??", client)
                 return
             
             self.sendWarning(id, reason)
-            self.sendOOC(ServerOOCName, "warned user %d (%s)" % (id, self.getCharName(self.clients[id].CharID)), client)
+            self.sendOOC(self.ServerOOCName, "warned user %d (%s)" % (id, self.getCharName(self.clients[id].CharID)), client)
         
         elif cmd == "evidence":
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /evidence <option>\noptions available: nuke", client)
+                self.sendOOC(self.ServerOOCName, "usage: /evidence <option>\noptions available: nuke", client)
                 return
             
             ev_arg = cmdargs.pop(0).lower()
             if ev_arg == "nuke":
                 if not cmdargs:
-                    self.sendOOC(ServerOOCName, "usage: /evidence nuke <zone/all>\nif you're absolutely sure you wish to nuke the evidence in any of the two options said above, you must type:\n/evidence nuke (option) yes", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /evidence nuke <zone/all>\nif you're absolutely sure you wish to nuke the evidence in any of the two options said above, you must type:\n/evidence nuke (option) yes", client)
                     return
                 
                 type = cmdargs[0].lower()
@@ -1561,72 +1554,72 @@ class AIOserver(object):
                         msg = "all zones"
                     else:
                         msg = "(unknown option %s)" % type
-                    self.sendOOC(ServerOOCName, "Are you ABSOLUTELY sure you wish to nuke the evidence on %s?\nThis can not be undone! To confirm, enter the command:\n/evidence nuke %s yes" % (msg, type), client)
+                    self.sendOOC(self.ServerOOCName, "Are you ABSOLUTELY sure you wish to nuke the evidence on %s?\nThis can not be undone! To confirm, enter the command:\n/evidence nuke %s yes" % (msg, type), client)
                     return
                 
                 confirm = cmdargs[1].lower()
                 if confirm != "yes":
-                    self.sendOOC(ServerOOCName, "no! you must type EXACTLY \"yes\" to confirm that you're sure! you can't make mistakes here!", client)
+                    self.sendOOC(self.ServerOOCName, "no! you must type EXACTLY \"yes\" to confirm that you're sure! you can't make mistakes here!", client)
                     return
                 else:
                     if type == "zone":
                         if isConsole or isEcon:
-                            self.sendOOC(ServerOOCName, "sorry, but you must be ingame to do this for the time being.", client)
+                            self.sendOOC(self.ServerOOCName, "sorry, but you must be ingame to do this for the time being.", client)
                             return
                         self.evidencelist[self.clients[client].zone] = []
-                        self.sendOOC(ServerOOCName, "all the evidence on this zone was nuked off.", client)
+                        self.sendOOC(self.ServerOOCName, "all the evidence on this zone was nuked off.", client)
                         for client2 in self.clients.keys():
                             if not self.clients[client2].isBot() and self.clients[client2].zone == self.clients[client].zone:
                                 self.sendEvidenceList(client2, zone)
                     elif type == "all": #rip everything
                         for i in range(len(self.evidencelist)):
                             self.evidencelist[i] = []
-                        self.sendOOC(ServerOOCName, "every single piece of evidence has been nuked off.\ncan we get an F in the chat?")
+                        self.sendOOC(self.ServerOOCName, "every single piece of evidence has been nuked off.\ncan we get an F in the chat?")
                         for client2 in self.clients.keys():
                             if not self.clients[client2].isBot():
                                 self.sendEvidenceList(client2, zone)
                     else:
-                        self.sendOOC(ServerOOCName, "unknown type %s, can not return." % type)
+                        self.sendOOC(self.ServerOOCName, "unknown type %s, can not return." % type)
                                     
         elif cmd == "login":
             if isConsole or isEcon:
                 self.sendOOC("", "lol what's the point of that here", client)
                 return
             if self.clients[client].is_authed:
-                self.sendOOC(ServerOOCName, "you're already logged in.", client)
+                self.sendOOC(self.ServerOOCName, "you're already logged in.", client)
                 return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /login <password>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /login <password>", client)
                 return
             if not self.rcon:
-                self.sendOOC(ServerOOCName, "the admin password is not set on this server. to set it, open 'server/base.ini' and add the line 'rcon=adminpass'", client)
+                self.sendOOC(self.ServerOOCName, "the admin password is not set on this server. to set it, open 'server/base.ini' and add the line 'rcon=adminpass'", client)
                 return
                 
             password = cmdargs[0]
             if password == self.rcon:
                 self.clients[client].is_authed = True
-                self.sendOOC(ServerOOCName, "logged in.", client)
+                self.sendOOC(self.ServerOOCName, "logged in.", client)
             else:
                 self.clients[client].loginfails += 1
                 if self.clients[client].loginfails >= MaxLoginFails:
                     self.kick(client, "too many wrong login attempts")
                     return
                     
-                self.sendOOC(ServerOOCName, "wrong password %d/%d." % (self.clients[client].loginfails, MaxLoginFails), client)
+                self.sendOOC(self.ServerOOCName, "wrong password %d/%d." % (self.clients[client].loginfails, MaxLoginFails), client)
         
         elif cmd == "kick":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /kick <id> [reason]\nto find your target, type /status and search for the id.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /kick <id> [reason]\nto find your target, type /status and search for the id.", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             try:
                 id = int(cmdargs[0])
             except:
-                self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
                 return
             
             reason = ""
@@ -1638,38 +1631,38 @@ class AIOserver(object):
                 reason = "No reason given"
             
             if not self.clients.has_key(id):
-                self.sendOOC(ServerOOCName, "that client doesn't exist lol", client)
+                self.sendOOC(self.ServerOOCName, "that client doesn't exist lol", client)
                 return
             if self.clients[id].isBot():
-                self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
+                self.sendOOC(self.ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
                 return
             
-            self.sendOOC(ServerOOCName, "kicked player %d (%s) (%s)" % (id, self.getCharName(self.clients[id].CharID), self.clients[id].ip), client)
+            self.sendOOC(self.ServerOOCName, "kicked player %d (%s) (%s)" % (id, self.getCharName(self.clients[id].CharID), self.clients[id].ip), client)
             self.kick(id, reason)
         
         elif cmd == "ban":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /ban <id or ip> <time> [reason]\nthe \"time\" argument can be phrased like this:\n'0' for lifeban\n'1m' for 1 minute\n'24h' for 1 day\n'7d' for one week, and so on.\nif this letter is not specified, minutes are used by default.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /ban <id or ip> <time> [reason]\nthe \"time\" argument can be phrased like this:\n'0' for lifeban\n'1m' for 1 minute\n'24h' for 1 day\n'7d' for one week, and so on.\nif this letter is not specified, minutes are used by default.", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             try:
                 id = cmdargs[0]
             except:
-                self.sendOOC(ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid ID "+cmdargs[0]+".", client)
                 return
             
             if (id.startswith("127.") or id.lower() == "localhost" or id.startswith("192.")) and not isConsole and not isEcon:
-                self.sendOOC(ServerOOCName, "HOOOOLD UP fam you can't do that", client)
+                self.sendOOC(self.ServerOOCName, "HOOOOLD UP fam you can't do that", client)
                 return
             
             try:
                 banlength = cmdargs[1]
             except:
-                self.sendOOC(ServerOOCName, "missing/invalid ban length argument.", client)
+                self.sendOOC(self.ServerOOCName, "missing/invalid ban length argument.", client)
                 return    
             
             bantype = banlength[-1].lower()
@@ -1680,15 +1673,15 @@ class AIOserver(object):
                 try:
                     banlength = int(banlength[:-1])
                 except:
-                    self.sendOOC(ServerOOCName, "invalid ban length argument.", client)
+                    self.sendOOC(self.ServerOOCName, "invalid ban length argument.", client)
                     return
             
             if bantype != "m" and bantype != "h" and bantype != "d":
-                self.sendOOC(ServerOOCName, "invalid ban type: %s" % bantype, client)
+                self.sendOOC(self.ServerOOCName, "invalid ban type: %s" % bantype, client)
                 return
             
             if ((bantype == "d" and banlength >= 365) or (bantype == "h" and banlength >= 8760) or (bantype == "m" and banlength >= 525600)) and not isConsole and not isEcon:
-                self.sendOOC(ServerOOCName, "woah, you can't ban people for a year, what's wrong with you?", client)
+                self.sendOOC(self.ServerOOCName, "woah, you can't ban people for a year, what's wrong with you?", client)
                 return
             
             reason = ""
@@ -1703,25 +1696,25 @@ class AIOserver(object):
                 try:
                     id = int(id)
                 except:
-                    self.sendOOC(ServerOOCName, "invalid ID.", client)
+                    self.sendOOC(self.ServerOOCName, "invalid ID.", client)
                     return
                     
                 if not self.clients.has_key(id):
-                    self.sendOOC(ServerOOCName, "that client doesn't exist lol", client)
+                    self.sendOOC(self.ServerOOCName, "that client doesn't exist lol", client)
                     return
                 if self.clients[id].isBot():
-                    self.sendOOC(ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
+                    self.sendOOC(self.ServerOOCName, "you might want to use \"/bot remove\" for that, buddy", client)
                     return
                 if id == client:
-                    self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+                    self.sendOOC(self.ServerOOCName, "you can't ban yourself.", client)
                     return
             else:
                 if len(id.split(".")) != 4:
-                    self.sendOOC(ServerOOCName, "invalid IP address %s" % id, client)
+                    self.sendOOC(self.ServerOOCName, "invalid IP address %s" % id, client)
                     return
                 for i in self.clients.keys():
                     if client == i and self.clients[i].ip == id:
-                        self.sendOOC(ServerOOCName, "you can't ban yourself.", client)
+                        self.sendOOC(self.ServerOOCName, "you can't ban yourself.", client)
                         return
             
             if banlength > 0:
@@ -1740,45 +1733,45 @@ class AIOserver(object):
             self.ban(id, reallength, reason)
             
             if min > 0:
-                self.sendOOC(ServerOOCName, "user %s has been banned for %d %s (%s)" % (str(id), min+1, mintext, reason), client)
+                self.sendOOC(self.ServerOOCName, "user %s has been banned for %d %s (%s)" % (str(id), min+1, mintext, reason), client)
             else:
-                self.sendOOC(ServerOOCName, "user %s has been lifebanned (%s)" % (str(id), reason), client)
+                self.sendOOC(self.ServerOOCName, "user %s has been lifebanned (%s)" % (str(id), reason), client)
         
         elif cmd == "unban":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /unban <ip>\nunban an IP address from the server.", client)
+                self.sendOOC(self.ServerOOCName, "usage: /unban <ip>\nunban an IP address from the server.", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             try:
                 ip = cmdargs[0]
             except:
-                self.sendOOC(ServerOOCName, "invalid IP "+cmdargs[0]+".", client)
+                self.sendOOC(self.ServerOOCName, "invalid IP "+cmdargs[0]+".", client)
                 return
             
             for i in range(len(self.banlist)):
                 ban = self.banlist[i]
                 if ban[0] == ip:
-                    self.sendOOC(ServerOOCName, "unbanned IP %s" % ip, client)
+                    self.sendOOC(self.ServerOOCName, "unbanned IP %s" % ip, client)
                     del self.banlist[i]
                     self.writeBanList()
                     return
             
-            self.sendOOC(ServerOOCName, "IP %s is not banned" % ip, client)
+            self.sendOOC(self.ServerOOCName, "IP %s is not banned" % ip, client)
         
         elif cmd == "play":
             if not cmdargs:
                 if not isConsole and not isEcon:
-                    self.sendOOC(ServerOOCName, "usage: /play <filename>", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /play <filename>", client)
                 else:
-                    self.sendOOC(ServerOOCName, "usage: /play <zone ID> <filename>", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /play <zone ID> <filename>", client)
                 return
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             if isConsole or isEcon:
@@ -1799,13 +1792,13 @@ class AIOserver(object):
             if not isConsole and not isEcon:
                 self.changeMusic(musicname, self.clients[client].CharID, "", self.clients[client].zone)
             else:
-                showname = ServerOOCName if isConsole else "ECON USER %d" % (client-10000)
+                showname = self.ServerOOCName if isConsole else "ECON USER %d" % (client-10000)
                 self.changeMusic(musicname, 0, showname, zone)
         
         elif cmd == "status":
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             
             message = ""
@@ -1813,11 +1806,11 @@ class AIOserver(object):
                 message += "id=%d addr=%s version=%s zone=%d char=%s oocname=%s authed=%r\n" % (client2, self.clients[client2].ip, self.clients[client2].ClientVersion, self.clients[client2].zone, self.getCharName(self.clients[client2].CharID), self.clients[client2].OOCname, self.clients[client2].is_authed)
             message = message.rstrip("\n")
             
-            self.sendOOC(ServerOOCName, message, client)
+            self.sendOOC(self.ServerOOCName, message, client)
         
         elif cmd == "g":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /g <text>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /g <text>", client)
                 return
                 
             globalmsg = ""
@@ -1829,17 +1822,17 @@ class AIOserver(object):
                 self.sendOOC("$G[%s][%d]" % (self.getCharName(self.clients[client].CharID), self.clients[client].zone), globalmsg)
             else:
                 if isConsole:
-                    self.sendOOC("$G[%s][-1]" % ServerOOCName, globalmsg)
+                    self.sendOOC("$G[%s][-1]" % self.ServerOOCName, globalmsg)
                 elif isEcon:
                     self.sendOOC("$G[%s][-1]" % ("ECON USER %d" % (client-10000)), globalmsg)
         
         elif cmd == "gm":
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /gm <text>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /gm <text>", client)
                 return
                 
             globalmsg = ""
@@ -1851,13 +1844,13 @@ class AIOserver(object):
                 self.sendOOC("$G[%s][%d][M]" % (self.getCharName(self.clients[client].CharID), self.clients[client].zone), globalmsg)
             else:
                 if isConsole:
-                    self.sendOOC("$G[%s][-1][M]" % ServerOOCName, globalmsg)
+                    self.sendOOC("$G[%s][-1][M]" % self.ServerOOCName, globalmsg)
                 elif isEcon:
                     self.sendOOC("$G[%s][-1][M]" % ("ECON USER %d" % (client-10000)), globalmsg)
         
         elif cmd == "need":
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /need <text>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /need <text>", client)
                 return
                 
             globalmsg = ""
@@ -1866,23 +1859,23 @@ class AIOserver(object):
             globalmsg = globalmsg.rstrip()
             
             if not isConsole and not isEcon:
-                self.sendOOC(ServerOOCName, "=== ATTENTION ===\n%s at zone %d needs %s" % (self.getCharName(self.clients[client].CharID), self.clients[client].zone, globalmsg))
+                self.sendOOC(self.ServerOOCName, "=== ATTENTION ===\n%s at zone %d needs %s" % (self.getCharName(self.clients[client].CharID), self.clients[client].zone, globalmsg))
                 self.sendBroadcast("%s at zone %d needs %s" % (self.getCharName(self.clients[client].CharID), self.clients[client].zone, globalmsg))
             else:
                 if isConsole:
-                    name = ServerOOCName
+                    name = self.ServerOOCName
                 else:
                     name = "ECON USER %d" % (client-10000)
-                self.sendOOC(ServerOOCName, "=== ATTENTION ===\n"+name+" at zone -1 needs %s" % globalmsg)
+                self.sendOOC(self.ServerOOCName, "=== ATTENTION ===\n"+name+" at zone -1 needs %s" % globalmsg)
                 self.sendBroadcast("%s at zone -1 needs %s" % (name, globalmsg))
         
         elif cmd == "announce":
             if not isConsole and not isEcon:
                 if not self.clients[client].is_authed:
-                    self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                    self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                     return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /announce <text>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /announce <text>", client)
                 return
                 
             globalmsg = ""
@@ -1890,7 +1883,7 @@ class AIOserver(object):
                 globalmsg += text+" "
             globalmsg = globalmsg.rstrip()
             
-            self.sendOOC(ServerOOCName, "=== ANNOUNCEMENT ===\n"+globalmsg)
+            self.sendOOC(self.ServerOOCName, "=== ANNOUNCEMENT ===\n"+globalmsg)
             self.sendBroadcast("ANNOUNCEMENT: %s" % globalmsg)
         
         elif cmd == "crash":
@@ -1898,10 +1891,10 @@ class AIOserver(object):
                 self.sendOOC("", "this must be executed ingame", client)
                 return
             if not self.clients[client].ip.startswith("127."):
-                self.sendOOC(ServerOOCName, "you are not allowed to use this!", client)
+                self.sendOOC(self.ServerOOCName, "you are not allowed to use this!", client)
                 return
             if not cmdargs or cmdargs[0].lower() != "now":
-                self.sendOOC(ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
+                self.sendOOC(self.ServerOOCName, "ARE YOU SURE?\ntype \"/crash now\" to confirm", client)
                 return
             
             raise Exception("(CRASH MANUALLY TRIGGERED)")
@@ -1911,19 +1904,19 @@ class AIOserver(object):
                 self.sendOOC("", "sorry. you must be ingame to use this command.", client)
                 return
             if not self.clients[client].is_authed:
-                self.sendOOC(ServerOOCName, "access denied: you're not logged in.", client)
+                self.sendOOC(self.ServerOOCName, "access denied: you're not logged in.", client)
                 return
             if not AllowBot:
-                self.sendOOC(ServerOOCName, "bots are disabled on this server.", client)
+                self.sendOOC(self.ServerOOCName, "bots are disabled on this server.", client)
                 return
             if not cmdargs:
-                self.sendOOC(ServerOOCName, "usage: /bot <add/remove/type>", client)
+                self.sendOOC(self.ServerOOCName, "usage: /bot <add/remove/type>", client)
                 return
             
             bot_arg = cmdargs.pop(0)
             if bot_arg == "add":
                 if not cmdargs:
-                    self.sendOOC(ServerOOCName, "usage: /bot add <charname>", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /bot add <charname>", client)
                     return
                     
                 charname = cmdargs[0].lower()
@@ -1937,7 +1930,7 @@ class AIOserver(object):
                         break
                 
                 if not found:
-                    self.sendOOC(ServerOOCName, "character not found. the characters list is as follows:\n"+str(self.charlist), client)
+                    self.sendOOC(self.ServerOOCName, "character not found. the characters list is as follows:\n"+str(self.charlist), client)
                     return
                 
                 idattempt = self.maxplayers
@@ -1946,63 +1939,64 @@ class AIOserver(object):
                 
                 self.clients[idattempt] = AIObot(charid, self.getCharName(charid), self.clients[client].x, self.clients[client].y, self.clients[client].zone)
                 self.clients[idattempt].interact = self.clients[client]
-                self.sendOOC(ServerOOCName, "bot added with client ID %d" % idattempt, client)
+                self.sendOOC(self.ServerOOCName, "bot added with client ID %d" % idattempt, client)
                 self.sendCreate(idattempt)
                 self.setPlayerChar(idattempt, charid)
                 
             elif bot_arg == "remove":
                 if not cmdargs:
-                    self.sendOOC(ServerOOCName, "usage: /bot remove <bot client ID>", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /bot remove <bot client ID>", client)
                     return
                 
                 try:
                     botid = int(cmdargs[0])
                 except:
-                    self.sendOOC(ServerOOCName, "invalid client ID.", client)
+                    self.sendOOC(self.ServerOOCName, "invalid client ID.", client)
                     return
                 
                 if not self.clients.has_key(botid):
-                    self.sendOOC(ServerOOCName, "that client ID doesn't exist.", client)
+                    self.sendOOC(self.ServerOOCName, "that client ID doesn't exist.", client)
                     return
                 
                 if not self.clients[botid].isBot():
-                    self.sendOOC(ServerOOCName, "that's a human, not a bot you nobo", client)
+                    self.sendOOC(self.ServerOOCName, "that's a human, not a bot you nobo", client)
                     return
                 
                 self.sendDestroy(botid)
                 del self.clients[botid]
-                self.sendOOC(ServerOOCName, "bot deleted", client)
+                self.sendOOC(self.ServerOOCName, "bot deleted", client)
             
             elif bot_arg == "type":
                 if not cmdargs:
-                    self.sendOOC(ServerOOCName, "usage: /bot type <botid> <idle/follow/wander>", client)
+                    self.sendOOC(self.ServerOOCName, "usage: /bot type <botid> <idle/follow/wander>", client)
                     return
                 
                 try:
                     botid = int(cmdargs[0])
                 except:
-                    self.sendOOC(ServerOOCName, "invalid client ID.", client)
+                    self.sendOOC(self.ServerOOCName, "invalid client ID.", client)
                     return
                 
                 if not self.clients.has_key(botid):
-                    self.sendOOC(ServerOOCName, "that client ID doesn't exist.", client)
+                    self.sendOOC(self.ServerOOCName, "that client ID doesn't exist.", client)
                     return
                 
                 if not self.clients[botid].isBot():
-                    self.sendOOC(ServerOOCName, "that's a human, not a bot you nobo", client)
+                    self.sendOOC(self.ServerOOCName, "that's a human, not a bot you nobo", client)
                     return
                 
                 if len(cmdargs) == 1:
-                    self.sendOOC(ServerOOCName, "bot %d's current type is '%s'" % (botid, self.clients[botid].type))
+                    self.sendOOC(self.ServerOOCName, "bot %d's current type is '%s'" % (botid, self.clients[botid].type))
                     return
                 
                 bottype = cmdargs[1].lower()
                 self.clients[botid].type = bottype
                 self.clients[botid].interact = self.clients[client]
-                self.sendOOC(ServerOOCName, "bot type set to %s" % bottype, client)
+                self.sendOOC(self.ServerOOCName, "bot type set to %s" % bottype, client)
         
         else:
-            self.sendOOC(ServerOOCName, "unknown command \"%s\". try \"/cmdlist\" for a list of available commands." % cmd, client)
+            self.sendOOC(self.ServerOOCName, "unknown command \"%s\". try \"/cmdlist\" for a list of available commands." % cmd, client)
+        """
     
     def econTick(self):
         try:
@@ -2117,14 +2111,14 @@ class AIOserver(object):
         if dest == -1:
             for client in self.econ_clients.values():
                 if client[2] == ECONSTATE_AUTHED:
-                    send = text+"\r\n" if client[3] == ECONCLIENT_CRLF else text+"\n"
+                    send = text.replace("\n", "\r\n")+"\r\n" if client[3] == ECONCLIENT_CRLF else text+"\n"
                     try:
                         client[0].send(send)
                     except:
                         pass
         else:
             if self.econ_clients.has_key(dest):
-                send = text+"\r\n" if self.econ_clients[dest][3] == ECONCLIENT_CRLF else text+"\n"
+                send = text.replace("\n", "\r\n")+"\r\n" if self.econ_clients[dest][3] == ECONCLIENT_CRLF else text+"\n"
                 try:
                     self.econ_clients[dest][0].send(send)
                 except:
@@ -2158,8 +2152,8 @@ class AIOserver(object):
                     continue
                 
                 txt = txt.replace(str(var)+" ", "")
-                #print "[chat][IC] -1,%d,%s: %s" % (var, ServerOOCName, txt)
-                self.sendChat(ServerOOCName, txt, "male", var, 4294901760, 0, self.maxplayers, 0)
+                #print "[chat][IC] -1,%d,%s: %s" % (var, self.ServerOOCName, txt)
+                self.sendChat(self.ServerOOCName, txt, "male", var, 4294901760, 0, self.maxplayers, 0)
             
 if __name__ == "__main__":
     server = AIOserver()

@@ -612,6 +612,7 @@ class Character(BaseCharacter):
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
 			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
+
 			if not self.playFile[2]:
 				super(Character, self).play(self.playFile[0], self.playFile[1])
 			else:

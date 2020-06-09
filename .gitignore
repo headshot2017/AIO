@@ -3,11 +3,9 @@ pybass/
 build/
 dist/
 server/*.txt
-server/*.ini
 server/*.pyc
 server/_commands/*.pyc
 *.exe
-*.ini
 bass.dll
 bass24.zip
 PyQt4-4.11.4-cp27-cp27m-win32.whl

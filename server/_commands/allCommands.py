@@ -300,6 +300,26 @@ If the letter is omitted, minutes are used by default."""
         return "User %s has been banned for life (%s). Ban ID: %d" % (str(id), reason, banid)
 
 @mod_only()
+def ooc_cmd_baninfo(server, client, consoleUser, args):
+    """
+Show information about a ban.
+Usage: /baninfo <ban ID>"""
+    if not args: return _help("baninfo")
+
+    try:
+        id = int(args[0])
+    except:
+        return "Invalid ban ID "+args[0]+"."
+
+    if id < 0 or id >= len(server.banlist): return "Ban ID range out of bounds."
+    ban = server.banlist[id]
+
+    min = abs(time.time() - ban[1]) / 60
+    mintext = plural("minute", int(min+1))
+    
+    return "Ban %d\nIP: %s\nDuration: %d %s\nFor: %s" % (id, ban[0], min, mintext, ban[2])
+
+@mod_only()
 def ooc_cmd_unban(server, client, consoleUser, args):
     """
 Unbans a player.
@@ -375,8 +395,8 @@ def ooc_cmd_g(server, client, consoleUser, args):
     """
 Send a message globally to all players.
 Usage: /g <message>"""
-
-    if consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
+    if not args: return _help("g")
+    elif consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
 
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
@@ -391,8 +411,8 @@ def ooc_cmd_gm(server, client, consoleUser, args):
     """
 Send a message globally to all players with a moderator tag.
 Usage: /gm <message>"""
-
-    if consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
+    if not args: return _help("gm")
+    elif consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
 
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
@@ -406,8 +426,8 @@ def ooc_cmd_need(server, client, consoleUser, args):
     """
 Send an advert globally to all players specifying what you need.
 Usage: /need <message>"""
-
-    if consoleUser == 0 and not server.clients[client].use_adverts: return "Adverts are turned off, use /toggleadverts first."
+    if not args: return _help("need")
+    elif consoleUser == 0 and not server.clients[client].use_adverts: return "Adverts are turned off, use /toggleadverts first."
 
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
@@ -423,6 +443,7 @@ def ooc_cmd_announce(server, client, consoleUser, args):
     """
 Send a server-wide announcement.
 Usage: /announce <message>"""
+    if not args: return _help("announce")
 
     globalmsg = " ".join(args)
     server.sendOOC(server.ServerOOCName, "=== ANNOUNCEMENT ===\n%s" % globalmsg)

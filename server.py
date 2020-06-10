@@ -625,7 +625,7 @@ class AIOserver(object):
             for i in self.clients.keys(): # kick all players that match the banned ID
                 if self.clients[i].ip == self.clients[ClientID].ip: # found a player
                     if length > 0:
-                        self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)))
+                        self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)-1))
                     else:
                         self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)-1))
         

@@ -272,11 +272,11 @@ If the letter is omitted, minutes are used by default."""
         if len(id.split(".")) != 4:
             return "Invalid IP address '"+ip+"'"
         
-        if id.beginswith("127.") or id == "localhost":
+        if id.startswith("127.") or id == "localhost":
             return "You can't ban the host."
 
         for i in server.clients.keys():
-            if server.clients[i].ip == server.clients[client].ip:
+            if id == server.clients[client].ip:
                 return "You can't ban yourself."
 
     if banlength > 0:

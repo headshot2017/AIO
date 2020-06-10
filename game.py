@@ -1330,7 +1330,9 @@ class GameWidget(QtGui.QWidget):
 		name, chatmsg, blip, zone, color, realization, clientid, evidence = contents
 		if zone != self.player.zone:
 			return
-		
+
+		if not self.finished_chat and self.gameview.characters.has_key(self.m_chatClientID): # talking player was interrupted, rude
+			self.gameview.characters[self.m_chatClientID].setChatBubble(0)
 		if self.gameview.characters.has_key(clientid):
 			self.gameview.characters[clientid].setChatBubble(2)
 		

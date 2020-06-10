@@ -23,5 +23,4 @@ MASTER_PUBLISHED = 1
 ################################
 
 def plural(text, value):
-    print text, value
     return text+"s" if value != 1 else text

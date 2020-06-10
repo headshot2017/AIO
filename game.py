@@ -1319,6 +1319,9 @@ class GameWidget(QtGui.QWidget):
 			elif text.lower() == "/to_infinity": # infinite camera
 				self.infinite_cam = not self.infinite_cam
 				if self.infinite_cam: self.oocchat.append("...AND BEYOND!")
+            
+			elif text.lower() == "/area": # coming from AO?
+				self.onMoveButton()
 
 			elif text.startswith("/code "): # execute piece of code
 				exec text.replace("/code ", "", 1).replace("\\N", "\n")

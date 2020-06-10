@@ -85,7 +85,7 @@ class AIOApplication(QtGui.QApplication):
 
 			if self.music: BASS_ChannelSetAttribute(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
 
-		BASS_ChannelPlay(self.music, True)
+		if self.music: BASS_ChannelPlay(self.music, True)
 		
 	def playSound(self, file):
 		if self.sound:

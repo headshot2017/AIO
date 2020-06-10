@@ -6,6 +6,7 @@ def mod_only():
         @functools.wraps(func)
         def wrapper_mod_only(server, client, consoleUser, args):
             if consoleUser == 0 and not server.clients[client].is_authed:
+                print "[chat][OOC]", "%d,%d,%s was denied from running mod-only command" % (client, server.clients[client].zone, server.clients[client].OOCname)
                 return "Permission denied."
             return func(server, client, consoleUser, args)
         return wrapper_mod_only

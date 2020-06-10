@@ -26,6 +26,8 @@ class AIOplayer(object):
     loginfails = 0
     close = False
     first_picked = False
+    use_adverts = True
+    use_global = True
     pingpong = 0
 
     def __init__(self, sock, ip, id=-1):

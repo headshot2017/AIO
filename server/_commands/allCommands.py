@@ -34,6 +34,8 @@ Usage: /logout"""
     server.clients[client].is_authed = False
     return "Logged out."
 
+ooc_cmd_unmod = ooc_cmd_logout
+
 @mod_only()
 def ooc_cmd_setzone(server, client, consoleUser, args):
     """
@@ -349,15 +351,40 @@ Usage: /status"""
         message += "\n[%d][%s][%s][%s] version=%s zone=%d authed=%r" % (client2, server.clients[client2].ip, server.getCharName(server.clients[client2].CharID), server.clients[client2].OOCname, server.clients[client2].ClientVersion, server.clients[client2].zone, server.clients[client2].is_authed)
     return message
 
+def ooc_cmd_toggleadverts(server, client, consoleUser, args):
+    """
+Enable/disable /need adverts.
+Usage: /toggleadverts"""
+
+    if consoleUser > 0: return "You can't use /toggleadverts from the console."
+
+    server.clients[client].use_adverts = not server.clients[client].use_adverts
+    return "/need adverts: %s" % server.clients[client].use_adverts
+
+def ooc_cmd_toggleglobal(server, client, consoleUser, args):
+    """
+Enable/disable global chat.
+Usage: /toggleglobal"""
+
+    if consoleUser > 0: return "You can't use /toggleglobal from the console."
+
+    server.clients[client].use_global = not server.clients[client].use_global
+    return "Global chat: %s" % server.clients[client].use_global
+
 def ooc_cmd_g(server, client, consoleUser, args):
     """
 Send a message globally to all players.
 Usage: /g <message>"""
 
+    if consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
+
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
-    server.sendOOC("$G[%s][%d]" % (name, zone), globalmsg)
+    
+    for i in server.clients.keys():
+        if server.clients[i].use_global:
+            server.sendOOC("$G[%s][%d]" % (name, zone), globalmsg, i)
 
 @mod_only()
 def ooc_cmd_gm(server, client, consoleUser, args):
@@ -365,22 +392,31 @@ def ooc_cmd_gm(server, client, consoleUser, args):
 Send a message globally to all players with a moderator tag.
 Usage: /gm <message>"""
 
+    if consoleUser == 0 and not server.clients[client].use_global: return "Global chat is turned off, use /toggleglobal first."
+
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
-    server.sendOOC("$G[%s][%d][M]" % (name, zone), globalmsg)
 
-@mod_only()
+    for i in server.clients.keys():
+        if server.clients[i].use_global:
+            server.sendOOC("$G[%s][%d][M]" % (name, zone), globalmsg, i)
+
 def ooc_cmd_need(server, client, consoleUser, args):
     """
 Send an advert globally to all players specifying what you need.
 Usage: /need <message>"""
 
+    if consoleUser == 0 and not server.clients[client].use_adverts: return "Adverts are turned off, use /toggleadverts first."
+
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
-    server.sendOOC(server.ServerOOCName, "=== ATTENTION ===\n%s at zone %d needs %s" % (name, zone, globalmsg))
-    server.sendBroadcast("%s at zone %d needs %s" % (name, zone, globalmsg))
+    
+    for i in server.clients.keys():
+        if server.clients[i].use_adverts:
+            server.sendOOC(server.ServerOOCName, "=== ADVERT ===\n%s at zone %d needs %s" % (name, zone, globalmsg), i)
+            server.sendBroadcast("%s at zone %d needs %s" % (name, zone, globalmsg), ClientID=i)
 
 @mod_only()
 def ooc_cmd_announce(server, client, consoleUser, args):

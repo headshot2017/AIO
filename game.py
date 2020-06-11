@@ -1807,7 +1807,6 @@ class GameWidget(QtGui.QWidget):
 			client, x, y, hspeed, vspeed, sprite, emoting, dir_nr = move
 			if not self.gameview.characters.has_key(client):
 				continue
-			
 			char = self.gameview.characters[client]
 			char.hspeed = (x - char.xx) / 5.0
 			char.vspeed = (y - char.yy) / 5.0

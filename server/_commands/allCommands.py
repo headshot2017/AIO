@@ -1,6 +1,7 @@
 from __init__ import mod_only, _help
 from server_vars import *
-import time
+from AIOplayer import AIObot
+import time, thread
 
 def ooc_cmd_login(server, client, consoleUser, args):
     """
@@ -462,4 +463,64 @@ Manage server-side player bots.
 Usage: /bot <add/remove/type>"""
 
     if not AllowBot: return "Bots are disabled on this server."
-    return "To be implemented in a future version."
+    elif not args: return _help("bot")
+
+    bot_arg = args.pop(0)
+
+    if bot_arg == "add":
+        if not args: return "Usage: /bot add <character name>"
+
+        charname = args[0].lower()
+        
+        found = False
+        charid = -1
+        for i in range(len(server.charlist)):
+            if server.charlist[i].lower() == charname:
+                found = True
+                charid = i
+                break
+        if not found: return "Character '%s' not found." % args[0]
+
+        idattempt = server.maxplayers
+        while server.clients.has_key(idattempt):
+            idattempt += 1
+        
+        server.clients[idattempt] = AIObot(charid, server.getCharName(charid), server.clients[client].x, server.clients[client].y, server.clients[client].zone)
+        server.clients[idattempt].interact = server.clients[client]
+        server.sendCreate(idattempt)
+        server.setPlayerChar(idattempt, charid)
+        thread.start_new_thread(server.clientLoop, (idattempt,))
+        return "Bot added as client ID %d" % idattempt
+        
+    elif bot_arg == "remove":
+        if not args: return "Usage: /bot remove <bot client ID>"
+        
+        try:
+            botid = int(args[0])
+        except:
+            return "Invalid client ID %s" % args[0]
+        
+        if not server.clients.has_key(botid): return "That client ID doesn't exist."
+        elif not server.clients[botid].isBot(): return "That client isn't a bot. Use '/status' to search for bots."
+
+        msg = "'%s' bot deleted." % server.getCharName(server.clients[botid].CharID)
+        server.sendDestroy(botid)
+        del server.clients[botid]
+        return msg
+    
+    elif bot_arg == "type":
+        if not args: return "Usage: /bot type <botid> <idle/follow/wander>"
+        
+        try:
+            botid = int(args[0])
+        except:
+            return "Invalid client ID %s" % args[0]
+        
+        if not server.clients.has_key(botid): return "That client ID doesn't exist."
+        elif not server.clients[botid].isBot(): return "That client isn't a bot. Use '/status' to search for bots."
+        elif len(args) == 1: return "Bot %d's current type is '%s'" % (botid, server.clients[botid].type)
+        
+        bottype = args[1].lower()
+        server.clients[botid].type = bottype
+        server.clients[botid].interact = server.clients[client]
+        return "Bot type set to '%s'" % bottype

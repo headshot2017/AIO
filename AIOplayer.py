@@ -1,4 +1,4 @@
-import thread, time, random
+import thread, time, random, math
 from iniconfig import IniConfig
 import AIOprotocol
 
@@ -57,18 +57,19 @@ class AIObot(AIOplayer):
     imgprefix = ""
     walkanims = []
     runanim = 0
+    wandertick = 0
     blip = ""
-    type = "wander"
+    type = "idle"
     interact = None
     def __init__(self, charid, charname, x=0.0, y=0.0, zone=0):
-        super(AIObot, self).__init__(None, random.choice(["noby is the biggest troll", "go commit die", "beep boop", "i'm a bot", "69", "vali sucks"]))
+        super(AIObot, self).__init__(None, "BOT")
         self.x = x
         self.y = y
         self.zone = zone
         self.ready = True
         self.CharID = charid
         self.charname = charname
-        self.sprite = charname+"\\spin"
+        self.sprite = charname+"\\spin.gif"
         self.char_ini = IniConfig("data/characters/"+charname+"/char.ini")
         self.imgprefix = self.char_ini.get("Options", "imgprefix", "")
         if self.imgprefix:
@@ -80,106 +81,101 @@ class AIObot(AIOplayer):
         self.setMovement(False)
     
     def point_distance(self, x1, y1, x2, y2):
-        return ((x1- x2) * (x1 - x2) + (y1 - y2) * (y1-y2))
+        return math.sqrt(pow(x2-x1, 2) + pow(y2-y1, 2))
     
     def player_thread(self):
-        wandertick = 0
-        while True:
-            if self.close:
-                thread.exit()
+        time.sleep(1./30)
+        if not self.interact:
+            return
             
-            if not self.interact:
-                continue
-                
-            if self.type == "follow":
-                dist = self.point_distance(self.x, self.y, self.interact.x, self.interact.y)
-                if dist < 512:
-                    self.setMovement(False)
-                else:
-                    run = int(dist >= 768)
-                    if self.x > self.interact.x and self.y > self.interact.y:
-                        dir_nr = AIOprotocol.NORTHWEST
-                    elif self.x < self.interact.x and self.y > self.interact.y:
-                        dir_nr = AIOprotocol.NORTHEAST
-                    elif self.x > self.interact.x and self.y < self.interact.y:
-                        dir_nr = AIOprotocol.SOUTHWEST
-                    elif self.x < self.interact.x and self.y < self.interact.y:
-                        dir_nr = AIOprotocol.SOUTHEAST
-                    elif self.x < self.interact.x:
-                        dir_nr = AIOprotocol.EAST
-                    elif self.x > self.interact.x:
-                        dir_nr = AIOprotocol.WEST
-                    elif self.y > self.interact.y:
-                        dir_nr = AIOprotocol.NORTH
-                    elif self.y < self.interact.y:
-                        dir_nr = AIOprotocol.SOUTH
-                    
-                    self.setMovement(True, dir_nr, run)
-            
-            elif self.type == "wander":
-                if wandertick:
-                    wandertick -= 1
-                else:
-                    
-                    if self.isMoving():
-                        wandertick = random.randint(10, 25)
-                    else:
-                        wandertick = random.randint(30, 60)
-                    
-                    self.setMovement(not self.isMoving(), random.randint(0, 7), 0)
-            
-            else:
+        if self.type == "follow":
+            dist = self.point_distance(self.x, self.y, self.interact.x, self.interact.y)
+            if dist < 64:
                 self.setMovement(False)
-            
-            self.x += self.hspeed
-            self.y += self.vspeed
-            time.sleep(1./30)
+            else:
+                run = int(dist >= 128)
+                if self.x > self.interact.x and self.y > self.interact.y:
+                    dir_nr = AIOprotocol.NORTHWEST
+                elif self.x < self.interact.x and self.y > self.interact.y:
+                    dir_nr = AIOprotocol.NORTHEAST
+                elif self.x > self.interact.x and self.y < self.interact.y:
+                    dir_nr = AIOprotocol.SOUTHWEST
+                elif self.x < self.interact.x and self.y < self.interact.y:
+                    dir_nr = AIOprotocol.SOUTHEAST
+                elif self.x < self.interact.x:
+                    dir_nr = AIOprotocol.EAST
+                elif self.x > self.interact.x:
+                    dir_nr = AIOprotocol.WEST
+                elif self.y > self.interact.y:
+                    dir_nr = AIOprotocol.NORTH
+                elif self.y < self.interact.y:
+                    dir_nr = AIOprotocol.SOUTH
+                
+                self.setMovement(True, dir_nr, run)
+        
+        elif self.type == "wander":
+            if self.wandertick:
+                self.wandertick -= 1
+            else:
+                
+                if self.isMoving():
+                    self.wandertick = random.randint(10, 25)
+                else:
+                    self.wandertick = random.randint(60, 120)
+                
+                self.setMovement(not self.isMoving(), random.randint(0, 7), 0)
+        
+        else:
+            self.setMovement(False)
+        
+        self.x += self.hspeed
+        self.y += self.vspeed
         
     def setMovement(self, move, dir_nr=0, run=0):
         if not move:
             self.hspeed = 0
             self.vspeed = 0
-            self.sprite = self.charname+"\\spin"
+            self.sprite = self.charname+"\\spin.gif"
             return
         
         self.dir_nr = dir_nr
         self.run = run
         if not run:
-            spd = 3
+            spd = 4.2
             ind = 0
         else:
-            spd = 6
+            spd = 8.4
             ind = self.runanim
             
         if dir_nr == 0: #south
             self.hspeed = 0
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"south"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"south.gif"
         if dir_nr == 1: #southwest
             self.hspeed = -spd
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southwest"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southwest.gif"
         if dir_nr == 2: #west
             self.hspeed = -spd
             self.vspeed = 0
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"west"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"west.gif"
         if dir_nr == 3: #northwest
             self.hspeed = -spd
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northwest"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northwest.gif"
         if dir_nr == 4: #north
             self.hspeed = 0
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"north"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"north.gif"
         if dir_nr == 5: #northeast
             self.hspeed = spd
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northeast"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northeast.gif"
         if dir_nr == 6: #east
             self.hspeed = spd
             self.vspeed = 0
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"east"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"east.gif"
         if dir_nr == 7: #southeast
             self.hspeed = spd
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southeast"
+            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southeast.gif"

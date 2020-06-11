@@ -932,7 +932,7 @@ class AIOserver(object):
             while True:
                 if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
                     return
-
+                
                 self.clients[client].player_thread()
 
                 if self.clients[client].ready and len(self.clients) > 1:
@@ -1686,7 +1686,8 @@ if __name__ == "__main__":
         
     except KeyboardInterrupt: # manual interruption
         for i in server.clients.keys():
-            server.kick(i, "\n\n=== SERVER CLOSED ===", False, True)
+            if not server.clients[i].isBot():
+                server.kick(i, "\n\n=== SERVER CLOSED ===", False, True)
         server.tcp.close()
         
     except Exception as e: #server crashed
@@ -1698,6 +1699,7 @@ if __name__ == "__main__":
             f.write(tracebackmsg)
         
         for i in server.clients.keys():
-            server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False, True)
+            if not server.clients[i].isBot():
+                server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False, True)
         
         server.tcp.close()

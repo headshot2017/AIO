@@ -1167,8 +1167,10 @@ class AIOserver(object):
                             self.sendOOC(self.ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
                         else:
                             self.clients[client].ratelimits[3] = OOCRateLimit
-                            if chatmsg[0] != "/":
+                            if chatmsg[0] != "/": # normal chat
+                                if self.rcon and self.rcon in chatmsg: continue # NO LEAK PASSWORD
                                 self.sendOOC(self.clients[client].OOCname, chatmsg, zone=self.clients[client].zone)
+
                             else: #commands.
                                 cmdargs = chatmsg.split(" ")
                                 cmd = cmdargs.pop(0).lower().replace("/", "", 1)

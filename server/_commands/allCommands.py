@@ -400,6 +400,8 @@ Usage: /g <message>"""
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
     
+    if server.rcon and server.rcon in globalmsg: return # NO LEAK PASSWORD
+    
     for i in server.clients.keys():
         if server.clients[i].use_global:
             server.sendOOC("$G[%s][%d]" % (name, zone), globalmsg, i)
@@ -415,6 +417,8 @@ Usage: /gm <message>"""
     globalmsg = " ".join(args)
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
+    
+    if server.rcon and server.rcon in globalmsg: return # NO LEAK PASSWORD
 
     for i in server.clients.keys():
         if server.clients[i].use_global:
@@ -431,6 +435,8 @@ Usage: /need <message>"""
     name = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else server.getCharName(server.clients[client].CharID)
     zone = server.clients[client].zone if consoleUser == 0 else -1
     
+    if server.rcon and server.rcon in globalmsg: return # NO LEAK PASSWORD
+    
     for i in server.clients.keys():
         if server.clients[i].use_adverts:
             server.sendOOC(server.ServerOOCName, "=== ADVERT ===\n%s at zone %d needs %s" % (name, zone, globalmsg), i)
@@ -444,6 +450,8 @@ Usage: /announce <message>"""
     if not args: return _help("announce")
 
     globalmsg = " ".join(args)
+    if server.rcon and server.rcon in globalmsg: return # NO LEAK PASSWORD
+
     server.sendOOC(server.ServerOOCName, "=== ANNOUNCEMENT ===\n%s" % globalmsg)
     server.sendBroadcast("Announcement: %s" % globalmsg)
 

@@ -356,7 +356,7 @@ YouTube http streams are NOT supported."""
 
     filename = " ".join(args)
     showname = server.ServerOOCName if consoleUser == 1 else "ECON USER %d"%client if consoleUser == 2 else ""
-    charID = consoleUser == 0 and server.clients[client].CharID or 0
+    charID = server.clients[client].CharID if consoleUser == 0 else 0
     server.changeMusic(filename, charID, showname, zone)
 
 @mod_only()

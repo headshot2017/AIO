@@ -1589,6 +1589,7 @@ if __name__ == "__main__":
             if not server.clients[i].isBot():
                 server.kick(i, "\n\n=== SERVER CLOSED ===", False, True)
         server.tcp.close()
+        if server.econ_password: server.econ_tcp.close()
         
     except Exception as e: #server crashed
         tracebackmsg = traceback.format_exc(e)
@@ -1603,3 +1604,4 @@ if __name__ == "__main__":
                 server.kick(i, "\n\n=== SERVER CRASHED ===\n" + tracebackmsg.rstrip(), False, True)
         
         server.tcp.close()
+        if server.econ_password: server.econ_tcp.close()

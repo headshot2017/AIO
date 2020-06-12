@@ -1818,7 +1818,7 @@ class GameWidget(QtGui.QWidget):
 					char.hide()
 				else:
 					char.show()
-					aSprite = sprite.split("\\" if "\\" in aSprite else "/")
+					aSprite = sprite.split("\\" if "\\" in sprite else "/")
 					if len(aSprite) < 2:
 						continue
 					oldpath = char.movie.fileName()

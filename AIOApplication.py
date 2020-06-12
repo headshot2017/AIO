@@ -83,9 +83,9 @@ class AIOApplication(QtGui.QApplication):
 		elif file.lower().startswith("http") or file.lower().startswith("ftp"): # stream from internet
 			self.music = BASS_StreamCreateURL(file, 0, 0, DOWNLOADPROC(), 0)
 
-			if self.music: BASS_ChannelSetAttribute(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
-
-		if self.music: BASS_ChannelPlay(self.music, True)
+		if self.music:
+			BASS_ChannelSetAttribute(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
+			BASS_ChannelPlay(self.music, True)
 		
 	def playSound(self, file):
 		if self.sound:

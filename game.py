@@ -1812,13 +1812,13 @@ class GameWidget(QtGui.QWidget):
 			char.vspeed = (y - char.yy) / 5.0
 			char.sprite = sprite
 			char.emoting = emoting
-			
+
 			if self.player:
 				if char.zone != self.player.zone:
 					char.hide()
 				else:
 					char.show()
-					aSprite = sprite.split("\\")
+					aSprite = sprite.split("\\" if "\\" in aSprite else "/")
 					if len(aSprite) < 2:
 						continue
 					oldpath = char.movie.fileName()

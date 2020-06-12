@@ -69,7 +69,7 @@ class AIObot(AIOplayer):
         self.ready = True
         self.CharID = charid
         self.charname = charname
-        self.sprite = charname+"\\spin.gif"
+        self.sprite = charname+"/spin.gif"
         self.char_ini = IniConfig("data/characters/"+charname+"/char.ini")
         self.imgprefix = self.char_ini.get("Options", "imgprefix", "")
         if self.imgprefix:
@@ -135,7 +135,7 @@ class AIObot(AIOplayer):
         if not move:
             self.hspeed = 0
             self.vspeed = 0
-            self.sprite = self.charname+"\\spin.gif"
+            self.sprite = self.charname+"/spin.gif"
             return
         
         self.dir_nr = dir_nr
@@ -150,32 +150,32 @@ class AIObot(AIOplayer):
         if dir_nr == 0: #south
             self.hspeed = 0
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"south.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"south.gif"
         if dir_nr == 1: #southwest
             self.hspeed = -spd
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southwest.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"southwest.gif"
         if dir_nr == 2: #west
             self.hspeed = -spd
             self.vspeed = 0
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"west.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"west.gif"
         if dir_nr == 3: #northwest
             self.hspeed = -spd
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northwest.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"northwest.gif"
         if dir_nr == 4: #north
             self.hspeed = 0
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"north.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"north.gif"
         if dir_nr == 5: #northeast
             self.hspeed = spd
             self.vspeed = -spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"northeast.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"northeast.gif"
         if dir_nr == 6: #east
             self.hspeed = spd
             self.vspeed = 0
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"east.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"east.gif"
         if dir_nr == 7: #southeast
             self.hspeed = spd
             self.vspeed = spd
-            self.sprite = self.charname+"\\"+self.walkanims[ind]+"southeast.gif"
+            self.sprite = self.charname+"/"+self.walkanims[ind]+"southeast.gif"

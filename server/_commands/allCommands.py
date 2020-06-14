@@ -466,7 +466,7 @@ def ooc_cmd_bot(server, client, consoleUser, args):
 Manage server-side player bots.
 Usage: /bot <add/remove/type>"""
 
-    if not AllowBot: return "Bots are disabled on this server."
+    if not server.allow_bots: return "Bots are disabled on this server."
     elif not args: return _help("bot")
 
     bot_arg = args.pop(0)

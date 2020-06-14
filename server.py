@@ -207,6 +207,15 @@ class AIOserver(object):
                             self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (bans[2], self.banlist.index(bans)))
                         return
                 
+                # multiclients
+                ip_count = 1
+                for multiclient in self.clients.keys():
+                    if multiclient != i and self.clients[multiclient].ip == ipaddr[0]:
+                        ip_count += 1
+                if ip_count > self.max_clients_per_ip:
+                    self.kick(i, "Only %d players with the same IP are allowed" % self.max_clients_per_ip)
+                    return
+                
                 for plug in self.plugins:
                     if plug[1].running and hasattr(plug[1], "onClientConnect"):
                         wasKicked = plug[1].onClientConnect(self, self.clients[i], ipaddr[0])

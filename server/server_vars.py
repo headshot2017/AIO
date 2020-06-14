@@ -9,8 +9,6 @@ OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message
 WTCERateLimit = 10 # amount of seconds to wait before allowing another testimony button (anti spam)
 ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
 ShowNameLength = 16 # maximum amount of characters (or letters if you're computer illiterate) a showname can have, it is trimmed down if exceeded
-
-AllowBot = False # set this to True to allow usage of the /bot command (NOTE: to use these bots you MUST have the client data on the server so that it can get the character data)
 ################################
 
 ############CONSTANTS#############

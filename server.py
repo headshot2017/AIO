@@ -79,10 +79,6 @@ class AIOserver(object):
     
     
     def __init__(self):
-        global AllowBot
-        if AllowBot and not os.path.exists("data/characters"):
-            AllowBot = False
-        
         if not os.path.exists("server/base.ini"):
             print "[warning]", "server/base.ini not found, creating file..."
             with open("server/base.ini", "w") as f:
@@ -93,9 +89,24 @@ class AIOserver(object):
                 f.write("scene=default\n")
                 f.write("motd=Welcome to my server!##Overview of in-game controls:#WASD keys - move#Shift - run##Have fun!\n")
                 f.write("publish=1\n")
+                f.write("rcon=theadminpassword\n")
+                f.write("maxplayers=100\n")
                 f.write("evidence_limit=255\n")
-                f.write("rcon=theadminpassword")
-                
+                f.write("\n")
+                f.write(";you cannot set the evidence limit higher than 255. it's the max.\n")
+                f.write(";you can set \"maxplayers\" to 0 to use the total number of characters\n")
+                f.write(";defined in the scene's init.ini file.\n")
+                f.write("\n")
+                f.write("[MasterServer]\n")
+                f.write("ip=aaio-ms.aceattorneyonline.com:27011\n")
+                f.write("[ECON]\n")
+                f.write("port=27000\n")
+                f.write("password=consolepassword\n")
+                f.write("\n")
+                f.write(";ECON is for advanced users. it allows you to control the server\n")
+                f.write(";through the command line. leave the password empty to disable.\n")
+
+
         ini = iniconfig.IniConfig("server/base.ini")
         self.servername = ini.get("Server", "name", "unnamed server")
         self.serverdesc = ini.get("Server", "desc", "automatically generated base.ini file")
@@ -118,6 +129,12 @@ class AIOserver(object):
         self.econ_port = int(ini.get("ECON", "port", "27000"))
         self.econ_password = ini.get("ECON", "password", "")
         self.econ_tcp = None
+        
+        self.max_clients_per_ip = int(ini.get("Advanced", "MaxMultiClients", "4"))
+        self.allow_bots = ini.get("Advanced", "AllowBots", "0") == "1"
+        if self.allow_bots and not os.path.exists("data/characters"):
+            self.allow_bots = False
+            print "[warning]", "bots are enabled but 'data/characters' folder doesn't exist. disabling"
     
         if not os.path.exists("server/scene/"+self.scene) or not os.path.exists("server/scene/"+self.scene+"/init.ini"):
             print "[warning]", "scene %s does not exist, switching to 'default'" % self.scene

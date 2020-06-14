@@ -1,7 +1,11 @@
 from __init__ import mod_only, _help
 from server_vars import *
-from AIOplayer import AIObot
-import time, thread
+import time, thread, sys
+
+try:
+    from AIOplayer import AIObot
+except ImportError: # pyinstaller goes apeshit
+    AIObot = sys.modules["AIOplayer"].AIObot # a little hack, it works
 
 def ooc_cmd_login(server, client, consoleUser, args):
     """

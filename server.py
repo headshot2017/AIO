@@ -1,6 +1,5 @@
 import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback
-import AIOprotocol
-from AIOplayer import AIOplayer, AIObot
+import AIOprotocol, AIOplayer
 
 sys.path.append("./server/")
 import _commands as Commands

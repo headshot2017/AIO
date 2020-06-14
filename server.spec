@@ -4,10 +4,10 @@ block_cipher = None
 
 
 a = Analysis(['server.py'],
-             pathex=['I:\\aaiovanilla\\python client prototype'],
+             pathex=[],
              binaries=None,
              datas=[],
-             hiddenimports=["AIOprotocol.py"],
+             hiddenimports=["AIOprotocol"],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],

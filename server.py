@@ -106,6 +106,7 @@ class AIOserver(object):
                 f.write(";ECON is for advanced users. it allows you to control the server\n")
                 f.write(";through the command line. leave the password empty to disable.\n")
 
+        self.commands = Commands
 
         ini = iniconfig.IniConfig("server/base.ini")
         self.servername = ini.get("Server", "name", "unnamed server")
@@ -175,11 +176,30 @@ class AIOserver(object):
         for file in os.listdir("./server/plugins"):
             if file.lower().endswith(".py"):
                 try:
-                    pluginObj = getattr(importlib.import_module(file[:-3]), file[:-3])
-                    self.plugins.append([pluginObj, pluginObj()])
+                    pluginModule = importlib.import_module(file[:-3])
+                    pluginObj = getattr(pluginModule, file[:-3])
+                    self.plugins.append([pluginObj, pluginObj(), file[:-3], pluginModule])
                 except:
                     print "Error occurred while trying to import plugin \"%s\":" % file[:-3]
                     print traceback.format_exc()
+
+    def reloadPlugins(self):
+        for i in range(len(self.plugins)):
+            plug = self.plugins[i]
+            
+            if plug[1].running:
+                super(plug[0], plug[1]).onPluginStop(server, False)
+                if hasattr(plug[1], "onPluginStop"):
+                    plug[1].onPluginStop(self, False)
+
+                pluginModule = reload(plug[3])
+                pluginObj = getattr(plug[3], plug[2])
+                pluginInst = pluginObj()
+                self.plugins[i] = [pluginObj, pluginInst, plug[2], pluginModule]
+
+                super(pluginObj, pluginInst).onPluginStart(server)
+                if hasattr(pluginInst, "onPluginStart"):
+                    pluginInst.onPluginStart(self)
     
     def getCharName(self, charid):
         if charid != -1:
@@ -1476,7 +1496,8 @@ class AIOserver(object):
 
         for plug in self.plugins:
             super(plug[0], plug[1]).onPluginStart(self)
-            plug[1].onPluginStart(self)
+            if hasattr(plug[1], "onPluginStart"):
+                plug[1].onPluginStart(self)
 
         if self.publish:
             loopMS = self.startMasterServerAdverter()
@@ -1715,7 +1736,8 @@ if __name__ == "__main__":
         
         for plug in server.plugins:
             super(plug[0], plug[1]).onPluginStop(server, False)
-            plug[1].onPluginStop(server, False)
+            if hasattr(plug[1], "onPluginStop"):
+                plug[1].onPluginStop(server, False)
         
     except Exception as e: #server crashed
         tracebackmsg = traceback.format_exc(e)
@@ -1734,4 +1756,5 @@ if __name__ == "__main__":
         
         for plug in server.plugins:
             super(plug[0], plug[1]).onPluginStop(server, True)
-            plug[1].onPluginStop(server, True)
+            if hasattr(plug[1], "onPluginStop"):
+                plug[1].onPluginStop(server, True)

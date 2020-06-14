@@ -528,3 +528,9 @@ Usage: /bot <add/remove/type>"""
         server.clients[botid].type = bottype
         server.clients[botid].interact = server.clients[client]
         return "Bot type set to '%s'" % bottype
+
+def ooc_cmd_plugins(server, client, consoleUser, args):
+    """
+Show all loaded server plugins."""
+
+    return "Plugins (%d):\n%s" % (len(server.plugins), ", ".join(plugin[2] for plugin in server.plugins))

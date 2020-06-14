@@ -1,4 +1,5 @@
 import sys
+from server_vars import plural
 
 def mod_only():
     import functools
@@ -33,6 +34,9 @@ def _help(cmd=None):
             return getattr(sys.modules["_commands"], "ooc_"+hidden+"cmd_"+cmd).__doc__
         else:
             return '"'+cmd+'" is not a valid command.'
+
+def register(callback):
+    setattr(sys.modules[__name__], callback.func_name, callback)
 
 def ooc_cmd_help(server, client, consoleUser, args):
     """
@@ -69,7 +73,9 @@ Usage: /reload
         if cmd.startswith("ooc_cmd_") or cmd.startswith("ooc_hiddencmd_"):
             all.append(cmd)
             setattr(sys.modules[__name__], cmd, getattr(allCommands, cmd))
+    
+    server.reloadPlugins()
 
-    server.sendOOC(server.ServerOOCName, "%d commands loaded." % len(all), client)
+    server.sendOOC(server.ServerOOCName, "%d %s and %d %s loaded." % (len(all), plural("command", len(all)), len(server.plugins), plural("plugin", len(server.plugins))), client)
 
 from allCommands import *

@@ -781,6 +781,10 @@ class AIOserver(object):
         buff = struct.pack("I", len(buffer)+1)
         buff += buffer
         
+        for plug in self.plugins:
+            if plug[1].running and hasattr(plug[1], "onClientSetZone"):
+                plug[1].onClientSetZone(self, self.clients[ClientID], zone)
+        
         for client in self.clients.keys():
             if self.clients[client].ready and not self.clients[client].isBot():
                 self.sendBuffer(client, buffer)
@@ -796,6 +800,10 @@ class AIOserver(object):
         buffer += struct.pack("h", charid)
         buff = struct.pack("I", len(buffer)+1)
         buff += buffer
+        
+        for plug in self.plugins:
+            if plug[1].running and hasattr(plug[1], "onClientSetChar"):
+                plug[1].onClientSetZone(self, self.clients[ClientID], charid)
 
         for client in self.clients.keys():
             if self.clients[client].ready and not self.clients[client].isBot():
@@ -1110,7 +1118,11 @@ class AIOserver(object):
                             self.clients[client].ready = True
                             self.Print("[game] player is ready. id=%d addr=%s" % (client, self.clients[client].ip))
                             self.sendCreate(client)
-                    
+                            
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientReady"):
+                                    plug[1].onClientReady(self, self.clients[client])
+
                     elif header == AIOprotocol.MOVE: #player movement.
                         try:
                             self.readbuffer, x = buffer_read("f", self.readbuffer)
@@ -1132,7 +1144,11 @@ class AIOserver(object):
                         self.clients[client].sprite = sprite
                         self.clients[client].emoting = emoting
                         self.clients[client].dir_nr = dir_nr
-                    
+                        
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientMovement"):
+                                plug[1].onClientMovement(self, self.clients[client], x, y, hspeed,vspeed, sprite, emoting, dir_nr)
+
                     elif header == AIOprotocol.SETZONE: # change player zone
                         try:
                             self.readbuffer, zone = buffer_read("H", self.readbuffer)
@@ -1146,7 +1162,7 @@ class AIOserver(object):
                         self.sendEvidenceList(client, zone)
                         self.sendPenaltyBar(0, self.zonelist[zone][2], zone, client)
                         self.sendPenaltyBar(1, self.zonelist[zone][3], zone, client)
-                    
+
                     elif header == AIOprotocol.SETCHAR:
                         try:
                             self.readbuffer, charid = buffer_read("h", self.readbuffer)
@@ -1193,7 +1209,9 @@ class AIOserver(object):
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendChat(showname, chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
-                        #print "[chat][IC]", "%d,%d,%s: %s" % (client, self.clients[client].zone, self.getCharName(self.clients[client].CharID), chatmsg)
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientChat"):
+                                plug[1].onClientChat(self, self.clients[client], chatmsg, showname, color, realization, evidence)
                     
                     elif header == AIOprotocol.OOC:
                         try:
@@ -1225,7 +1243,11 @@ class AIOserver(object):
                             self.clients[client].ratelimits[3] = OOCRateLimit
                             if chatmsg[0] != "/": # normal chat
                                 if self.rcon and self.rcon in chatmsg: continue # NO LEAK PASSWORD
+
                                 self.sendOOC(self.clients[client].OOCname, chatmsg, zone=self.clients[client].zone)
+                                for plug in self.plugins:
+                                    if plug[1].running and hasattr(plug[1], "onClientChatOOC"):
+                                        plug[1].onClientChatOOC(self, self.clients[client], name, chatmsg)
 
                             else: #commands.
                                 cmdargs = chatmsg.split(" ")
@@ -1253,6 +1275,10 @@ class AIOserver(object):
 
                         self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
                         self.clients[client].ratelimits[2] = ExamineRateLimit
+
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientExamine"):
+                                plug[1].onClientExamine(self, self.clients[client], x, y, showname)
                     
                     elif header == AIOprotocol.MUSIC: #music change
                         try:
@@ -1281,8 +1307,16 @@ class AIOserver(object):
                         if change:
                             self.changeMusic(songname, self.clients[client].CharID, showname, self.clients[client].zone)
                             self.Print("[game] %s changed the music to %s" % (message, songname))
+                            
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientMusic"):
+                                    plug[1].onClientMusic(self, self.clients[client], songname, showname, True)
                         else:
                             self.Print("[game] %s attempted to the music to %s" % (message, songname))
+                            
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientMusic"):
+                                    plug[1].onClientMusic(self, self.clients[client], songname, showname, False)
 
                         self.clients[client].ratelimits[0] = MusicRateLimit
                     
@@ -1295,6 +1329,9 @@ class AIOserver(object):
                             continue
                         
                         self.setChatBubble(client, on)
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientChatBubble"):
+                                plug[1].onClientChatBubble(self, self.clients[client], on)
                     
                     elif header == AIOprotocol.EMOTESOUND:
                         try:
@@ -1312,6 +1349,10 @@ class AIOserver(object):
                         
                         self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
                         self.clients[client].ratelimits[1] = EmoteSoundRateLimit
+                        
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientEmoteSound"):
+                                plug[1].onClientEmoteSound(self, self.clients[client], soundname, delay)
                     
                     elif header == AIOprotocol.EVIDENCE:
                         try:
@@ -1341,12 +1382,26 @@ class AIOserver(object):
                             
                             print "[game]", "%s id=%d addr=%s zone=%d added a piece of evidence: %s" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, name)
                             self.addEvidence(self.clients[client].zone, name, desc, image)
+                            
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientEvidenceAdd"):
+                                    plug[1].onClientEvidenceAdd(self, self.clients[client], self.clients[client].zone, name, desc, image)
+
                         elif type == AIOprotocol.EV_EDIT:
                             print "[game]", "%s id=%d addr=%s zone=%d edited piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
                             self.editEvidence(self.clients[client].zone, ind, name, desc, image)
+
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientEvidenceEdit"):
+                                    plug[1].onClientEvidenceEdit(self, self.clients[client], self.clients[client].zone, ind, name, desc, image)
+
                         elif type == AIOprotocol.EV_DELETE:
                             print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
                             self.deleteEvidence(self.clients[client].zone, ind)
+                            
+                            for plug in self.plugins:
+                                if plug[1].running and hasattr(plug[1], "onClientEvidenceDelete"):
+                                    plug[1].onClientEvidenceDelete(self, self.clients[client], self.clients[client].zone, ind)
                     
                     elif header == AIOprotocol.BARS: # penalty bars (AIO 0.4)
                         try:
@@ -1364,6 +1419,10 @@ class AIOserver(object):
                         print "[game]", "%s id=%d addr=%s zone=%d changed penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
                         self.zonelist[self.clients[client].zone][bar+2] = health
                         self.sendPenaltyBar(bar, health, self.clients[client].zone)
+                        
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientHealthBar"):
+                                plug[1].onClientHealthBar(self, self.clients[client], self.clients[client].zone, bar, health)
 
                     elif header == AIOprotocol.WTCE: # testimony buttons (AIO 0.4)
                         try:
@@ -1378,6 +1437,10 @@ class AIOserver(object):
 
                         self.clients[client].ratelimits[4] = WTCERateLimit
                         self.sendWTCE(wtcetype, self.clients[client].zone)
+                        
+                        for plug in self.plugins:
+                            if plug[1].running and hasattr(plug[1], "onClientWTCE"):
+                                plug[1].onClientWTCE(self, self.clients[client], self.clients[client].zone, wtcetype)
 
                     elif header == AIOprotocol.PING: #pong
                         self.clients[client].pingpong = ClientPingTime

@@ -1,5 +1,8 @@
 # core plugin object
 
+class PluginError(Exception):
+    pass
+
 class Plugin(object):
     running = False
     

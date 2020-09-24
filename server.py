@@ -4,7 +4,7 @@ from AIOplayer import *
 
 sys.path.append("./server/")
 sys.path.append("./server/plugins")
-from plugin import Plugin
+from plugin import Plugin, PluginError
 import _commands as Commands
 from server_vars import *
 
@@ -179,9 +179,32 @@ class AIOserver(object):
                     pluginModule = importlib.import_module(file[:-3])
                     pluginObj = getattr(pluginModule, file[:-3])
                     self.plugins.append([pluginObj, pluginObj(), file[:-3], pluginModule])
+
+                    # plugin table explained: [plugin class object, plugin object instance, plugin name, imported plugin module]
+
                 except:
                     print "Error occurred while trying to import plugin \"%s\":" % file[:-3]
                     print traceback.format_exc()
+    
+    def getPlugin(self, plugin_name, min_version=None, max_version=None):
+        for plug in self.plugins:
+            this_plugin = plug[2]
+            if plugin_name == this_plugin:
+                version = versionToInt(plug[3].version)
+                
+                if min_version:
+                    min_version_int = versionToInt(min_version)
+                    if version < min_version_int:
+                        raise PluginError('Plugin "%s" is too old (%s), must be at least %s' % (plugin_name, plug[3].version, min_version))
+
+                if max_version:
+                    max_version_int = versionToInt(max_version)
+                    if version > max_version_int:
+                        raise PluginError('Plugin "%s" is too new (%s), maximum allowed is %s' % (plugin_name, plug[3].version, max_version))
+
+                return plug[1]
+
+        return False
 
     def reloadPlugins(self):
         for i in range(len(self.plugins)):

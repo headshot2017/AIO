@@ -1519,7 +1519,11 @@ class AIOserver(object):
         for plug in self.plugins:
             super(plug[0], plug[1]).onPluginStart(self)
             if hasattr(plug[1], "onPluginStart"):
-                plug[1].onPluginStart(self)
+                failed = not plug[1].onPluginStart(self)
+                if failed:
+                    self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
+                    super(plug[0], plug[1]).onPluginStop(self)
+                    plug[1].onPluginStop(self)
 
         if self.publish:
             loopMS = self.startMasterServerAdverter()

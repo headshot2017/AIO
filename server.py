@@ -237,7 +237,7 @@ class AIOserver(object):
         
         for i in range(self.maxplayers):
             if not self.clients.has_key(i):
-                self.Print("[game] incoming connection from %s (%d)" % (ipaddr[0], i))
+                self.Print("game", "incoming connection from %s (%d)" % (ipaddr[0], i))
                 self.clients[i] = AIOplayer(client, ipaddr[0], i)
                 
                 for bans in self.banlist:
@@ -265,8 +265,7 @@ class AIOserver(object):
                         if wasKicked: return
                 
                 client.settimeout(0.1)
-                if ipaddr[0].startswith("127."): #localhost
-                    self.clients[i].is_authed = True
+                self.clients[i].is_authed = ipaddr[0].startswith("127.") # automatically make localhost an admin
                 self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                 self.clients[i].pingpong = ClientPingTime
                 thread.start_new_thread(self.clientLoop, (i,))
@@ -305,7 +304,7 @@ class AIOserver(object):
             return
         
         printname = name if clientid >= self.maxplayers else self.getCharName(self.clients[clientid].CharID)
-        self.Print("[chat][IC] %d,%d,%s: %s" % (clientid,zone, printname, chatmsg))
+        self.Print("chat", "%d,%d,%s: %s" % (clientid,zone, printname, chatmsg))
         thread.start_new_thread(self.ic_tick_thread, (chatmsg,))
         
         buffer = ""
@@ -591,7 +590,7 @@ class AIOserver(object):
         
         elif ClientID >= 10000: #ECON input
             econID = ClientID - 10000
-            self.Print(chatmsg, econID)
+            self.Print("OOC", chatmsg, dest=econID)
             return
         
         if self.econ_password and ClientID == -2:
@@ -599,7 +598,7 @@ class AIOserver(object):
             for i in self.clients.keys():
                 if self.clients[i].OOCname == name:
                     aClient = i
-            self.Print("[chat][OOC] %d,%d,%s: %s" % (aClient, zone, name, chatmsg))
+            self.Print("OOC", "%d,%d,%s: %s" % (aClient, zone, name, chatmsg))
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.OOC)
@@ -670,7 +669,7 @@ class AIOserver(object):
         if isinstance(ClientID, socket.socket):
             self.ClientID.sendall(buffer+"\r")
             if printMsg:
-                self.Print("[game] kicked client %s: %s" % (ClientID.getpeername()[0], reason))
+                self.Print("server", "kicked client %s: %s" % (ClientID.getpeername()[0], reason))
         else:
             self.sendBuffer(ClientID, buffer)
             
@@ -678,7 +677,7 @@ class AIOserver(object):
                 self.sendDestroy(ClientID)
             
             if printMsg:
-                self.Print("[game] kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+                self.Print("server", "kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
             
             if not noUpdate:
                 self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
@@ -718,7 +717,7 @@ class AIOserver(object):
                     else:
                         self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)-1))
         
-        self.Print("[bans] banned %s for %d min (%s)" % (self.banlist[-1][0], min+1, reason))
+        self.Print("bans", "banned %s for %s (%s)" % (self.banlist[-1][0], "%d min" % (min+1) if length > 0 else "life", reason))
         self.writeBanList()
         return len(self.banlist)-1
         
@@ -940,12 +939,12 @@ class AIOserver(object):
         self.sendBuffer(ClientID, buffer)
     
     def startMasterServerAdverter(self):
-        print "[masterserver]", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1])
+        self.Print("masterserver", "connecting to %s:%d..." % (self.ms_addr[0], self.ms_addr[1]))
         self.ms_tcp = None
         try:
             self.ms_tcp = socket.create_connection((self.ms_addr[0], self.ms_addr[1]))
         except socket.error as e:
-            print "[masterserver]", "failed to connect to masterserver. %s" % e
+            self.Print("masterserver", "failed to connect to masterserver. %s" % e)
             return False
         
         self.ms_tcp.setblocking(False)
@@ -966,11 +965,11 @@ class AIOserver(object):
             if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
                 return True
             else:
-                print "[masterserver]", "connection to master server lost, retrying."
+                self.Print("masterserver", "connection to master server lost, retrying.")
                 return False
         
         if not data:
-            print "[masterserver]", "no data from master server, retrying."
+            self.Print("masterserver", "no data from master server (connection lost), retrying.")
             return False
         
         t = data.split("%")
@@ -988,7 +987,7 @@ class AIOserver(object):
                             try:
                                 url = urllib.urlopen("http://ipv4bot.whatismyipaddress.com")
                             except:
-                                print "[masterserver]", "failed to get own IP address. make sure you have internet access."
+                                self.Print("masterserver", "failed to get own IP address. make sure you have internet access.")
                                 self.MSstate = -1
                                 self.ms_tcp.close()
                                 return False
@@ -996,10 +995,10 @@ class AIOserver(object):
                             ip = url.read().rstrip()
                             self.ms_tcp.send("SET_IP#"+ip+"#%\n")
                         else:
-                            print "[masterserver]", "server published."
+                            self.Print("masterserver", "server published.")
                     
                 elif type == "SET_IP":
-                    print "[masterserver]", "server published."
+                    self.Print("masterserver", "server published.")
                 
                 elif type == "KEEPALIVE":
                     self.MStick = 200
@@ -1050,7 +1049,7 @@ class AIOserver(object):
                     else:
                         if self.clients[client].ready:
                             self.sendDestroy(client)
-                        self.Print("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
+                        self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                                 plug[1].onClientDisconnect(self, client, self.clients[client].ip)
@@ -1064,7 +1063,7 @@ class AIOserver(object):
                 if not self.readbuffer or self.clients[client].pingpong <= 0:
                     if self.clients[client].ready:
                         self.sendDestroy(client)
-                    self.Print("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
+                    self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
                     for plug in self.plugins:
                         if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                             plug[1].onClientDisconnect(self, client, self.clients[client].ip)
@@ -1089,7 +1088,7 @@ class AIOserver(object):
                             self.sendDestroy(client)
                         try: sock.close()
                         except: pass
-                        self.Print("[game] client %d (%s) disconnected." % (client, self.clients[client].ip))
+                        self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                                 plug[1].onClientDisconnect(self, client, self.clients[client].ip)
@@ -1124,11 +1123,11 @@ class AIOserver(object):
                         except struct.error:
                             continue
                             
-                        text = "[game] client %d using version %s" % (client, version)
+                        text = "client %d using version %s" % (client, version)
                         if version != GameVersion:
                             text += " (mismatch!)"
                             mismatch = True
-                        self.Print(text)
+                        self.Print("server", text)
                         self.clients[client].ClientVersion = version
                         if mismatch and not AllowVersionMismatch:
                             self.kick(client, "your client version (%s) doesn't match the server's (%s).#make sure you got the latest AIO update at tiny.cc/updateaio, or the server's custom client." % (version, GameVersion))
@@ -1159,7 +1158,7 @@ class AIOserver(object):
                             self.sendPenaltyBar(0, self.zonelist[self.defaultzone][2], self.defaultzone, client)
                             self.sendPenaltyBar(1, self.zonelist[self.defaultzone][3], self.defaultzone, client)
                             self.clients[client].ready = True
-                            self.Print("[game] player is ready. id=%d addr=%s" % (client, self.clients[client].ip))
+                            self.Print("server", "player is ready. id=%d addr=%s" % (client, self.clients[client].ip))
                             self.sendCreate(client)
                             
                             for plug in self.plugins:
@@ -1295,7 +1294,7 @@ class AIOserver(object):
                             else: #commands.
                                 cmdargs = chatmsg.split(" ")
                                 cmd = cmdargs.pop(0).lower().replace("/", "", 1)
-                                print "[chat][OOC]", "%d,%d,%s used command '%s'" % (client, self.clients[client].zone, self.clients[client].OOCname, chatmsg)
+                                self.Print("OOC", "%d,%d,%s used command '%s'" % (client, self.clients[client].zone, self.clients[client].OOCname, chatmsg))
                                 self.parseOOCcommand(client, cmd, cmdargs)
                                 
                     elif header == AIOprotocol.EXAMINE: #AA-like "Examine" functionality
@@ -1349,13 +1348,13 @@ class AIOserver(object):
                         message = "%s id=%d addr=%s zone=%d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone)
                         if change:
                             self.changeMusic(songname, self.clients[client].CharID, showname, self.clients[client].zone)
-                            self.Print("[game] %s changed the music to %s" % (message, songname))
+                            self.Print("game", "%s changed the music to %s" % (message, songname))
                             
                             for plug in self.plugins:
                                 if plug[1].running and hasattr(plug[1], "onClientMusic"):
                                     plug[1].onClientMusic(self, self.clients[client], songname, showname, True)
                         else:
-                            self.Print("[game] %s attempted to the music to %s" % (message, songname))
+                            self.Print("game", "%s failed to change the music to %s" % (message, songname))
                             
                             for plug in self.plugins:
                                 if plug[1].running and hasattr(plug[1], "onClientMusic"):
@@ -1419,11 +1418,11 @@ class AIOserver(object):
                         
                         if type == AIOprotocol.EV_ADD:
                             if len(self.evidencelist[self.clients[client].zone]) == self.evidence_limit:
-                                print "[game]", "%s id=%d addr=%s zone=%d tried to add a piece of evidence but exceeded the limit"
+                                self.Print("evidence", "%s id=%d addr=%s zone=%d tried to add a piece of evidence but exceeded the limit" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone))
                                 self.sendWarning(client, "You cannot add more than %d pieces of evidence at a time." % self.evidence_limit)
                                 continue
                             
-                            print "[game]", "%s id=%d addr=%s zone=%d added a piece of evidence: %s" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, name)
+                            self.Print("evidence", "%s id=%d addr=%s zone=%d added a piece of evidence: %s" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, name))
                             self.addEvidence(self.clients[client].zone, name, desc, image)
                             
                             for plug in self.plugins:
@@ -1431,7 +1430,7 @@ class AIOserver(object):
                                     plug[1].onClientEvidenceAdd(self, self.clients[client], self.clients[client].zone, name, desc, image)
 
                         elif type == AIOprotocol.EV_EDIT:
-                            print "[game]", "%s id=%d addr=%s zone=%d edited piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
+                            self.Print("evidence", "%s id=%d addr=%s zone=%d edited piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind))
                             self.editEvidence(self.clients[client].zone, ind, name, desc, image)
 
                             for plug in self.plugins:
@@ -1439,7 +1438,7 @@ class AIOserver(object):
                                     plug[1].onClientEvidenceEdit(self, self.clients[client], self.clients[client].zone, ind, name, desc, image)
 
                         elif type == AIOprotocol.EV_DELETE:
-                            print "[game]", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind)
+                            self.Print("evidence", "%s id=%d addr=%s zone=%d deleted piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind))
                             self.deleteEvidence(self.clients[client].zone, ind)
                             
                             for plug in self.plugins:
@@ -1453,13 +1452,13 @@ class AIOserver(object):
                         except struct.error: continue
                         
                         if bar > 1: # must be 0 or 1
-                            print "[game]", "%s id=%d addr=%s zone=%d tried to change penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar)
+                            self.Print("game", "%s id=%d addr=%s zone=%d tried to change penalty bar (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar))
                             continue
                         if health > 10: # must be 0 or 10
-                            print "[game]", "%s id=%d addr=%s zone=%d broke the penalty machine %d (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
+                            self.Print("game", "%s id=%d addr=%s zone=%d broke the penalty machine %d (%d)" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health))
                             continue
                         
-                        print "[game]", "%s id=%d addr=%s zone=%d changed penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health)
+                        self.Print("game", "%s id=%d addr=%s zone=%d changed penalty bar %d to %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, bar, health))
                         self.zonelist[self.clients[client].zone][bar+2] = health
                         self.sendPenaltyBar(bar, health, self.clients[client].zone)
                         
@@ -1473,7 +1472,7 @@ class AIOserver(object):
                         except struct.error: continue
 
                         if wtcetype > 3: # must be between 0 and 3
-                            print "[game]", "%s id=%d addr=%s zone=%d tried to use WT/CE %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, wtcetype)
+                            self.Print("game", "%s id=%d addr=%s zone=%d tried to use WT/CE %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, wtcetype))
                             continue
                         if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
                             continue
@@ -1492,7 +1491,7 @@ class AIOserver(object):
         except Exception as e: # an error occurred on this client
             if client in self.clients:
                 tracebackmsg = traceback.format_exc(e)
-                print "Client %d crash:\n%s" % (client, tracebackmsg)
+                self.Print("error", "Client %d crash:\n%s" % (client, tracebackmsg), False)
                 server.kick(client, "\n\n=== CLIENT THREAD CRASH ===\n%s\nTry rejoining. If this message persists, report the problem." % tracebackmsg, False, True)
     
     def run(self): #main loop
@@ -1504,7 +1503,7 @@ class AIOserver(object):
         
         self.tcp.bind(("", self.port))
         self.tcp.listen(5)
-        print "[server]", "AIO server started on port %d" % self.port
+        self.Print("server", "AIO server started on port %d" % self.port)
         
         self.tcp.settimeout(0.1)
         
@@ -1513,9 +1512,9 @@ class AIOserver(object):
             self.econ_tcp.bind(("", self.econ_port))
             self.econ_tcp.listen(5)
             self.econ_tcp.setblocking(False)
-            print "[econ]", "external admin console started on port %d" % self.econ_port
+            self.Print("econ", "external admin console started on port %d" % self.econ_port)
 
-        if AllowVersionMismatch: print "[warning]", "AllowVersionMismatch is enabled, players with different client versions can join. chances are that things will break."
+        if AllowVersionMismatch: self.Print("warning", "AllowVersionMismatch is enabled, players with different client versions can join. This can cause problems.")
 
         for plug in self.plugins:
             super(plug[0], plug[1]).onPluginStart(self)
@@ -1552,7 +1551,7 @@ class AIOserver(object):
             for i in range(len(self.banlist)):
                 ban = self.banlist[i]
                 if ban[1] > 0 and time.time() > ban[1]:
-                    self.Print("[bans] %s expired (%s)" % (ban[0], ban[2]))
+                    self.Print("bans", "%s expired (%s)" % (ban[0], ban[2]))
                     del self.banlist[i]
                     self.writeBanList()
                     if not self.banlist:
@@ -1588,7 +1587,7 @@ class AIOserver(object):
         try:
             client, ipaddr = self.econ_tcp.accept()
             client.setblocking(False)
-            print "[econ]", "%s connected." % ipaddr[0]
+            self.Print("econ", "%s connected." % ipaddr[0], False)
             client.send("Enter password:\r\n> ")
             for i in range(500):
                 if not self.econ_clients.has_key(i):
@@ -1609,12 +1608,12 @@ class AIOserver(object):
                 if e.args[0] == 10035 or e.args[0] == "timed out" or e.errno == 11:
                     continue
                 else:
-                    print "[econ]", "%s disconnected." % client[1]
+                    self.Print("econ", "%s disconnected." % client[1], False)
                     del self.econ_clients[i]
                     continue
             
             if not data:
-                print "[econ]", "%s disconnected." % client[1]
+                self.Print("econ", "%s disconnected." % client[1], False)
                 try:
                     client[0].close()
                 except:
@@ -1641,12 +1640,12 @@ class AIOserver(object):
                 if data == self.econ_password:
                     client[2] = ECONSTATE_AUTHED
                     client[0].send("Access to server console granted.%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
-                    print "[econ]", "%s is now logged in." % client[1]
+                    self.Print("econ", "%s is now logged in." % client[1], False)
                 
                 else:
                     client[4] += 1
                     if client[4] >= MaxLoginFails:
-                        print "[econ]", "%s was kicked due to entering the wrong password." % client[1]
+                        self.Print("econ", "%s was kicked due to entering the wrong password." % client[1], False)
                         try:
                             client[0].close()
                         except:
@@ -1666,11 +1665,11 @@ class AIOserver(object):
                 if var.startswith("/"):
                     cmdargs = data.split(" ")
                     cmd = cmdargs.pop(0).lower()
-                    print "[econ]", "%s used command '%s'" % (client[1], var)
+                    self.Print("econ", "%s used command '%s'" % (client[1], var), False)
                     try:
                         self.parseOOCcommand(i+10000, cmd.replace("/", "", 1), cmdargs)
                     except Exception as e:
-                        print "[econ]", "an error occurred while executing command %s from %s: %s" % (cmd, client[1], e.args)
+                        self.Print("econ", "an error occurred while executing command %s from %s: %s" % (cmd, client[1], e.args), False)
                         client[0].send(str(e.args)+"%s" % ("\r\n" if client[3] == ECONCLIENT_CRLF else "\n"))
                         continue
                 else:
@@ -1695,23 +1694,28 @@ class AIOserver(object):
                     #print "[chat][IC] -1,%d,%s: %s" % (var, "ECON USER %d" % i, txt)
                     self.sendChat("ECON USER %d" % i, txt, "male", var, 4294901760, 0, self.maxplayers+1, 0)
     
-    def Print(self, text, dest=-1):
-        print text
-        if dest == -1:
-            for client in self.econ_clients.values():
-                if client[2] == ECONSTATE_AUTHED:
-                    send = text.replace("\n", "\r\n")+"\r\n" if client[3] == ECONCLIENT_CRLF else text+"\n"
+    def Print(self, element, text, sendToEcon=True, dest=-1):
+        local = time.localtime()
+        timestamp = "[%d-%.2d-%.2d %.2d:%.2d:%.2d]" % (local[0], local[1], local[2], local[3], local[4], local[5])
+        finaltext = "%s[%s]: %s" % (timestamp, element, text)
+        print finaltext
+
+        if sendToEcon:
+            if dest == -1:
+                for client in self.econ_clients.values():
+                    if client[2] == ECONSTATE_AUTHED:
+                        send = text.replace("\n", "\r\n")+"\r\n" if client[3] == ECONCLIENT_CRLF else text+"\n"
+                        try:
+                            client[0].send(send)
+                        except:
+                            pass
+            else:
+                if self.econ_clients.has_key(dest):
+                    send = text.replace("\n", "\r\n")+"\r\n" if self.econ_clients[dest][3] == ECONCLIENT_CRLF else text+"\n"
                     try:
-                        client[0].send(send)
+                        self.econ_clients[dest][0].send(send)
                     except:
                         pass
-        else:
-            if self.econ_clients.has_key(dest):
-                send = text.replace("\n", "\r\n")+"\r\n" if self.econ_clients[dest][3] == ECONCLIENT_CRLF else text+"\n"
-                try:
-                    self.econ_clients[dest][0].send(send)
-                except:
-                    pass
     
     def chatThread(self):
         while True:

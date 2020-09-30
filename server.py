@@ -261,8 +261,8 @@ class AIOserver(object):
                 
                 for plug in self.plugins:
                     if plug[1].running and hasattr(plug[1], "onClientConnect"):
-                        wasKicked = plug[1].onClientConnect(self, self.clients[i], ipaddr[0])
-                        if wasKicked: return
+                        wasNotKicked = plug[1].onClientConnect(self, self.clients[i], ipaddr[0])
+                        if not wasNotKicked: return
                 
                 client.settimeout(0.1)
                 self.clients[i].is_authed = ipaddr[0].startswith("127.") # automatically make localhost an admin
@@ -1517,13 +1517,14 @@ class AIOserver(object):
         if AllowVersionMismatch: self.Print("warning", "AllowVersionMismatch is enabled, players with different client versions can join. This can cause problems.")
 
         for plug in self.plugins:
+            server.Print("plugins", "starting plugin %s version %s" % (plug[2], plug[3].version))
             super(plug[0], plug[1]).onPluginStart(self)
             if hasattr(plug[1], "onPluginStart"):
                 failed = not plug[1].onPluginStart(self)
                 if failed:
                     self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
-                    super(plug[0], plug[1]).onPluginStop(self)
-                    plug[1].onPluginStop(self)
+                    super(plug[0], plug[1]).onPluginStop(self, False)
+                    plug[1].onPluginStop(self, False)
 
         if self.publish:
             loopMS = self.startMasterServerAdverter()

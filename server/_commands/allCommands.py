@@ -237,10 +237,10 @@ def ooc_cmd_ban(server, client, consoleUser, args):
 Bans a player from the server.
 Usage: /ban <id or ip> <ban length> [reason]
 The ban length can be phrased in various ways:
-"0" for lifeban
-"1m" for 1 minute
-or "24h" for 1 day.
-If the letter is omitted, minutes are used by default."""
+1m: one minute
+1h: one hour
+1d: one day
+If the letter in the ban length is omitted, minutes are used by default."""
 
     if len(args) < 2: return _help("ban")
     
@@ -258,7 +258,7 @@ If the letter is omitted, minutes are used by default."""
             return "Invalid ban length argument."
 
     if bantype != "m" and bantype != "h" and bantype != "d":
-        return "Invalid ban type '%s'. Valid: (m)inutes, (h)ours, (d)ays" % (bantype, client)
+        return "Invalid ban length modifier '%s'. Valid: (m)inutes, (h)ours, (d)ays" % (bantype, client)
 
     reason = " ".join(args[2:]) or "No reason given"
     
@@ -280,7 +280,7 @@ If the letter is omitted, minutes are used by default."""
         elif id.startswith("127.") or id == "localhost":
             return "You can't ban the host."
 
-        elif id == server.clients[client].ip:
+        elif client >= 0 and client < 10000 and id == server.clients[client].ip:
             return "You can't ban yourself."
 
     if banlength > 0:
@@ -294,14 +294,11 @@ If the letter is omitted, minutes are used by default."""
     else:
         reallength = 0
     
-    min = abs(time.time() - reallength) / 60 if reallength > 0 else 0
-    mintext = plural("minute", int(min+1))
+    min = abs(time.time() - reallength) / 60 + 1 if reallength > 0 else 0
+    mintext = "%d %s" % (min, plural("minute", int(min))) if min > 0 else "life"
     banid = server.ban(id, reallength, reason)
 
-    if min > 0:
-        return "User %s has been banned for %d %s (%s). Ban ID: %d" % (str(id), min+1, mintext, reason, banid)
-    else:
-        return "User %s has been banned for life (%s). Ban ID: %d" % (str(id), reason, banid)
+    return "User %s has been banned for %s (%s). Ban ID: %d" % (str(id), mintext, reason, banid)
 
 @mod_only()
 def ooc_cmd_baninfo(server, client, consoleUser, args):
@@ -318,10 +315,10 @@ Usage: /baninfo <ban ID>"""
     if id < 0 or id >= len(server.banlist): return "Ban ID range out of bounds."
     ban = server.banlist[id]
 
-    min = abs(time.time() - ban[1]) / 60
-    mintext = plural("minute", int(min+1))
+    min = abs(time.time() - ban[1]) / 60 + 1 if ban[1] > 0 else 0
+    mintext = "%d %s" % (min, plural("minute", int(min+1))) if min > 0 else "Perma"
     
-    return "Ban %d\nIP: %s\nDuration: %d %s\nFor: %s" % (id, ban[0], min, mintext, ban[2])
+    return "Ban %d\nIP: %s\nDuration: %s\nFor: %s" % (id, ban[0], mintext, ban[2])
 
 @mod_only()
 def ooc_cmd_unban(server, client, consoleUser, args):
@@ -336,12 +333,16 @@ Usage: /unban <ban ID>"""
         return "Invalid ban ID "+args[0]+"."
 
     if id < 0 or id >= len(server.banlist): return "Ban ID range out of bounds."
+    ban = server.banlist[id]
 
-    min = abs(time.time() - server.banlist[id][1]) / 60
-    mintext = plural("minute", int(min+1))
+    min = abs(time.time() - ban[1]) / 60 + 1 if ban[1] > 0 else 0
+    mintext = "%d %s" % (min, plural("minute", int(min))) if min > 0 else "Perma"
 
-    msg = "Unbanned %s: %d %s (%s)" % (id, min+1, mintext, server.banlist[id][2])
+    server.Print("bans", "%s was unbanned (%s, %s)" % (ban[0], mintext, ban[2]))
+    msg = "Unbanned %s: %s %s (%s)" % (id, ban[0], mintext, ban[2])
     del server.banlist[id]
+    server.writeBanList()
+
     return msg
 
 @mod_only()

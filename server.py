@@ -1517,7 +1517,7 @@ class AIOserver(object):
         if AllowVersionMismatch: self.Print("warning", "AllowVersionMismatch is enabled, players with different client versions can join. This can cause problems.")
 
         for plug in self.plugins:
-            server.Print("plugins", "starting plugin %s version %s" % (plug[2], plug[3].version))
+            server.Print("plugins", "starting '%s' version %s" % (plug[2], plug[3].version))
             super(plug[0], plug[1]).onPluginStart(self)
             if hasattr(plug[1], "onPluginStart"):
                 failed = not plug[1].onPluginStart(self)

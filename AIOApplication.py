@@ -157,8 +157,7 @@ class ClientThread(QtCore.QThread):
 	def __init__(self):
 		super(ClientThread, self).__init__()
 		self.connected = False
-		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		self.tcp = None
 		self.ip = "0"
 		self.port = 0
 		
@@ -172,7 +171,6 @@ class ClientThread(QtCore.QThread):
 	
 	def forceDisconnect(self, error=False):
 		self.tcp.close()
-		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.connected = False
 	
 	def disconnect(self, error=False):
@@ -313,6 +311,7 @@ class ClientThread(QtCore.QThread):
 		connection_phase = 0
 		pingtimer = 7
 		already_pinged = False
+		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -325,10 +324,7 @@ class ClientThread(QtCore.QThread):
 		self.tcp.setblocking(False)
 		self.sendWelcome()
 		
-		while True:
-			if not self.connected:
-				break
-			
+		while self.connected and self.tcp:
 			can_send = int(time.time()) % pingtimer == 0
 			if can_send and not already_pinged:
 				pingbefore = time.time()
@@ -336,7 +332,7 @@ class ClientThread(QtCore.QThread):
 				self.sendPing()
 			elif not can_send:
 				already_pinged = False
-			
+
 			try:
 				data = self.tcp.recv(4096)
 			except socket.error, err:

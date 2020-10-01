@@ -1500,7 +1500,17 @@ class AIOserver(object):
             return
         
         self.running = True
-        
+
+        for plug in self.plugins:
+            server.Print("plugins", "starting '%s' version %s" % (plug[2], plug[3].version))
+            super(plug[0], plug[1]).onPluginStart(self)
+            if hasattr(plug[1].onPluginStart):
+                success = plug[1].onPluginStart(self)
+                if success == False: # it would not be logical to do "if not success" because what if the plugin func doesn't return
+                    self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
+                    super(plug[0], plug[1]).onPluginStop(self, False)
+                    plug[1].onPluginStop(self, False)
+
         self.tcp.bind(("", self.port))
         self.tcp.listen(5)
         self.Print("server", "AIO server started on port %d" % self.port)
@@ -1515,16 +1525,6 @@ class AIOserver(object):
             self.Print("econ", "external admin console started on port %d" % self.econ_port)
 
         if AllowVersionMismatch: self.Print("warning", "AllowVersionMismatch is enabled, players with different client versions can join. This can cause problems.")
-
-        for plug in self.plugins:
-            server.Print("plugins", "starting '%s' version %s" % (plug[2], plug[3].version))
-            super(plug[0], plug[1]).onPluginStart(self)
-            if hasattr(plug[1].onPluginStart):
-                success = plug[1].onPluginStart(self)
-                if success == False: # it would not be logical to do "if not success" because what if the plugin func doesn't return
-                    self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
-                    super(plug[0], plug[1]).onPluginStop(self, False)
-                    plug[1].onPluginStop(self, False)
 
         if self.publish:
             loopMS = self.startMasterServerAdverter()

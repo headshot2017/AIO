@@ -108,6 +108,7 @@ class AIOserver(object):
                 f.write("\n")
                 f.write("[Advanced]\n")
                 f.write("MaxMultiClients=4\n")
+                f.write("ServerOOCName = $SERVER\n")
                 f.write("AllowBots=0\n")
 
         self.commands = Commands
@@ -136,6 +137,7 @@ class AIOserver(object):
         self.econ_tcp = None
         
         self.max_clients_per_ip = ini.get("Advanced", "MaxMultiClients", 4, int)
+        self.ServerOOCName = ini.get("Advanced", "ServerOOCName", "$SERVER")
         self.allow_bots = ini.get("Advanced", "AllowBots", "0") == "1"
         if self.allow_bots and not os.path.exists("data/characters"):
             self.allow_bots = False

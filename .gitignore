@@ -2,6 +2,7 @@ data/
 pybass/
 build/
 dist/
+server/logs/
 server/*.txt
 server/*.pyc
 server/_commands/*.pyc

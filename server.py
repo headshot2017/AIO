@@ -73,6 +73,7 @@ class AIOserver(object):
     MSstate = -1
     MStick = -1
     ic_finished = True
+    logfile = None
     
     
     ServerOOCName = "$SERVER" # the ooc name that the server will use to respond to OOC commands and the like
@@ -92,6 +93,7 @@ class AIOserver(object):
                 f.write("rcon=theadminpassword\n")
                 f.write("maxplayers=100\n")
                 f.write("evidence_limit=255\n")
+                f.write("log=1\n")
                 f.write("\n")
                 f.write(";you cannot set the evidence limit higher than 255. it's the max.\n")
                 f.write(";you can set \"maxplayers\" to 0 to use the total number of characters\n")
@@ -132,6 +134,14 @@ class AIOserver(object):
         except:
             self.ms_addr[1] = 27011
         self.rcon = ini.get("Server", "rcon", "")
+
+        if ini.get("Server", "log", "1") == "1":
+            local = time.localtime()
+            timestamp = "%d-%.2d-%.2d %.2d-%.2d-%.2d" % (local[0], local[1], local[2], local[3], local[4], local[5])
+
+            if not os.path.exists("server/logs"): os.makedirs("server/logs")
+            self.logfile = open("server/logs/server_log_"+timestamp+".txt", "w")
+
         self.econ_port = ini.get("ECON", "port", 27000, int)
         self.econ_password = ini.get("ECON", "password", "")
         self.econ_tcp = None
@@ -243,7 +253,7 @@ class AIOserver(object):
         
         for i in range(self.maxplayers):
             if not self.clients.has_key(i):
-                self.Print("game", "incoming connection from %s (%d)" % (ipaddr[0], i))
+                self.Print("server", "incoming connection from %s (%d)" % (ipaddr[0], i))
                 self.clients[i] = AIOplayer(client, ipaddr[0], i)
                 
                 for bans in self.banlist:
@@ -281,6 +291,8 @@ class AIOserver(object):
     
     def sendBuffer(self, clientID, buffer):
         try:
+            if isinstance(clientID, AIOplayer):
+                return clientID.sock.sendall(buffer+"\r")
             return self.clients[clientID].sock.sendall(buffer+"\r")
         except (socket.error, socket.timeout) as e:
             #print "socket error %d" % e.args[0]
@@ -673,22 +685,24 @@ class AIOserver(object):
         buff += buffer
         
         if isinstance(ClientID, socket.socket):
-            self.ClientID.sendall(buffer+"\r")
+            ClientID.sendall(buffer+"\r")
             if printMsg:
                 self.Print("server", "kicked client %s: %s" % (ClientID.getpeername()[0], reason))
         else:
-            self.sendBuffer(ClientID, buffer)
+            player = self.clients[ClientID]
+            del self.clients[ClientID]
+
+            self.sendBuffer(player, buffer)
             
-            if self.clients[ClientID].ready:
+            if player.ready:
                 self.sendDestroy(ClientID)
             
             if printMsg:
-                self.Print("server", "kicked client %d (%s): %s" % (ClientID, self.getCharName(self.clients[ClientID].CharID), reason))
+                self.Print("server", "kicked client %d (%s): %s" % (ClientID, self.getCharName(player.CharID), reason))
             
             if not noUpdate:
                 self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-            
-            del self.clients[ClientID]
+
     
     def ban(self, ClientID, length, reason):
         if not self.running:
@@ -1094,6 +1108,7 @@ class AIOserver(object):
                             self.sendDestroy(client)
                         try: sock.close()
                         except: pass
+                        print "dc 3"
                         self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
@@ -1711,6 +1726,9 @@ class AIOserver(object):
         finaltext = "%s[%s]: %s" % (timestamp, element, text)
         print finaltext
 
+        if self.logfile:
+            self.logfile.write(finaltext+"\n")
+
         if sendToEcon:
             if dest == -1:
                 for client in self.econ_clients.values():
@@ -1769,6 +1787,7 @@ if __name__ == "__main__":
         for i in server.clients.keys():
             if not server.clients[i].isBot():
                 server.kick(i, "\n\n=== SERVER CLOSED ===", False, True)
+
         server.tcp.close()
         if server.econ_password and server.econ_tcp: server.econ_tcp.close()
         
@@ -1779,6 +1798,8 @@ if __name__ == "__main__":
                 plug[1].onPluginStop(server, False)
         
         server.Print("server", "Server stopped.")
+
+        if server.logfile: server.logfile.close()
         
     except Exception as e: #server crashed
         tracebackmsg = traceback.format_exc(e)
@@ -1802,3 +1823,5 @@ if __name__ == "__main__":
                 plug[1].onPluginStop(server, True)
         
         server.Print("server", "Server stopped due to a crash.")
+
+        if server.logfile: server.logfile.close()

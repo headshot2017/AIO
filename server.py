@@ -105,6 +105,10 @@ class AIOserver(object):
                 f.write("\n")
                 f.write(";ECON is for advanced users. it allows you to control the server\n")
                 f.write(";through the command line. leave the password empty to disable.\n")
+                f.write("\n")
+                f.write("[Advanced]\n")
+                f.write("MaxMultiClients=4\n")
+                f.write("AllowBots=0\n")
 
         self.commands = Commands
 

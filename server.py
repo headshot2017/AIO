@@ -1108,7 +1108,6 @@ class AIOserver(object):
                             self.sendDestroy(client)
                         try: sock.close()
                         except: pass
-                        print "dc 3"
                         self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):

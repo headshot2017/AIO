@@ -1778,6 +1778,8 @@ if __name__ == "__main__":
             if hasattr(plug[1], "onPluginStop"):
                 plug[1].onPluginStop(server, False)
         
+        server.Print("server", "Server stopped.")
+        
     except Exception as e: #server crashed
         tracebackmsg = traceback.format_exc(e)
         atime = time.localtime()
@@ -1798,3 +1800,5 @@ if __name__ == "__main__":
             super(plug[0], plug[1]).onPluginStop(server, True)
             if hasattr(plug[1], "onPluginStop"):
                 plug[1].onPluginStop(server, True)
+        
+        server.Print("server", "Server stopped due to a crash.")

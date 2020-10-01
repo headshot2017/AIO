@@ -1519,9 +1519,9 @@ class AIOserver(object):
         for plug in self.plugins:
             server.Print("plugins", "starting '%s' version %s" % (plug[2], plug[3].version))
             super(plug[0], plug[1]).onPluginStart(self)
-            if hasattr(plug[1], "onPluginStart"):
-                failed = not plug[1].onPluginStart(self)
-                if failed:
+            if hasattr(plug[1].onPluginStart):
+                success = plug[1].onPluginStart(self)
+                if success == False: # it would not be logical to do "if not success" because what if the plugin func doesn't return
                     self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
                     super(plug[0], plug[1]).onPluginStop(self, False)
                     plug[1].onPluginStop(self, False)

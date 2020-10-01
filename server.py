@@ -115,13 +115,13 @@ class AIOserver(object):
         ini = iniconfig.IniConfig("server/base.ini")
         self.servername = ini.get("Server", "name", "unnamed server")
         self.serverdesc = ini.get("Server", "desc", "automatically generated base.ini file")
-        self.port = int(ini.get("Server", "port", "27010"))
+        self.port = ini.get("Server", "port", 27010, int)
         self.scene = ini.get("Server", "scene", "default")
         self.motd = ini.get("Server", "motd", "Welcome to my server!##Overview of in-game controls:#Arrow keys or WASD keys - move#Shift - run#ESC or close button - quit#Spacebar - show emotes bar#T key - IC chat (Check the options menu to change this)##Musiclist controls:#Arrow keys - select song#Enter - play selected song##Have fun!")
-        self.publish = int(ini.get("Server", "publish", "1"))
-        self.evidence_limit = int(ini.get("Server", "evidence_limit", "255"))
+        self.publish = ini.get("Server", "publish", 1, int)
+        self.evidence_limit = ini.get("Server", "evidence_limit", 255, int)
         if self.evidence_limit > 255:
-            print "[warning]", "evidence_limit is higher than 255, changing to the limit"
+            self.Print("warning", "evidence_limit is higher than 255, changing to the limit")
             self.evidence_limit = 255
         self.ms_addr = ini.get("MasterServer", "ip", "aaio-ms.aceattorneyonline.com:27011").split(":")
         if len(self.ms_addr) == 1:
@@ -131,37 +131,37 @@ class AIOserver(object):
         except:
             self.ms_addr[1] = 27011
         self.rcon = ini.get("Server", "rcon", "")
-        self.econ_port = int(ini.get("ECON", "port", "27000"))
+        self.econ_port = ini.get("ECON", "port", 27000, int)
         self.econ_password = ini.get("ECON", "password", "")
         self.econ_tcp = None
         
-        self.max_clients_per_ip = int(ini.get("Advanced", "MaxMultiClients", "4"))
+        self.max_clients_per_ip = ini.get("Advanced", "MaxMultiClients", 4, int)
         self.allow_bots = ini.get("Advanced", "AllowBots", "0") == "1"
         if self.allow_bots and not os.path.exists("data/characters"):
             self.allow_bots = False
-            print "[warning]", "bots are enabled but 'data/characters' folder doesn't exist. disabling"
+            self.Print("warning", "bots are enabled but 'data/characters' folder doesn't exist. disabling")
     
         if not os.path.exists("server/scene/"+self.scene) or not os.path.exists("server/scene/"+self.scene+"/init.ini"):
-            print "[warning]", "scene %s does not exist, switching to 'default'" % self.scene
+            self.Print("warning", "scene %s does not exist, switching to 'default'" % self.scene)
             self.scene = "default"
             if not os.path.exists("server/scene/"+self.scene) or not os.path.exists("server/scene/"+self.scene+"/init.ini"):
-                print "[error]", "scene 'default' does not exist, cannot continue loading!"
+                self.Print("error", "scene 'default' does not exist, cannot continue loading!")
                 sys.exit()
         
         scene_ini = iniconfig.IniConfig("server/scene/"+self.scene+"/init.ini")
         
-        self.maxplayers = int(ini.get("Server", "maxplayers", -1))
+        self.maxplayers = ini.get("Server", "maxplayers", -1, int)
         if self.maxplayers < 0:
-            self.maxplayers = int(scene_ini.get("chars", "total", 3))
-        self.maxchars = int(scene_ini.get("chars", "total", 3))
+            self.maxplayers = scene_ini.get("chars", "total", 3, int)
+        self.maxchars = scene_ini.get("chars", "total", 3, int)
         
-        zonelength = int(scene_ini.get("background", "total", 1))
+        zonelength = scene_ini.get("background", "total", 1, int)
         self.charlist = [scene_ini.get("chars", str(char), "Edgeworth") for char in range(1, self.maxchars+1)]
         self.zonelist = [[scene_ini.get("background", str(zone), "gk1hallway"), scene_ini.get("background", str(zone)+"_name", "Prosecutor's Office hallway"), 10, 10] for zone in range(1, zonelength+1)]
         for i in range(len(self.zonelist)):
             self.evidencelist.append([])
         
-        self.defaultzone = int(scene_ini.get("background", "default", 1))-1
+        self.defaultzone = scene_ini.get("background", "default", 1, int)-1
         if not os.path.exists("server/musiclist.txt"):
             self.musiclist = ["musiclist.txt not found"]
         else:

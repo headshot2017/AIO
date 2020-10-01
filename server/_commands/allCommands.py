@@ -24,7 +24,7 @@ Usage: /login <password>"""
     else:
         server.clients[client].loginfails += 1
         if server.clients[client].loginfails >= MaxLoginFails:
-            server.ban(client, time.time()+(60 * 5), "Too many wrong login attempts") # 5 min ban
+            server.ban(client, time.time()+(60 * 5)-1, "Too many wrong login attempts") # 5 min ban
             return
             
         return "Wrong password %d/%d." % (server.clients[client].loginfails, MaxLoginFails)

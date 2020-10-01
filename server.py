@@ -713,17 +713,17 @@ class AIOserver(object):
             return
         
         if length > 0:
-            min = abs(time.time() - length) / 60
+            min = abs(time.time() - length) / 60+1
         else:
             min = 0
-        mintext = plural("minute", int(min+1))
+        mintext = plural("minute", int(min))
 
         if type(ClientID) == str:
             if "." in ClientID: # if it's an ip address
                 for i in self.clients.keys(): # kick all players that match this IP
                     if self.clients[i].ip == ClientID: # found a player
                         if length > 0:
-                            self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)))
+                            self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min, mintext, reason, len(self.banlist)))
                         else:
                             self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)))
                 self.banlist.append([ClientID, length, reason])
@@ -733,11 +733,11 @@ class AIOserver(object):
             for i in self.clients.keys(): # kick all players that match the banned ID
                 if self.clients[i].ip == self.clients[ClientID].ip: # found a player
                     if length > 0:
-                        self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min+1, mintext, reason, len(self.banlist)-1))
+                        self.kick(i, "You have been banned for %d %s: %s\nYour ban ID is %d." % (min, mintext, reason, len(self.banlist)-1))
                     else:
                         self.kick(i, "You have been banned for life: %s\nYour ban ID is %d." % (reason, len(self.banlist)-1))
         
-        self.Print("bans", "banned %s for %s (%s)" % (self.banlist[-1][0], "%d min" % (min+1) if length > 0 else "life", reason))
+        self.Print("bans", "banned %s for %s (%s)" % (self.banlist[-1][0], "%d min" % (min) if length > 0 else "life", reason))
         self.writeBanList()
         return len(self.banlist)-1
         

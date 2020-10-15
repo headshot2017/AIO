@@ -1116,7 +1116,11 @@ class GameWidget(QtGui.QWidget):
 		self.ce_button.clicked.connect(self.onWTCEButton)
 		self.notguilty_button.clicked.connect(self.onWTCEButton)
 		self.guilty_button.clicked.connect(self.onWTCEButton)
-		
+
+		self.ooclogin = QtGui.QPushButton("Login", self)
+		self.ooclogin.clicked.connect(self.onOOCLoginBtn)
+		self.ooclogin.setGeometry(self.wt_button.x()+2, self.evidencebtn.y()+2, 64, 22)
+
 		#self.logbtn = buttons.AIOButton(self)
 		#logbtn = QtGui.QPixmap("data/misc/chatlog_button.png")
 		#self.logbtn.setPixmap(logbtn)
@@ -1134,6 +1138,12 @@ class GameWidget(QtGui.QWidget):
 		self.spawned_once = False
 		self.realizationsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-lightbulb.wav", 0, 0, 0)
+
+	def onOOCLoginBtn(self):
+		password, ok = QtGui.QInputDialog.getText(self, "Login as moderator", "Enter password.")
+		if password and ok:
+			name = str(self.oocnameinput.text().toUtf8())
+			self.ao_app.tcpthread.sendOOC(name, "/login "+password.toUtf8())
 	
 	def changeWalkAnim(self, ind):
 		self.player.walkanims[2] = ind
@@ -1619,6 +1629,7 @@ class GameWidget(QtGui.QWidget):
 	
 	def showCharSelect(self):
 		self.charselect.show()
+		self.ooclogin.hide()
 		self.musicslider.hide()
 		self.soundslider.hide()
 		self.blipslider.hide()
@@ -1881,6 +1892,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.setChar(selection)
 		
 	def hideCharSelect(self):
+		self.ooclogin.show()
 		self.ic_input.show()
 		self.showname_input.show()
 		self.musicslider.show()
@@ -2040,36 +2052,8 @@ class GameWidget(QtGui.QWidget):
 		self.testtimer.start(1000./30, self)
 		self.tcptimer.start(1000./5, self)
 		self.playing = True
-		self.emotebar.hide()
-		self.movebtn.hide()
-		self.switchbtn.hide()
-		self.textcolorbtn.hide()
-		self.realizationbtn.hide()
-		self.examinebtn.hide()
-		self.chatlog.hide()
-		self.oocwidget.hide()
-		self.musiclist.hide()
-		self.evidencewidget.hide()
-		self.evidencedialog.hide()
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
-		self.musicslider.hide()
-		self.soundslider.hide()
-		self.blipslider.hide()
-		self.sliderlabel1.hide()
-		self.sliderlabel2.hide()
-		self.sliderlabel3.hide()
-		self.walkanim_dropdown.hide()
-		self.runanim_dropdown.hide()
-		self.walkanim_label.hide()
-		self.runanim_label.hide()
-		for bar in self.penaltybars: bar.hide()
-		self.wt_button.hide()
-		self.ce_button.hide()
-		self.notguilty_button.hide()
-		self.guilty_button.hide()
-		self.charselect.show()
-		self.pinglabel.move(512-96, self.ic_input.y())
+        
+		self.showCharSelect()
 	
 	def stopGame(self):
 		self.ic_input.enter_pressed = False
@@ -2078,40 +2062,9 @@ class GameWidget(QtGui.QWidget):
 		
 		for i in self.gameview.characters.keys():
 			self.gameview.deleteCharacter(i)
-		self.evidencebtn.hide()
-		self.ic_input.hide()
-		self.showname_input.hide()
-		self.areainfo.hide()
-		self.emotebar.hide()
-		self.movebtn.hide()
-		self.switchbtn.hide()
-		self.textcolorbtn.hide()
-		self.realizationbtn.hide()
-		self.examinebtn.hide()
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
+
 		self.testtimer.stop()
 		self.tcptimer.stop()
-		self.evidencewidget.hide()
-		self.evidencedialog.setVisible(False)
-		self.chatlog.hide()
-		self.oocwidget.hide()
-		self.musiclist.hide()
-		self.musicslider.hide()
-		self.soundslider.hide()
-		self.blipslider.hide()
-		self.sliderlabel1.hide()
-		self.sliderlabel2.hide()
-		self.sliderlabel3.hide()
-		self.walkanim_dropdown.hide()
-		self.runanim_dropdown.hide()
-		self.walkanim_label.hide()
-		self.runanim_label.hide()
-		for bar in self.penaltybars: bar.hide()
-		self.wt_button.hide()
-		self.ce_button.hide()
-		self.notguilty_button.hide()
-		self.guilty_button.hide()
 		self.playing = False
 
 class EvidenceDialog(QtGui.QWidget):

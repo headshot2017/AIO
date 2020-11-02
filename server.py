@@ -1,4 +1,4 @@
-import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback
+import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback, zlib
 import AIOprotocol
 from AIOplayer import *
 
@@ -57,6 +57,7 @@ def versionToStr(ver):
 class AIOserver(object):
     running = False
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     plugins = []
     readbuffer = ""
     econTemp = ""
@@ -1533,9 +1534,11 @@ class AIOserver(object):
 
         self.tcp.bind(("", self.port))
         self.tcp.listen(5)
+        self.udp.bind(("", self.port))
         self.Print("server", "AIO server started on port %d" % self.port)
         
         self.tcp.settimeout(0.1)
+        self.udp.settimeout(0.1)
         
         if self.econ_password:
             self.econ_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1585,6 +1588,28 @@ class AIOserver(object):
                     continue
                     
             self.acceptClient()
+            self.udpLoop()
+
+    def udpLoop(self):
+        try:
+            data, addr = self.udp.recvfrom(65535)
+        except socket.error as e:
+            if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
+                return
+
+        try:
+            data, header = buffer_read("B", data)
+        except struct.error: # wtf?
+            return
+
+        self.Print("udp", "message from %s: %d" % (addr, header))
+
+        if header == AIOprotocol.UDP_REQUEST:
+            response = struct.pack("B", header)
+            response += self.servername+"\0" + self.serverdesc+"\0"
+            response += struct.pack("IIH", len(self.clients), self.maxplayers, versionToInt(GameVersion))
+
+        self.udp.sendto(zlib.compress(response), addr)
 
     def parseOOCcommand(self, client, cmd, cmdargs):
         isConsole = client == -1

@@ -101,6 +101,7 @@ class lobby(QtGui.QWidget):
 		self.refreshbtn = buttons.AIOButton(self)
 		self.newsbtn = buttons.AIOButton(self)
 		self.allservers = buttons.AIOButton(self)
+		self.LANbtn = buttons.AIOButton(self)
 		self.favoritesbtn = buttons.AIOButton(self)
 		self.joinipaddress = buttons.AIOButton(self)
 		self.optionsbtn = buttons.AIOButton(self)
@@ -114,11 +115,13 @@ class lobby(QtGui.QWidget):
 		self.allservers.setPixmap(QtGui.QPixmap("data/misc/all_servers.png"))
 		self.allservers.move(self.refreshbtn.x() - 128 - 8, self.refreshbtn.y() + 64)
 		self.favoritesbtn.setPixmap(QtGui.QPixmap("data/misc/favorites.png"))
-		self.favoritesbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
+		self.favoritesbtn.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
+		self.LANbtn.setPixmap(QtGui.QPixmap("data/misc/lan.png"))
+		self.LANbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
 		self.newsbtn.setPixmap(QtGui.QPixmap("data/misc/news_button.png"))
-		self.newsbtn.move(self.refreshbtn.x(), self.favoritesbtn.y() + 32)
+		self.newsbtn.move(self.refreshbtn.x() - (self.newsbtn.pixmap().size().width())/2, self.favoritesbtn.y() + 32)
 		self.joinipaddress.setPixmap(QtGui.QPixmap("data/misc/joinip_button.png"))
-		self.joinipaddress.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
+		self.joinipaddress.move(self.newsbtn.x() + self.newsbtn.pixmap().size().width() + 8, self.newsbtn.y())
 		self.optionsbtn.setPixmap(QtGui.QPixmap("data/misc/options_button.png"))
 		self.optionsbtn.move(8, self.size().height()-40)
 		
@@ -151,6 +154,7 @@ class lobby(QtGui.QWidget):
 		self.connectbtn.clicked.connect(self.connectClicked)
 		self.refreshbtn.clicked.connect(self.refresh)
 		self.allservers.clicked.connect(self.on_public_servers)
+		self.LANbtn.clicked.connect(self.on_lan_servers)
 		self.favoritesbtn.clicked.connect(self.on_favorites_list)
 		self.newsbtn.clicked.connect(self.on_news_tab)
 		self.joinipaddress.clicked.connect(self.join_ip_address)
@@ -159,6 +163,7 @@ class lobby(QtGui.QWidget):
 		self.connectbtn.show()
 		self.refreshbtn.show()
 		self.allservers.show()
+		self.LANbtn.show()
 		self.favoritesbtn.show()
 		self.newsbtn.show()
 		self.joinipaddress.show()
@@ -173,23 +178,30 @@ class lobby(QtGui.QWidget):
 		try:
 			port = int(a[1])
 		except:
-			port = 27010
-		
-		self.msthread = MasterServerThread(ip, port)
+			port = 27011
+
+		self.newPackets = ini.read_ini("aaio.ini", "Advanced", "0.5 packets", "0") == "1"
+
+		self.msthread = MasterServerThread(ip, port, self.newPackets)
 		self.msthread.gotServers.connect(self.gotServerList)
 		self.msthread.gotNews.connect(self.gotNews)
 		self.msthread.start()
+
 		self.servers = []
+		self.favorites = []
+		self.lanservers = []
+		self.ao_app.udpthread.gotInfoRequest.connect(self.gotUDPRequest)
+
 		try:
-			self.favorites = [line.rstrip("\n").split(":") for line in open("data/serverlist.txt")]
+			for line in open("data/serverlist.txt"):
+				server = line.rstrip("\n").split(":")[:2]
+				self.favorites.append([server[0]+":"+server[1], "", server[0], int(server[1])])
+
 		except IOError:
-			self.favorites = [["localhost", "27010", "your server, port 27010 (serverlist.txt not found)", "to fix this, create an empty text file on the \"data\" folder named \"serverlist\"."]]
-		
-		for favorite in self.favorites:
-			if len(favorite) == 3:
-				favorite.append("")
-			favorite[1] = int(favorite[1])
-		
+			open("data/serverlist.txt", "w").write("localhost:27010\n")
+			self.favorites = [["localhost", 27010]]
+
+		self.pinged_favorites = list(self.favorites) # a copy
 		self.serverselected = -1
 		self.tab = 0
 	
@@ -204,15 +216,28 @@ class lobby(QtGui.QWidget):
 		
 		painter.fillRect(0, 0, 800, 480, QtGui.QColor(255, 255, 255))
 		painter.fillPath(painterpath, QtGui.QColor(64, 64, 64))
-	
+
 	def showServers(self):
 		self.connectingstatus.showServers()
-	
+
 	def gotServerList(self, servers):
 		self.servers = list(servers)
 		if self.tab == 0:
 			self.updateServerList(servers)
-	
+
+	def gotUDPRequest(self, server):
+		addr, name, desc, players, maxplayers, version = server
+		ip, port = addr
+
+		if self.tab == 1:
+			self.lanservers.append([name, desc, ip, port, players, maxplayers, version])
+			self.updateServerList(self.lanservers)
+		elif self.tab == 2:
+			if ["%s:%d" % (ip, port), "", ip, port] in self.favorites:
+				ind = self.favorites.index(["%s:%d" % (ip, port), "", ip, port])
+				self.pinged_favorites[ind] = [name, desc, ip, port]
+				self.updateServerList(self.pinged_favorites)
+
 	def gotNews(self, news):
 		self.newstext.setText(news)
 		if not os.path.exists("data/aaio_news.txt"):
@@ -233,24 +258,34 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 		self.newstext.hide()
 		self.newslabel.hide()
-		self.updateServerList(self.servers)
-		self.refreshbtn.show()
-	
-	def on_favorites_list(self):
+		self.updateServerList([])
+		self.refresh()
+
+	def on_lan_servers(self):
 		if self.tab == 1:
 			return
 		
 		self.tab = 1
 		self.newstext.hide()
 		self.newslabel.hide()
-		self.updateServerList(self.favorites)
-		self.refreshbtn.hide()
+		self.updateServerList([])
+		self.refresh()
 	
-	def on_news_tab(self):
+	def on_favorites_list(self):
 		if self.tab == 2:
 			return
 		
 		self.tab = 2
+		self.newstext.hide()
+		self.newslabel.hide()
+		self.updateServerList(self.favorites)
+		self.refresh()
+	
+	def on_news_tab(self):
+		if self.tab == 3:
+			return
+		
+		self.tab = 3
 		self.refreshbtn.show()
 		self.newstext.show()
 		self.newslabel.show()
@@ -259,7 +294,7 @@ class lobby(QtGui.QWidget):
 		self.optionsgui.showSettings()
 	
 	def add_to_favorites(self):
-		if self.tab == 1:
+		if self.tab in (2, 3): # can't add in favs tab or news tab
 			return self.description.setText("You can't do that.")
 		if self.serverselected == -1:
 			return self.description.setText("Select a server first you nobo")
@@ -275,10 +310,26 @@ class lobby(QtGui.QWidget):
 			file.write(server[2]+":"+str(server[3])+":"+server[0]+":"+server[1]+"\n")
 	
 	def refresh(self):
-		if self.tab != 2:
+		if self.tab == 0: # public
 			self.msthread.sendRefresh()
+		elif self.tab == 1: # LAN
+			self.refreshLAN()
+		elif self.tab == 2: # favorites
+			self.refreshFavorites()
 		else:
 			self.msthread.getNews()
+
+	def refreshLAN(self):
+		self.lanservers = []
+
+		for i in range(27010, 27020+1):
+			self.ao_app.udpthread.sendInfoRequest(("<broadcast>", i))
+
+	def refreshFavorites(self):
+		self.pinged_favorites = list(self.favorites)
+
+		for server in self.favorites:
+			self.ao_app.udpthread.sendInfoRequest(tuple(server[2:]))
 	
 	def join_ip_address(self):
 		addr, ok = QtGui.QInputDialog.getText(self, "Join IP address...", "Enter the IP address of the server you wish to join.\nIt must have the format \"ip:port\"\nExample: 127.0.0.1:27010")
@@ -301,13 +352,13 @@ class lobby(QtGui.QWidget):
 		
 		if self.tab == 0:
 			server = self.servers[self.serverselected]
-			ip = server[2]
-			port = server[3]
-		else:
+		elif self.tab == 2:
 			server = self.favorites[self.serverselected]
-			ip = server[0]
-			port = server[1]
-		
+		else:
+			server = self.lanservers[self.serverselected]
+
+		ip = server[2]
+		port = server[3]
 		self.connectingstatus.show()
 		self.ao_app.connect(ip, port)
 
@@ -315,11 +366,9 @@ class lobby(QtGui.QWidget):
 		self.serverlistwidget.clear()
 		self.serverselected = -1
 		self.description.setText("")
+
 		for server in servers:
-			if self.tab == 0:
-				item = QtGui.QListWidgetItem(server[0])
-			elif self.tab == 1:
-				item = QtGui.QListWidgetItem(server[2])
+			item = QtGui.QListWidgetItem(server[0])
 			item.setFont(self.font)
 			self.serverlistwidget.addItem(item)
 	
@@ -329,17 +378,21 @@ class lobby(QtGui.QWidget):
 				if self.tab == 0:
 					self.description.setText(self.servers[i][1])
 				elif self.tab == 1:
-					self.description.setText(self.favorites[i][3])
+					self.description.setText(self.lanservers[i][1])
+				elif self.tab == 2:
+					self.description.setText(self.pinged_favorites[i][1])
 				self.serverselected = i
 
 class MasterServerThread(QtCore.QThread):
 	gotServers = QtCore.pyqtSignal(tuple)
 	gotNews = QtCore.pyqtSignal(str)
-	def __init__(self, ip, port):
+
+	def __init__(self, ip, port, newPackets=False):
 		super(MasterServerThread, self).__init__()
 		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.ip = ip
 		self.port = port
+		self.newPackets = newPackets
 	
 	def __del__(self):
 		self.closeConnection()
@@ -354,7 +407,47 @@ class MasterServerThread(QtCore.QThread):
 	
 	def getNews(self):
 		self.tcp.send("NEWS#%\n")
-	
+
+    def oldPacketLoop(self, data):
+		if not data.endswith("%"):
+			self.tempdata += data
+			continue
+		else:
+			if self.tempdata:
+				data = self.tempdata+data
+				self.tempdata = ""
+
+		totals = data.split("%")
+		for moredata in totals:
+			network = moredata.split("#")
+			header = network.pop(0)
+
+			if header == "1": #connected, contains client ID (not that useful anyway)
+				player_id = int(network[0])
+				self.sendRefresh() #request servers
+
+			elif header == "12": #server list
+				total_servers = len(network) / 4
+				if total_servers <= 0:
+					print "warning: received server list packet, but total_servers is %d" % total_servers
+					continue
+
+				servers = []
+				for i in range(0, total_servers*4, 4):
+					servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
+
+				self.gotServers.emit(tuple(servers))
+
+				if not got_news:
+					self.getNews() #get news tab
+					got_news = True
+
+			elif header == "NEWS": #news tab
+				self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
+
+    def newPacketLoop(self, data):
+		pass
+
 	def run(self):
 		got_news = False
 		
@@ -365,11 +458,11 @@ class MasterServerThread(QtCore.QThread):
 			self.closeConnection()
 		
 		self.tcp.settimeout(0.1)
-		tempdata = ""
+		self.tempdata = ""
 		
 		while True:
 			try:
-				data = self.tcp.recv(8192)
+				data = self.tcp.recv(8192 if not self.newPackets else 4)
 				
 			except socket.timeout, err:
 				error = err.args[0]
@@ -386,39 +479,9 @@ class MasterServerThread(QtCore.QThread):
 			if not data:
 				print "MS connection closed by server"
 				self.closeConnection()
-			
-			if not data.endswith("%"):
-				tempdata += data
-				continue
+
+
+			if not self.newPackets:
+				self.oldPacketLoop(data)
 			else:
-				if tempdata:
-					data = tempdata+data
-					tempdata = ""
-			
-			totals = data.split("%")
-			for moredata in totals:
-				network = moredata.split("#")
-				header = network.pop(0)
-				
-				if header == "1": #connected, contains client ID (not that useful anyway)
-					player_id = int(network[0])
-					self.sendRefresh() #request servers
-				
-				elif header == "12": #server list
-					total_servers = len(network) / 4
-					if total_servers <= 0:
-						print "warning: received server list packet, but total_servers is %d" % total_servers
-						continue
-					
-					servers = []
-					for i in range(0, total_servers*4, 4):
-						servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
-					
-					self.gotServers.emit(tuple(servers))
-					
-					if not got_news:
-						self.getNews() #get news tab
-						got_news = True
-				
-				elif header == "NEWS": #news tab
-					self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
+                self.newPacketLoop(data)

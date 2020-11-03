@@ -258,7 +258,6 @@ class lobby(QtGui.QWidget):
 		self.tab = 0
 		self.newstext.hide()
 		self.newslabel.hide()
-		self.updateServerList([])
 		self.refresh()
 
 	def on_lan_servers(self):
@@ -268,7 +267,6 @@ class lobby(QtGui.QWidget):
 		self.tab = 1
 		self.newstext.hide()
 		self.newslabel.hide()
-		self.updateServerList([])
 		self.refresh()
 	
 	def on_favorites_list(self):
@@ -278,7 +276,6 @@ class lobby(QtGui.QWidget):
 		self.tab = 2
 		self.newstext.hide()
 		self.newslabel.hide()
-		self.updateServerList(self.favorites)
 		self.refresh()
 	
 	def on_news_tab(self):
@@ -311,10 +308,13 @@ class lobby(QtGui.QWidget):
 	
 	def refresh(self):
 		if self.tab == 0: # public
+			self.updateServerList([])
 			self.msthread.sendRefresh()
 		elif self.tab == 1: # LAN
+			self.updateServerList([])
 			self.refreshLAN()
 		elif self.tab == 2: # favorites
+			self.updateServerList(self.favorites)
 			self.refreshFavorites()
 		else:
 			self.msthread.getNews()
@@ -438,9 +438,9 @@ class MasterServerThread(QtCore.QThread):
 
 				self.gotServers.emit(tuple(servers))
 
-				if not got_news:
+				if not self.got_news:
 					self.getNews() #get news tab
-					got_news = True
+					self.got_news = True
 
 			elif header == "NEWS": #news tab
 				self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
@@ -449,7 +449,7 @@ class MasterServerThread(QtCore.QThread):
 		pass
 
 	def run(self):
-		got_news = False
+		self.got_news = False
 		
 		try:
 			self.tcp.connect((self.ip, self.port))

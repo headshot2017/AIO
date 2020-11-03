@@ -408,10 +408,10 @@ class MasterServerThread(QtCore.QThread):
 	def getNews(self):
 		self.tcp.send("NEWS#%\n")
 
-    def oldPacketLoop(self, data):
+	def oldPacketLoop(self, data):
 		if not data.endswith("%"):
 			self.tempdata += data
-			continue
+			return
 		else:
 			if self.tempdata:
 				data = self.tempdata+data
@@ -430,7 +430,7 @@ class MasterServerThread(QtCore.QThread):
 				total_servers = len(network) / 4
 				if total_servers <= 0:
 					print "warning: received server list packet, but total_servers is %d" % total_servers
-					continue
+					return
 
 				servers = []
 				for i in range(0, total_servers*4, 4):
@@ -445,7 +445,7 @@ class MasterServerThread(QtCore.QThread):
 			elif header == "NEWS": #news tab
 				self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
 
-    def newPacketLoop(self, data):
+	def newPacketLoop(self, data):
 		pass
 
 	def run(self):
@@ -484,4 +484,4 @@ class MasterServerThread(QtCore.QThread):
 			if not self.newPackets:
 				self.oldPacketLoop(data)
 			else:
-                self.newPacketLoop(data)
+				self.newPacketLoop(data)

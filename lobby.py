@@ -1,6 +1,20 @@
 from PyQt4 import QtCore, QtGui
 from game_version import LOBBY_VERSION
-import os, socket, buttons, options, ini
+import os, socket, buttons, options, ini, zlib, struct
+import AIOprotocol
+from packing import *
+
+class ServerItem(QtGui.QTreeWidgetItem):
+    def __lt__(self, other):
+        column = self.treeWidget().sortColumn()
+        key1 = self.text(column)
+        key2 = other.text(column)
+        try:
+            if column == 1: # online player count
+                return int(key1.split("/")[0]) < int(key2.split("/")[0])
+            return float(key1) < float(key2)
+        except ValueError:
+            return key1.toLower() < key2.toLower()
 
 class ConnectingStatus(QtGui.QWidget):
 	ao_app = None
@@ -8,9 +22,9 @@ class ConnectingStatus(QtGui.QWidget):
 		super(ConnectingStatus, self).__init__(parent)
 		self.ao_app = _ao_app
 		
-		self.resize(800, 480)
+		self.resize(960, 480)
 		self.connectingmsg = QtGui.QLabel(self, text="Connecting...")
-		self.connectingmsg.resize(800, 320)
+		self.connectingmsg.resize(960, 320)
 		self.connectingmsg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter)
 		self.connectingmsg.setFont(QtGui.QFont("Arial", 12))
 		self.connectingmsg.setStyleSheet("color: white")
@@ -73,7 +87,7 @@ class ConnectingStatus(QtGui.QWidget):
 	
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)
-		painter.fillRect(0, 0, 800, 480, QtGui.QColor(0, 0, 0, 128))
+		painter.fillRect(0, 0, 960, 480, QtGui.QColor(0, 0, 0, 128))
 
 class lobby(QtGui.QWidget):
 	ao_app = None
@@ -87,11 +101,18 @@ class lobby(QtGui.QWidget):
 		self.text.setFont(self.font)
 		self.text.move(8, 8)
 		
-		self.serverlistwidget = QtGui.QListWidget(self)
-		self.serverlistwidget.setGeometry(64, 64, 512-64, 240)
+		#self.serverlistwidget = QtGui.QListWidget(self)
+		self.serverlistwidget = QtGui.QTreeWidget(self)
+		self.serverlistwidget.setSortingEnabled(True)
+		self.serverlistwidget.setGeometry(32, 64, 512+144+16, 240)
+		self.serverlistwidget.setHeaderItem(ServerItem(["Name", "Players", "Version", "Ping"]))
+		self.serverlistwidget.header().resizeSection(0, 448)
+		self.serverlistwidget.header().resizeSection(1, 64)
+		self.serverlistwidget.header().resizeSection(2, 80)
+		self.serverlistwidget.header().resizeSection(3, 64)
 		self.serverlistwidget.itemClicked.connect(self.serverItemClicked)
 		
-		desc_x, desc_y, desc_w, desc_h = 640-64+8, 16, 256-48, 480-128
+		desc_x, desc_y, desc_w, desc_h = 800-64+8, 16, 256-48, 480-128
 		
 		self.connectingstatus = ConnectingStatus(self, _ao_app)
 		self.connectingstatus.hide()
@@ -107,9 +128,9 @@ class lobby(QtGui.QWidget):
 		self.optionsbtn = buttons.AIOButton(self)
 		
 		self.addtofav.setPixmap(QtGui.QPixmap("data/misc/add_to_favorites.png"))
-		self.addtofav.move(640-16, desc_y+desc_h+4)
+		self.addtofav.move(800-16, desc_y+desc_h+4)
 		self.connectbtn.setPixmap(QtGui.QPixmap("data/misc/connect_button.png"))
-		self.connectbtn.move(640-16, desc_y+desc_h+4+48)
+		self.connectbtn.move(800-16, desc_y+desc_h+4+48)
 		self.refreshbtn.setPixmap(QtGui.QPixmap("data/misc/refresh.png"))
 		self.refreshbtn.move((self.serverlistwidget.x()+self.serverlistwidget.size().width())/2 - 32, self.serverlistwidget.y()+self.serverlistwidget.size().height()+16)
 		self.allservers.setPixmap(QtGui.QPixmap("data/misc/all_servers.png"))
@@ -138,7 +159,8 @@ class lobby(QtGui.QWidget):
 		
 		self.newstext = QtGui.QTextEdit(self)
 		self.newstext.setFont(self.font)
-		self.newstext.setGeometry(64, 64, 512-64, 240)
+		self.newstext.move(self.serverlistwidget.x(), self.serverlistwidget.y())
+		self.newstext.resize(self.serverlistwidget.size())
 		self.newstext.setReadOnly(True)
 		self.newslabel = QtGui.QLabel(self)
 		self.newslabel.setFont(self.font)
@@ -185,26 +207,30 @@ class lobby(QtGui.QWidget):
 		self.msthread = MasterServerThread(ip, port, self.newPackets)
 		self.msthread.gotServers.connect(self.gotServerList)
 		self.msthread.gotNews.connect(self.gotNews)
+		self.msthread.error.connect(self.MSError)
 		self.msthread.start()
 
 		self.servers = []
 		self.favorites = []
 		self.lanservers = []
+		self.pinged_list = [] # [name, players, version, ping, desc, ip, str(port)]
 		self.ao_app.udpthread.gotInfoRequest.connect(self.gotUDPRequest)
 
 		try:
 			for line in open("data/serverlist.txt"):
 				server = line.rstrip("\n").split(":")[:2]
-				self.favorites.append([server[0]+":"+server[1], "", server[0], int(server[1])])
+				self.favorites.append([server[0]+":"+server[1], "", "", "pinging", "", server[0], server[1]])
 
 		except IOError:
 			open("data/serverlist.txt", "w").write("localhost:27010\n")
-			self.favorites = [["localhost", 27010]]
+			self.favorites = [["localhost:27010", "", "", "pinging", "", "localhost", "27010"]]
 
-		self.pinged_favorites = list(self.favorites) # a copy
 		self.serverselected = -1
 		self.tab = 0
-	
+
+	def MSError(self, msg):
+		QtGui.QMessageBox.critical(None, "Error connecting to master", "Failed to connect to the master server.\nCheck your antivirus, internet connection or firewall?\n\nAdditional info:\n"+msg)
+
 	def onOptionsSave(self):
 		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
 		
@@ -212,31 +238,42 @@ class lobby(QtGui.QWidget):
 		painter = QtGui.QPainter(self)
 		painterpath = QtGui.QPainterPath()
 		
-		painterpath.addRoundRect(640-64, 0, 800-(640-64), 480, 25, 10)
+		painterpath.addRoundRect(960-160-64, 0, 960-(960-160-64), 480, 25, 10)
 		
-		painter.fillRect(0, 0, 800, 480, QtGui.QColor(255, 255, 255))
+		painter.fillRect(0, 0, 960, 480, QtGui.QColor(255, 255, 255))
 		painter.fillPath(painterpath, QtGui.QColor(64, 64, 64))
 
 	def showServers(self):
 		self.connectingstatus.showServers()
 
 	def gotServerList(self, servers):
-		self.servers = list(servers)
+		self.servers = servers
+
 		if self.tab == 0:
-			self.updateServerList(servers)
+			self.pinged_list = list(servers)
+			self.updateServerList(self.pinged_list)
+
+			for server in servers:
+				self.ao_app.udpthread.sendInfoRequest(tuple(server[-2:]))
 
 	def gotUDPRequest(self, server):
-		addr, name, desc, players, maxplayers, version = server
+		addr, name, desc, players, maxplayers, version, ping = server
 		ip, port = addr
+		version = versionToStr(str(version))
 
 		if self.tab == 1:
-			self.lanservers.append([name, desc, ip, port, players, maxplayers, version])
+			self.lanservers.append([name, "%d/%d" % (players, maxplayers), version, ping, desc, ip, str(port)])
 			self.updateServerList(self.lanservers)
 		elif self.tab == 2:
-			if ["%s:%d" % (ip, port), "", ip, port] in self.favorites:
-				ind = self.favorites.index(["%s:%d" % (ip, port), "", ip, port])
-				self.pinged_favorites[ind] = [name, desc, ip, port]
-				self.updateServerList(self.pinged_favorites)
+			if ["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)] in self.favorites:
+				ind = self.favorites.index(["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)])
+				self.pinged_list[ind] = [name, "%d/%d"%(players, maxplayers), str(version), ping, desc, ip, str(port)]
+				self.updateServerList(self.pinged_list)
+		elif self.tab == 0:
+			if ["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)] in self.servers:
+				ind = self.servers.index(["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)])
+				self.pinged_list[ind] = [name, "%d/%d"%(players, maxplayers), str(version), ping, desc, ip, str(port)]
+				self.updateServerList(self.pinged_list)
 
 	def gotNews(self, news):
 		self.newstext.setText(news)
@@ -307,6 +344,8 @@ class lobby(QtGui.QWidget):
 			file.write(server[2]+":"+str(server[3])+":"+server[0]+":"+server[1]+"\n")
 	
 	def refresh(self):
+		self.pinged_list = []
+
 		if self.tab == 0: # public
 			self.updateServerList([])
 			self.msthread.sendRefresh()
@@ -326,10 +365,10 @@ class lobby(QtGui.QWidget):
 			self.ao_app.udpthread.sendInfoRequest(("<broadcast>", i))
 
 	def refreshFavorites(self):
-		self.pinged_favorites = list(self.favorites)
+		self.pinged_list = list(self.favorites)
 
 		for server in self.favorites:
-			self.ao_app.udpthread.sendInfoRequest(tuple(server[2:]))
+			self.ao_app.udpthread.sendInfoRequest(tuple(server[-2:]))
 	
 	def join_ip_address(self):
 		addr, ok = QtGui.QInputDialog.getText(self, "Join IP address...", "Enter the IP address of the server you wish to join.\nIt must have the format \"ip:port\"\nExample: 127.0.0.1:27010")
@@ -357,8 +396,8 @@ class lobby(QtGui.QWidget):
 		else:
 			server = self.lanservers[self.serverselected]
 
-		ip = server[2]
-		port = server[3]
+		ip = server[-2]
+		port = int(server[-1])
 		self.connectingstatus.show()
 		self.ao_app.connect(ip, port)
 
@@ -368,24 +407,24 @@ class lobby(QtGui.QWidget):
 		self.description.setText("")
 
 		for server in servers:
-			item = QtGui.QListWidgetItem(server[0])
-			item.setFont(self.font)
-			self.serverlistwidget.addItem(item)
+			#item = QtGui.QListWidgetItem(server[0])
+			item = ServerItem(server)
+			item.setFont(0, self.font)
+			self.serverlistwidget.addTopLevelItem(item)
 	
-	def serverItemClicked(self, current):
-		for i in range(self.serverlistwidget.count()):
-			if self.serverlistwidget.item(i) == current:
-				if self.tab == 0:
-					self.description.setText(self.servers[i][1])
-				elif self.tab == 1:
-					self.description.setText(self.lanservers[i][1])
-				elif self.tab == 2:
-					self.description.setText(self.pinged_favorites[i][1])
-				self.serverselected = i
+	def serverItemClicked(self, item):
+		i = self.serverlistwidget.indexOfTopLevelItem(item)
+		for sv in self.pinged_list:
+			if sv[0] == item.text(0):
+				i = self.serverselected = self.pinged_list.index(sv)
+				break
+
+		self.description.setText(self.pinged_list[i][-3])
 
 class MasterServerThread(QtCore.QThread):
-	gotServers = QtCore.pyqtSignal(tuple)
+	gotServers = QtCore.pyqtSignal(list)
 	gotNews = QtCore.pyqtSignal(str)
+	error = QtCore.pyqtSignal(str)
 
 	def __init__(self, ip, port, newPackets=False):
 		super(MasterServerThread, self).__init__()
@@ -401,12 +440,22 @@ class MasterServerThread(QtCore.QThread):
 	def closeConnection(self):
 		self.tcp.close()
 		self.terminate()
-	
+
+	def sendBuffer(self, data):
+		data = struct.pack("I", len(data)) + data
+		self.tcp.send(data)
+
 	def sendRefresh(self):
-		self.tcp.send("12#%\n")
+		if not self.newPackets:
+			self.tcp.send("12#%\n")
+		else:
+			self.sendBuffer(struct.pack("B", AIOprotocol.MS_LIST))
 	
 	def getNews(self):
-		self.tcp.send("NEWS#%\n")
+		if not self.newPackets:
+			self.tcp.send("NEWS#%\n")
+		else:
+			self.sendBuffer(struct.pack("B", AIOprotocol.MS_NEWS))
 
 	def oldPacketLoop(self, data):
 		if not data.endswith("%"):
@@ -435,8 +484,9 @@ class MasterServerThread(QtCore.QThread):
 				servers = []
 				for i in range(0, total_servers*4, 4):
 					servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
+					#servers.append([network[i+2], network[i+3]])
 
-				self.gotServers.emit(tuple(servers))
+				self.gotServers.emit(servers)
 
 				if not self.got_news:
 					self.getNews() #get news tab
@@ -446,7 +496,34 @@ class MasterServerThread(QtCore.QThread):
 				self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
 
 	def newPacketLoop(self, data):
-		pass
+		if len(data) < 4:
+			return
+
+		data, length = buffer_read("I", data)
+		data = zlib.decompress(self.tcp.recv(length+1))
+
+		data, header = buffer_read("B", data)
+
+		if header == AIOprotocol.MS_CONNECTED:
+			self.sendRefresh()
+
+		elif header == AIOprotocol.MS_LIST: # server list
+			servers = []
+			while data:
+				data, ip = buffer_read("S", data)
+				data, port = buffer_read("H", data)
+
+				servers.append(["%s:%d"%(ip,port), "", "", "pinging", "", ip, str(port)])
+
+			self.gotServers.emit(servers)
+
+			if not self.got_news:
+				self.getNews()
+				self.got_news = True
+
+		elif header == AIOprotocol.MS_NEWS:
+			data, big_wall_of_text = buffer_read("S", data)
+			self.gotNews.emit(big_wall_of_text)
 
 	def run(self):
 		self.got_news = False
@@ -454,7 +531,8 @@ class MasterServerThread(QtCore.QThread):
 		try:
 			self.tcp.connect((self.ip, self.port))
 		except socket.error as err:
-			self.gotServers.emit((("Error connecting to master server. Click for details", str(err), "127.0.0.1", 27010),))
+			#self.gotServers.emit((("Error connecting to master server. Click for details", str(err), "127.0.0.1", 27010),))
+			self.error.emit(str(err))
 			self.closeConnection()
 		
 		self.tcp.settimeout(0.1)
@@ -481,7 +559,10 @@ class MasterServerThread(QtCore.QThread):
 				self.closeConnection()
 
 
-			if not self.newPackets:
-				self.oldPacketLoop(data)
-			else:
-				self.newPacketLoop(data)
+			try:
+				if not self.newPackets:
+					self.oldPacketLoop(data)
+				else:
+					self.newPacketLoop(data)
+			except:
+				continue

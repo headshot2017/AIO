@@ -32,7 +32,7 @@ class AIOMainWindow(QtGui.QMainWindow):
 	def showServers(self):
 		self.lobbywidget.showServers()
 		self.stackwidget.setCurrentWidget(self.lobbywidget)
-		self.setFixedSize(800, 480)
+		self.setFixedSize(960, 480)
 		self.center()
 	
 	def center(self):

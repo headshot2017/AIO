@@ -4,27 +4,7 @@ from ConfigParser import ConfigParser
 import socket, struct, AIOprotocol, os, time, zlib
 from AIOMainWindow import AIOMainWindow
 from pybass import *
-
-
-# taken from AIO python server code, it'll make my life easier.
-def string_unpack(buf):
-	unpacked = buf.split("\0")[0]
-	gay = list(buf)
-	for l in range(len(unpacked+"\0")):
-		del gay[0]
-	return "".join(gay), unpacked
-
-def buffer_read(format, buffer):
-	if format != "S":
-		unpacked = struct.unpack_from(format, buffer)
-		size = struct.calcsize(format)
-		liss = list(buffer)
-		for l in range(size):
-			del liss[0]
-		returnbuffer = "".join(liss)
-		return returnbuffer, unpacked[0]
-	else:
-		return string_unpack(buffer)
+from packing import *
 
 
 class AIOApplication(QtGui.QApplication):
@@ -577,15 +557,22 @@ class UDPThread(QtCore.QThread):
 		super(UDPThread, self).__init__()
 		self.udp = None
 		self.end = False
+		self.pings = {}
 
 	def __del__(self):
 		self.end = True
 		self.wait()
 
 	def sendBuffer(self, buf, addr):
-		self.udp.sendto(buf, addr)
+		port = addr[1]
+		if type(port) != int:
+			port = int(port)
+		self.udp.sendto(buf, (addr[0], port))
 
 	def sendInfoRequest(self, addr):
+		addr = (addr[0], int(addr[1]))
+		self.pings[addr] = time.time()
+
 		data = struct.pack("B", AIOprotocol.UDP_REQUEST)
 		self.sendBuffer(data, addr)
 
@@ -613,4 +600,20 @@ class UDPThread(QtCore.QThread):
 				data, maxplayers = buffer_read("I", data)
 				data, version = buffer_read("H", data)
 
-				self.gotInfoRequest.emit([addr, name, desc, players, maxplayers, version])
+				ping = "999"
+				sentPing = addr in self.pings
+				isLAN = False
+				for sv in self.pings:
+					if sv[0] == "<broadcast>" and sv[1] == addr[1]:
+						sentPing = isLAN = True
+						break
+
+				addrKey = addr if not isLAN else ("<broadcast>", addr[1])
+
+				if sentPing:
+					pingbefore = self.pings[addrKey]
+					pingafter = time.time()
+					ping = "%d" % ((pingafter - pingbefore)* 1000)
+					del self.pings[addrKey]
+
+				self.gotInfoRequest.emit([addr, name, desc, players, maxplayers, version, ping])

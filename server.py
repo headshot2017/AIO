@@ -945,6 +945,10 @@ class AIOserver(object):
             else:
                 self.Print("masterserver", "connection to master server lost, retrying.")
                 return False
+        
+        if not data:
+            self.Print("masterserver", "no data from master server (connection lost), retrying.")
+            return False
 
         if len(data) < 4: # we need these 4 bytes to read the packet length
             return True
@@ -1491,7 +1495,7 @@ class AIOserver(object):
         self.udp.bind(("", self.port))
         self.Print("server", "AIO server started on port %d" % self.port)
         
-        self.tcp.settimeout(0.1)
+        self.tcp.setblocking(False)
         self.udp.settimeout(0.1)
         
         if self.econ_password:

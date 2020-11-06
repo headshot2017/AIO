@@ -22,6 +22,7 @@ class AIOplayer(object):
     emoting = 0
     currentemote = 0
     run = 0
+    mustSend = False
     OOCname = ""
     loginfails = 0
     close = False

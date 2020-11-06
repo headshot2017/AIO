@@ -315,8 +315,8 @@ class Character(BaseCharacter):
 	dir_nr = 0
 	emoting = 0
 	currentemote = -1
-	xx = 160.0
-	yy = 384.0
+	xx = 0.0
+	yy = 0.0
 	xprevious = 0
 	yprevious = 0
 	xprevious2 = 0
@@ -336,6 +336,7 @@ class Character(BaseCharacter):
 	walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
 	emotes = [[], [], [], [], []] #value 0 contains the emotes, value 1 contains loop values, value 2 contains directions (east, west...), value 3 contains sound names and value 4 sound delays
 	isPlayer = False
+	mustSend = False # if this char is the player and a value (pos, speed, emote, etc) changed, send new data
 	maxwidth = 0
 	maxheight = 0
 	chatbubble = 0
@@ -464,6 +465,13 @@ class Character(BaseCharacter):
 			currsprite = os.path.basename(str(self.movie.fileName().toUtf8()))
 			self.run = self.ao_app.controls["run"][0] in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
+
+			# checks for self.mustSend
+			old_hspeed = self.hspeed
+			old_vspeed = self.vspeed
+			old_sprite = self.sprite
+			old_emoting = self.emoting
+			old_dir_nr = self.dir_nr
 
 			up = self.ao_app.controls["up"]
 			down = self.ao_app.controls["down"]
@@ -606,6 +614,9 @@ class Character(BaseCharacter):
 			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
 				self.ao_app.tcpthread.sendChatBubble(0)
+
+			if self.hspeed != old_hspeed or self.vspeed != old_vspeed or self.sprite != old_sprite or self.emoting != old_emoting or self.dir_nr != old_dir_nr: # send new data
+				self.mustSend = True
 			
 		if self.playFile[0]:
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
@@ -631,10 +642,11 @@ class Character(BaseCharacter):
 		self.xx += self.hspeed
 		self.yy += self.vspeed
 		
-		if not self.isPlayer:
+		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
-			if self.smoothmoves == 5:
-				self.hspeed = self.vspeed = self.smoothmoves = 0
+			if self.smoothmoves >= 4:
+				self.hspeed = self.vspeed = 0
+				self.smoothmoves = 0
 		
 class GamePort(QtGui.QWidget):
 	def __init__(self, parent, ao_app):
@@ -668,7 +680,9 @@ class GamePort(QtGui.QWidget):
 				player = self.characters[self.ao_app.player_id]
 				x1 = player.x()+(player.maxwidth/2)
 				y1 = player.y()+(player.maxheight/4)
-				
+
+				old_dir_nr = player.dir_nr
+
 				if x2 > x1 and y2 > y1-64 and y2 < y1+64:
 					player.dir_nr = AIOprotocol.EAST
 				elif x2 > x1+64 and y2 > y1+64:
@@ -686,6 +700,9 @@ class GamePort(QtGui.QWidget):
 				elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
 					player.dir_nr = AIOprotocol.NORTH
 				player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
+
+				if old_dir_nr != player.dir_nr:
+					player.mustSend = True
 			
 		super(GamePort, self).mousePressEvent(event)
 	
@@ -1818,9 +1835,11 @@ class GameWidget(QtGui.QWidget):
 			client, x, y, hspeed, vspeed, sprite, emoting, dir_nr = move
 			if not self.gameview.characters.has_key(client):
 				continue
+
 			char = self.gameview.characters[client]
-			char.hspeed = (x - char.xx) / 5.0
-			char.vspeed = (y - char.yy) / 5.0
+			if not char.isPlayer and char.smoothmoves <= 0:
+				char.hspeed = (x - char.xx) / 4.0
+				char.vspeed = (y - char.yy) / 4.0
 			char.sprite = sprite
 			char.emoting = emoting
 
@@ -1954,7 +1973,8 @@ class GameWidget(QtGui.QWidget):
 		
 		if event.timerId() == self.testtimer.timerId(): #game
 			self.updateGame()
-		elif event.timerId() == self.tcptimer.timerId(): #player movement
+		elif event.timerId() == self.tcptimer.timerId() and self.player.mustSend: #player movement
+			self.player.mustSend = False
 			self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
 	
 	def mousePressEvent(self, event):
@@ -2050,7 +2070,7 @@ class GameWidget(QtGui.QWidget):
 		self.setZone(self.ao_app.defaultzoneid)
 		self.player.setPlayer(True)
 		self.testtimer.start(1000./30, self)
-		self.tcptimer.start(1000./5, self)
+		self.tcptimer.start(1000./15, self)
 		self.playing = True
         
 		self.showCharSelect()

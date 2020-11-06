@@ -876,7 +876,7 @@ class AIOserver(object):
         
         if sourceID == -1:
             for client in self.clients.keys():
-                if client == ClientID or not self.clients[client].ready or not self.clients[client].first_picked or not self.clients[client].sprite:
+                if client == ClientID or not self.clients[client].ready or not self.clients[client].first_picked or not self.clients[client].sprite or not self.clients[client].mustSend:
                     continue
                 
                 buffer += struct.pack("I", client)
@@ -1157,7 +1157,15 @@ class AIOserver(object):
                             continue
                         if not self.clients[client].ready:
                             continue
-                        
+
+                        old_x = self.clients[client].x
+                        old_y = self.clients[client].y
+                        old_hspeed = self.clients[client].hspeed
+                        old_vspeed = self.clients[client].vspeed
+                        old_sprite = self.clients[client].sprite
+                        old_emoting = self.clients[client].emoting
+                        old_dir_nr = self.clients[client].dir_nr
+
                         self.clients[client].x = x
                         self.clients[client].y = y
                         self.clients[client].hspeed = hspeed
@@ -1165,7 +1173,10 @@ class AIOserver(object):
                         self.clients[client].sprite = sprite
                         self.clients[client].emoting = emoting
                         self.clients[client].dir_nr = dir_nr
-                        
+
+                        if old_x != x or old_y != y or old_hspeed != hspeed or old_vspeed != vspeed or old_emoting != emoting or old_dir_nr != dir_nr or old_sprite != sprite
+                            self.clients[client].mustSend = True
+
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientMovement"):
                                 plug[1].onClientMovement(self, self.clients[client], x, y, hspeed,vspeed, sprite, emoting, dir_nr)

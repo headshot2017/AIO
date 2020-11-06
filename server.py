@@ -1174,7 +1174,7 @@ class AIOserver(object):
                         self.clients[client].emoting = emoting
                         self.clients[client].dir_nr = dir_nr
 
-                        if old_x != x or old_y != y or old_hspeed != hspeed or old_vspeed != vspeed or old_emoting != emoting or old_dir_nr != dir_nr or old_sprite != sprite
+                        if old_x != x or old_y != y or old_hspeed != hspeed or old_vspeed != vspeed or old_emoting != emoting or old_dir_nr != dir_nr or old_sprite != sprite:
                             self.clients[client].mustSend = True
 
                         for plug in self.plugins:

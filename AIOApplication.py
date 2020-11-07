@@ -274,7 +274,8 @@ class ClientThread(QtCore.QThread):
 			self.sendBuffer(buf)
 	
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
-		if self.connected:
+		if self.connected and (time.time() - self.lastSendTime) > 1./10:
+			self.lastSendTime = time.time()
 			buf = struct.pack("B", AIOprotocol.MOVE)
 			buf += struct.pack("f", x)
 			buf += struct.pack("f", y)
@@ -294,6 +295,7 @@ class ClientThread(QtCore.QThread):
 		tempdata = ""
 		connection_phase = 0
 		pingtimer = 7
+		self.lastSendTime = time.time()
 		already_pinged = False
 		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		
@@ -305,7 +307,7 @@ class ClientThread(QtCore.QThread):
 			return
 		
 		self.connected = True
-		self.tcp.setblocking(False)
+		self.tcp.settimeout(0.1)
 		self.sendWelcome()
 		
 		while self.connected and self.tcp:

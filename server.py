@@ -145,6 +145,7 @@ class AIOserver(object):
 
         # plugins
         import importlib
+        if not os.path.exists("./server/plugins"): os.makedirs("./server/plugins")
         for file in os.listdir("./server/plugins"):
             if file.lower().endswith(".py"):
                 try:

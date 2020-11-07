@@ -1003,6 +1003,8 @@ class AIOserver(object):
                 f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
 
     def clientLoop(self, client):
+        lastSendTime = time.time()
+
         try:
             while True:
                 if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
@@ -1013,7 +1015,7 @@ class AIOserver(object):
                 if self.clients[client].ready and len(self.clients) > 1:
                     if self.clients[client].isBot():
                         self.sendBotMovement(client)
-                    else:
+                    elif (time.time() - lastSendTime) > 1./15:
                         self.sendMovement(client)
 
                 if not self.clients.has_key(client) or self.clients[client].isBot(): #trust no one, not even myself.

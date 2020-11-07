@@ -212,7 +212,6 @@ class lobby(QtGui.QWidget):
 
 		self.servers = []
 		self.favorites = []
-		self.lanservers = []
 		self.pinged_list = [] # [name, players, version, ping, desc, ip, str(port)]
 		self.ao_app.udpthread.gotInfoRequest.connect(self.gotUDPRequest)
 
@@ -262,8 +261,8 @@ class lobby(QtGui.QWidget):
 		version = versionToStr(str(version))
 
 		if self.tab == 1:
-			self.lanservers.append([name, "%d/%d" % (players, maxplayers), version, ping, desc, ip, str(port)])
-			self.updateServerList(self.lanservers)
+			self.pinged_list.append([name, "%d/%d" % (players, maxplayers), version, ping, desc, ip, str(port)])
+			self.updateServerList(self.pinged_list)
 		elif self.tab == 2:
 			if ["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)] in self.favorites:
 				ind = self.favorites.index(["%s:%d" % (ip, port), "", "", "pinging", "", ip, str(port)])
@@ -359,7 +358,7 @@ class lobby(QtGui.QWidget):
 			self.msthread.getNews()
 
 	def refreshLAN(self):
-		self.lanservers = []
+		self.pinged_list = []
 
 		for i in range(27010, 27020+1):
 			self.ao_app.udpthread.sendInfoRequest(("<broadcast>", i))
@@ -388,13 +387,8 @@ class lobby(QtGui.QWidget):
 	def connectClicked(self):
 		if self.serverselected == -1:
 			return self.description.setText("Lmao you need to pick a server from the list")
-		
-		if self.tab == 0:
-			server = self.servers[self.serverselected]
-		elif self.tab == 2:
-			server = self.favorites[self.serverselected]
-		else:
-			server = self.lanservers[self.serverselected]
+
+		server = self.pinged_list[self.serverselected]
 
 		ip = server[-2]
 		port = int(server[-1])

@@ -2070,7 +2070,7 @@ class GameWidget(QtGui.QWidget):
 		self.setZone(self.ao_app.defaultzoneid)
 		self.player.setPlayer(True)
 		self.testtimer.start(1000./30, self)
-		self.tcptimer.start(100, self)
+		self.tcptimer.start(150, self)
 		self.playing = True
         
 		self.showCharSelect()

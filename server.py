@@ -1016,7 +1016,7 @@ class AIOserver(object):
                 if self.clients[client].ready and len(self.clients) > 1:
                     if self.clients[client].isBot():
                         self.sendBotMovement(client)
-                    elif (time.time() - lastSendTime) > 1./15:
+                    elif (time.time() - lastSendTime) > 150./1000:
                         self.sendMovement(client)
 
                 if not self.clients.has_key(client) or self.clients[client].isBot(): #trust no one, not even myself.

@@ -1,7 +1,7 @@
 from PyQt4 import QtCore, QtGui
 from game_version import GAME_VERSION
 from ConfigParser import ConfigParser
-import socket, struct, AIOprotocol, os, time, zlib
+import socket, struct, AIOprotocol, os, time, zlib, ini
 from AIOMainWindow import AIOMainWindow
 from pybass import *
 from packing import *
@@ -144,6 +144,7 @@ class ClientThread(QtCore.QThread):
 		self.tcp = None
 		self.ip = "0"
 		self.port = 0
+		self.newPackets = ini.read_ini("aaio.ini", "Advanced", "0.5 packets", "0") == "1"
 		
 	def __del__(self):
 		self.disconnect()
@@ -274,7 +275,7 @@ class ClientThread(QtCore.QThread):
 			self.sendBuffer(buf)
 	
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
-		if self.connected and (time.time() - self.lastSendTime) > 1./10:
+		if self.connected and (time.time() - self.lastSendTime) > 150./1000:
 			self.lastSendTime = time.time()
 			buf = struct.pack("B", AIOprotocol.MOVE)
 			buf += struct.pack("f", x)
@@ -294,10 +295,11 @@ class ClientThread(QtCore.QThread):
 	def run(self):
 		tempdata = ""
 		connection_phase = 0
-		pingtimer = 7
+		pingtimer = 70
+		pingbefore = 0
 		self.lastSendTime = time.time()
-		already_pinged = False
 		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -311,16 +313,14 @@ class ClientThread(QtCore.QThread):
 		self.sendWelcome()
 		
 		while self.connected and self.tcp:
-			can_send = int(time.time()) % pingtimer == 0
-			if can_send and not already_pinged:
-				pingbefore = time.time()
-				already_pinged = True
-				self.sendPing()
-			elif not can_send:
-				already_pinged = False
+			if pingtimer > 0:
+				pingtimer -= 1
+				if pingtimer == 0:
+					pingbefore = time.time()
+					self.sendPing()
 
 			try:
-				data = self.tcp.recv(4096)
+				data = self.tcp.recv(8192)
 			except socket.error, err:
 				if err.args[0] == 10035 or err.errno == 11 or err.args[0] == "timed out":
 					continue
@@ -328,7 +328,7 @@ class ClientThread(QtCore.QThread):
 					self.connectionError.emit("The connection to the server has been lost.\nAdditional information: %s" % err)
 					self.disconnect()
 					break
-				
+
 			if not data.endswith("\r"):
 				tempdata += data
 				continue
@@ -544,6 +544,7 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.PING:
 					pingafter = time.time()
 					self.gotPing.emit(int((pingafter - pingbefore)* 1000))
+					pingtimer = 70
 				
 				if data:
 					if data[0] == "\r":

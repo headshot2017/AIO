@@ -1524,8 +1524,9 @@ class AIOserver(object):
         if self.publish:
             loopMS = self.startMasterServerAdverter()
             MSretryTick = 0
-        
-        thread.start_new_thread(self.chatThread, ())
+
+        if "noinput" not in sys.argv:
+            thread.start_new_thread(self.chatThread, ())
         
         while True:
             if self.publish:
@@ -1721,6 +1722,7 @@ class AIOserver(object):
         timestamp = "[%d-%.2d-%.2d %.2d:%.2d:%.2d]" % (local[0], local[1], local[2], local[3], local[4], local[5])
         finaltext = "%s[%s]: %s" % (timestamp, element, text)
         print finaltext
+        sys.stdout.flush()
 
         if self.logfile:
             self.logfile.write(finaltext+"\n")

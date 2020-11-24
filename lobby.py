@@ -126,6 +126,8 @@ class lobby(QtGui.QWidget):
 		self.favoritesbtn = buttons.AIOButton(self)
 		self.joinipaddress = buttons.AIOButton(self)
 		self.optionsbtn = buttons.AIOButton(self)
+		self.aboutbtn = buttons.AIOButton(self)
+		self.startserverbtn = buttons.AIOButton(self)
 		
 		self.addtofav.setPixmap(QtGui.QPixmap("data/misc/add_to_favorites.png"))
 		self.addtofav.move(800-16, desc_y+desc_h+4)
@@ -145,6 +147,10 @@ class lobby(QtGui.QWidget):
 		self.joinipaddress.move(self.newsbtn.x() + self.newsbtn.pixmap().size().width() + 8, self.newsbtn.y())
 		self.optionsbtn.setPixmap(QtGui.QPixmap("data/misc/options_button.png"))
 		self.optionsbtn.move(8, self.size().height()-40)
+		self.aboutbtn.setPixmap(QtGui.QPixmap("data/misc/about_button.png"))
+		self.aboutbtn.move(self.optionsbtn.x() + self.optionsbtn.pixmap().size().width() + 8, self.size().height()-40)
+		self.startserverbtn.setPixmap(QtGui.QPixmap("data/misc/start_server.png"))
+		self.startserverbtn.move(960-160-64 - self.startserverbtn.pixmap().size().width() - 20, self.size().height()-40)
 		
 		self.description = QtGui.QTextEdit(self)
 		self.description.setFont(self.font)
@@ -181,14 +187,8 @@ class lobby(QtGui.QWidget):
 		self.newsbtn.clicked.connect(self.on_news_tab)
 		self.joinipaddress.clicked.connect(self.join_ip_address)
 		self.optionsbtn.clicked.connect(self.on_settings_button)
-		self.addtofav.show()
-		self.connectbtn.show()
-		self.refreshbtn.show()
-		self.allservers.show()
-		self.LANbtn.show()
-		self.favoritesbtn.show()
-		self.newsbtn.show()
-		self.joinipaddress.show()
+		self.aboutbtn.clicked.connect(self.on_about_button)
+		self.startserverbtn.clicked.connect(self.on_startserver_button)
 		
 		self.connectingstatus.raise_()
 		
@@ -210,6 +210,8 @@ class lobby(QtGui.QWidget):
 		self.msthread.error.connect(self.MSError)
 		self.msthread.start()
 
+		self.server_subprocess = None
+
 		self.servers = []
 		self.favorites = []
 		self.pinged_list = [] # [name, players, version, ping, desc, ip, str(port)]
@@ -226,6 +228,13 @@ class lobby(QtGui.QWidget):
 
 		self.serverselected = -1
 		self.tab = 0
+
+	def on_startserver_button(self):
+		QtGui.QMessageBox.critical(None, "Start server", "This option does not work at this time.\nRun 'server.exe' in the game folder for the time being")
+
+	def on_about_button(self):
+		QtGui.QMessageBox.information(None, "About this game",
+		"Attorney Investigations Online\nVersion %s\nCreated by Headshotnoby\n\nThis game is not affiliated with the original Attorney Online team.\n\nThanks to all the collaborators:\nstonedDiscord, X0men0X, Phoenix \"Nick\" Wright,\nand anyone else I may have forgotten." % LOBBY_VERSION)
 
 	def MSError(self, msg):
 		QtGui.QMessageBox.critical(None, "Error connecting to master", "Failed to connect to the master server.\nCheck your antivirus, internet connection or firewall?\n\nAdditional info:\n"+msg)

@@ -1564,6 +1564,7 @@ class AIOserver(object):
             self.udpLoop()
 
     def udpLoop(self):
+        data = ""
         try:
             data, addr = self.udp.recvfrom(65535)
         except socket.error as e:

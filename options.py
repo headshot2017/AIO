@@ -30,6 +30,7 @@ class Options(QtGui.QWidget):
         general_tab = QtGui.QWidget()
         controls_tab = QtGui.QWidget()
         audio_tab = QtGui.QWidget()
+        theme_tab = QtGui.QWidget()
         advanced_tab = QtGui.QWidget()
         general_layout = QtGui.QVBoxLayout(general_tab)
         general_layout.setAlignment(QtCore.Qt.AlignTop)
@@ -39,6 +40,8 @@ class Options(QtGui.QWidget):
         audio_layout.setLabelAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         audio_layout.setFormAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         #audio_layout.setContentsMargins(0, 0, 0, 0)
+        theme_layout = QtGui.QVBoxLayout(theme_tab)
+        theme_layout.setAlignment(QtCore.Qt.AlignTop)
         advanced_layout = QtGui.QVBoxLayout(advanced_tab)
         advanced_layout.setAlignment(QtCore.Qt.AlignTop)
         
@@ -83,7 +86,24 @@ class Options(QtGui.QWidget):
         general_layout.addLayout(chatboximage_layout)
         general_layout.addWidget(self.chatboximage, 0, QtCore.Qt.AlignCenter)
         #general_layout.addWidget(savechangeswarn, 50, QtCore.Qt.AlignBottom)
+
+        ###### Theme tab ######
+        themeview_layout = QtGui.QHBoxLayout()
+        self.themeview = QtGui.QListWidget()
+        #self.themeview.setViewMode(QtGui.QListWidget.IconMode)
+        self.themeview.setIconSize(QtCore.QSize(128, 128))
+        self.themeview.setResizeMode(QtGui.QListWidget.Adjust)
+        self.themeview.setMovement(QtGui.QListWidget.Static)
+
+        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img3.png"), "Default theme"))
+        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img4.png"), "Large theme"))
+        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img1.png"), "Test"))
+        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img2.png"), "noby big troll"))
+
+        themeview_layout.addWidget(self.themeview)
         
+        theme_layout.addLayout(themeview_layout)
+
         ###### Controls tab ######
         self.changingBind = [] # [pushbutton object, control name, control index]
         
@@ -175,6 +195,7 @@ class Options(QtGui.QWidget):
 
 
         self.tabs.addTab(general_tab, "General")
+        self.tabs.addTab(theme_tab, "Theme")
         self.tabs.addTab(controls_tab, "Controls")
         self.tabs.addTab(audio_tab, "Audio")
         self.tabs.addTab(advanced_tab, "Advanced")

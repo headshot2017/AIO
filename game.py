@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4 import QtCore, QtGui, QtOpenGL, uic
 from functools import partial
 from pybass import *
 import random, os, AIOprotocol, buttons, math, charselect, ini
@@ -60,7 +60,7 @@ def getColor(number):
 
 class ICLineEdit(QtGui.QLineEdit):
 	enter_pressed = False
-	def __init__(self, window, ao_app):
+	def __init__(self, window=None, ao_app=None):
 		super(ICLineEdit, self).__init__(window)
 		self.window = window
 		self.ao_app = ao_app
@@ -649,7 +649,7 @@ class Character(BaseCharacter):
 				self.smoothmoves = 0
 		
 class GamePort(QtGui.QWidget):
-	def __init__(self, parent, ao_app):
+	def __init__(self, parent, ao_app=None):
 		super(GamePort, self).__init__(parent)
 		self.parent = parent
 		self.ao_app = ao_app
@@ -667,9 +667,11 @@ class GamePort(QtGui.QWidget):
 		
 		self.zonebackground.setZValue(-10000)
 		self.characters = {}
-		
+
+	def setupUi(self, ao_app):
+		self.ao_app = ao_app
 		ao_app.installEventFilter(self)
-	
+
 	def mousePressEvent(self, event):
 		self.clearFocus()
 		if event.buttons() == QtCore.Qt.LeftButton and self.characters.has_key(self.ao_app.player_id): # click to look at that direction
@@ -832,7 +834,6 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.gotPing.connect(self.onGotPing)
 		
 
-		emotebar = QtGui.QPixmap("data/misc/emote_bar.png")
 		
 		self.aSound = ["", -1, 0] #filename, delay, zone
 		self.mychatcolor = 0
@@ -840,12 +841,6 @@ class GameWidget(QtGui.QWidget):
 		self.myevidence = -1
 		
 		self.playing = False
-		self.resize(1000, 512+20)
-		self.gameview = GamePort(self, _ao_app)
-		self.gameview.move(0, 0)
-		
-		self.broadcastObj = Broadcast(self.gameview.gamescene)
-		self.broadcastObj.setPos(0, 64)
 		
 		self.testtimer = QtCore.QBasicTimer()
 		self.tcptimer = QtCore.QBasicTimer()
@@ -853,110 +848,64 @@ class GameWidget(QtGui.QWidget):
 		self.chatbubbletimer = QtCore.QTimer()
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
-		self.ic_input = ICLineEdit(self, _ao_app)
-		self.ic_input.setGeometry(self.gameview.x(), 384, 512-96, 16)
-		self.ic_input.setPlaceholderText("Click here to chat")
-		self.ic_input.textChanged.connect(self.ic_typing)
-		self.ic_input.hide()
-		self.showname_input = QtGui.QLineEdit(self)
-		self.showname_input.setGeometry(self.ic_input.x() + self.ic_input.size().width(), 384, 96, 16)
-		self.showname_input.hide()
-		self.areainfo = QtGui.QLabel(self)
-		self.areainfo.setAlignment(QtCore.Qt.AlignCenter)
-		self.areainfo.setGeometry(emotebar.size().width(), self.size().height()-18, self.size().width() - emotebar.size().width(), 18)
-		self.areainfo.setStyleSheet("color: white;\nbackground-color: rgb(128, 128, 128)")
-		self.areainfo.setText("zone 0")
-		self.areainfo.hide()
-		
-		self.chatbox = QtGui.QLabel(self)
-		chatbox = QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image", "chatbox_1.png"))
-		self.chatbox.setPixmap(chatbox)
-		self.chatbox.move(self.gameview.x() + (self.gameview.size().width()/2) - (chatbox.size().width()/2), 384-chatbox.size().height())
-		
-		self.chatname = QtGui.QLabel(self.chatbox)
-		self.chatname.setStyleSheet("color: white")
-		self.chatname.move(4, 2)
-		self.chatname.resize(256-4, 12)
-		
-		self.chattext = QtGui.QTextEdit(self.chatbox)
-		self.chattext.setFrameStyle(QtGui.QFrame.NoFrame)
-		self.chattext.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		self.chattext.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		self.chattext.setReadOnly(True)
-		self.chattext.setGeometry(2, 14, 240+10, 96)
-		self.chattext.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-		self.chattext.setStyleSheet("background-color: rgba(0, 0, 0, 0);"
-													"color: white")
 
-		self.wtceview = WTCEview(self.gameview)
+		# good riddance to like 200 lines of code...
 
-		self.emotebar = QtGui.QLabel(self)
-		self.emotebar.setPixmap(emotebar)
-		#self.emotebar.move(self.gameview.x(), 384+92)
-		self.emotebar.move(self.gameview.x(), self.ic_input.y()+self.ic_input.size().height())
-		
-		self.pinglabel = QtGui.QLabel(self)
-		self.pinglabel.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
-		self.pinglabel.setGeometry(512-96, self.ic_input.y()+22, 128, 14)
-		
-		self.prevemotepage = buttons.AIOButton(self)
-		self.prevemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data/misc/arrow_left.png").scaled(40, 40)))
-		self.prevemotepage.move(8, self.emotebar.y()-20+emotebar.size().height())
-		self.prevemotepage.clicked.connect(self.onPrevEmotePage)
-		self.nextemotepage = buttons.AIOButton(self)
-		self.nextemotepage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage("data/misc/arrow_right.png").scaled(40, 40)))
-		self.nextemotepage.move(512-40-8, self.emotebar.y()-20+emotebar.size().height())
-		self.nextemotepage.clicked.connect(self.onNextEmotePage)
-		
-		movebtn = QtGui.QPixmap("data/misc/move_button.png")
-		switchbtn = QtGui.QPixmap("data/misc/switch_button.png")
-		examinebtn = QtGui.QPixmap("data/misc/examine_button.png")
-		textcolorbtn = QtGui.QPixmap("data/misc/textcolor_button.png")
-		self.realizationbtn_off = QtGui.QPixmap("data/misc/realization.png")
-		self.realizationbtn_on = QtGui.QPixmap("data/misc/realization_pressed.png")
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+		uic.loadUi("data/themes/"+theme+"/game.ui", self) # plant the bomb
+
+		self.realizationbtn_off = QtGui.QPixmap("data/themes/"+theme+"/realization.png")
+		self.realizationbtn_on = QtGui.QPixmap("data/themes/"+theme+"/realization_pressed.png")
+
 		self.movemenu = QtGui.QMenu()
-		self.movebtn = buttons.AIOButton(self)
-		self.movebtn.setPixmap(movebtn)
-		self.movebtn.move(256-(movebtn.size().width()/2), self.emotebar.y()-20+emotebar.size().height()+8)
-		self.movebtn.clicked.connect(self.onMoveButton)
-		self.switchbtn = buttons.AIOButton(self)
-		self.switchbtn.setPixmap(switchbtn)
-		self.switchbtn.move(256-(movebtn.size().width()/2) - switchbtn.size().width() - 16, self.emotebar.y()-20+emotebar.size().height()+8)
-		self.switchbtn.clicked.connect(self.onSwitchButton)
-		self.examinebtn = buttons.AIOButton(self)
-		self.examinebtn.setPixmap(examinebtn)
-		self.examinebtn.move(256-(movebtn.size().width()/2) + examinebtn.size().width() + 16, self.emotebar.y()-20+emotebar.size().height()+8)
-		self.examinebtn.clicked.connect(self.onExamineButton)
-		
 		self.textcolormenu = QtGui.QMenu()
 		self.colors = ["white", "green", "red", "orange", "blue", "yellow", "rainbow", "pink", "cyan"]
 		for color in self.colors:
 			self.textcolormenu.addAction(color)
-		self.textcolorbtn = buttons.AIOButton(self)
-		self.textcolorbtn.setPixmap(textcolorbtn)
-		self.textcolorbtn.move(8+64, self.emotebar.y()-20+emotebar.size().height())
+
+		self.broadcastObj = Broadcast(self.gameview.gamescene)
+		self.broadcastObj.setPos(0, 64)
+		self.gameview.setupUi(_ao_app)
+
+		self.ic_input.textChanged.connect(self.ic_typing)
+		self.chattext.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.chattext.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.movebtn.clicked.connect(self.onMoveButton)
+		self.switchbtn.clicked.connect(self.onSwitchButton)
+		self.examinebtn.clicked.connect(self.onExamineButton)
 		self.textcolorbtn.clicked.connect(self.onTextColorButton)
-		self.textcolorbtn.hide()
-		
+		self.realizationbtn.clicked.connect(self.onRealizationButton)
+		self.prevemotepage.clicked.connect(self.onPrevEmotePage)
+		self.nextemotepage.clicked.connect(self.onNextEmotePage)
+		self.oocinput.returnPressed.connect(self.onOOCReturn)
+		self.musicslider.valueChanged.connect(self.changeMusicVolume)
+		self.soundslider.valueChanged.connect(self.changeSoundVolume)
+		self.blipslider.valueChanged.connect(self.changeBlipVolume)
+		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
+		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
+		self.wt_button.clicked.connect(self.onWTCEButton)
+		self.ce_button.clicked.connect(self.onWTCEButton)
+		self.notguilty_button.clicked.connect(self.onWTCEButton)
+		self.guilty_button.clicked.connect(self.onWTCEButton)
+		self.ooclogin.clicked.connect(self.onOOCLoginBtn)
+
+		self.ic_input.ao_app = _ao_app
+
 		self.realizationmenu = QtGui.QMenu()
 		self.realizations = ["Disabled", "sfx-realization", "sfx-lightbulb"]
 		for typ in self.realizations:
 			self.realizationmenu.addAction(typ)
-		self.realizationbtn = buttons.AIOButton(self)
-		self.realizationbtn.setPixmap(self.realizationbtn_off)
-		self.realizationbtn.move(512-40-8-64, self.emotebar.y()-20+emotebar.size().height())
-		self.realizationbtn.clicked.connect(self.onRealizationButton)
-		self.realizationbtn.hide()
 		
 		self.emotemenu = QtGui.QMenu()
 		self.emotemenuActions = [self.emotemenu.addAction("Play"), self.emotemenu.addAction("Play on chat")]
 		self.emote_on_chat = -1
+		self.evidence_page = 0
 
 		self.emotebuttons = []
 		spacing = 2
 		x_mod_count = y_mod_count = 0
 		left, top = (6, 8)
-		width, height = (emotebar.size().width(), emotebar.size().height())
+		width, height = (self.emotebar.size().width(), self.emotebar.size().height())
 		columns = (width - 40) / (spacing + 40) + 1
 		rows = (height - 40) / (spacing + 40) + 1
 		self.max_emotes_on_page = columns * rows
@@ -973,106 +922,24 @@ class GameWidget(QtGui.QWidget):
 			if x_mod_count == columns:
 				x_mod_count = 0
 				y_mod_count += 1
-		
-		#self.musicbtn = buttons.AIOButton(self)
-		#musicbtn = QtGui.QPixmap("data/misc/music_button.png")
-		#self.musicbtn.setPixmap(musicbtn)
-		#self.musicbtn.move(512-musicbtn.size().width(), 640-musicbtn.size().height())
-		#self.musicbtn.clicked.connect(self.toggleMusicList)
-		#self.musicbtn.hide()
 
-		self.chatlog = QtGui.QTextEdit(self)
-		self.chatlog.setGeometry(512, 0, (self.size().width()-512)/2, 280)
-		self.chatlog.setStyleSheet('background-color: rgb(96, 96, 96);\ncolor: white')
-		self.chatlog.setReadOnly(True)
-		
-		#self.oocbtn = buttons.AIOButton(self)
-		#oocbtn = QtGui.QPixmap("data/misc/ooc_button.png")
-		#self.oocbtn.setPixmap(oocbtn)
-		#self.oocbtn.move(0, 640-oocbtn.size().height())
-		#self.oocbtn.clicked.connect(self.onOOCButton)
-		#self.oocbtn.hide()
-		self.oocwidget = QtGui.QWidget(self)
-		self.oocwidget.setGeometry(self.chatlog.x() + self.chatlog.size().width(), 0, (self.size().width()-512)/2, 280)
-		
-		self.oocchat = QtGui.QTextBrowser(self.oocwidget)
-		self.oocchat.resize(self.oocwidget.size().width(), self.oocwidget.size().height()-20)
-		self.oocchat.setStyleSheet('QTextEdit { background-color: rgb(64, 64, 64);\ncolor: white } a{ color: rgb(0, 192, 192); }')
-		self.oocchat.setAutoFillBackground(False)
-		self.oocchat.setOpenExternalLinks(True)
-		self.oocnameinput = QtGui.QLineEdit(self.oocwidget)
-		self.oocnameinput.setGeometry(0, self.oocchat.size().height(), 64, 20)
-		self.oocnameinput.setStyleSheet('QLineEdit { background-color: rgb(64, 64, 64);\ncolor: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}')
-		self.oocnameinput.setAutoFillBackground(False)
-		self.oocinput = QtGui.QLineEdit(self.oocwidget)
-		self.oocinput.setGeometry(self.oocnameinput.size().width(), self.oocchat.size().height(), self.oocwidget.size().width() - self.oocnameinput.size().width(), 20)
-		self.oocinput.setStyleSheet('QLineEdit { background-color: rgb(64, 64, 64);\ncolor: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}')
-		self.oocinput.setPlaceholderText("OOC chat message...")
-		self.oocinput.setAutoFillBackground(False)
-		self.oocinput.returnPressed.connect(self.onOOCReturn)
-		self.oocwidget.hide()
-
-		self.musiclist = QtGui.QListWidget(self)
-		self.musiclist.move(512, self.oocwidget.size().height())
-		self.musiclist.resize(self.size().width()-512, 120)
-		self.musiclist.itemDoubleClicked.connect(self.onMusicClicked)
-		self.musiclist.setVerticalScrollMode(QtGui.QAbstractItemView.ScrollPerPixel)
 		self.musiclist.setVerticalStepsPerItem(1)
 		self.musiclist.verticalScrollBar().setSingleStep(1)
-		self.musiclist.hide()
 
-		self.musicslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-		self.soundslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-		self.blipslider = QtGui.QSlider(QtCore.Qt.Horizontal, self)
-		self.musicslider.setRange(0, 100)
-		self.soundslider.setRange(0, 100)
-		self.blipslider.setRange(0, 100)
-		self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
-		self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
-		self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
-		self.musicslider.setGeometry(512+8, self.musiclist.y() + self.musiclist.size().height()+4, 160-12, 16)
-		self.soundslider.setGeometry(512+8, self.musicslider.y()+20, 160-12, 16)
-		self.blipslider.setGeometry(512+8, self.soundslider.y()+20, 160-12, 16)
-		self.musicslider.valueChanged.connect(self.changeMusicVolume)
-		self.soundslider.valueChanged.connect(self.changeSoundVolume)
-		self.blipslider.valueChanged.connect(self.changeBlipVolume)
-		self.sliderlabel1 = QtGui.QLabel("Music", self)
-		self.sliderlabel2 = QtGui.QLabel("SFX", self)
-		self.sliderlabel3 = QtGui.QLabel("Blips", self)
-		self.sliderlabel1.move(self.musicslider.x() + self.musicslider.size().width()+8, self.musicslider.y())
-		self.sliderlabel2.move(self.soundslider.x() + self.soundslider.size().width()+8, self.soundslider.y())
-		self.sliderlabel3.move(self.blipslider.x() + self.blipslider.size().width()+8, self.blipslider.y())
-
-		self.walkanim_dropdown = QtGui.QComboBox(self)
-		self.runanim_dropdown = QtGui.QComboBox(self)
-		self.walkanim_dropdown.setGeometry(self.musicslider.x() + self.musicslider.size().width() + 48, self.soundslider.y()-4, 80, 20)
-		self.runanim_dropdown.setGeometry(self.walkanim_dropdown.x(), self.walkanim_dropdown.y() + self.walkanim_dropdown.size().height()+20, 80, 20)
-		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
-		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
-		self.walkanim_label = QtGui.QLabel("Walk animation", self)
-		self.runanim_label = QtGui.QLabel("Run animation", self)
-		self.walkanim_label.move(self.walkanim_dropdown.x(), self.walkanim_dropdown.y()-16)
-		self.runanim_label.move(self.runanim_dropdown.x(), self.runanim_dropdown.y()-16)
-        
-		self.penaltybars = []
+		self.penaltybars = [self._penaltybar1, self._penaltybar2]
 		for i in range(2):
-			self.penaltybars.append(buttons.PenaltyBar(self, i))
-			self.penaltybars[-1].move(self.blipslider.x(), self.blipslider.y() + self.blipslider.size().height()+24 + ((i-1) * self.penaltybars[-1].size().height()))
-			self.penaltybars[-1].minusClicked.connect(self.onPenaltyBarMinus)
-			self.penaltybars[-1].plusClicked.connect(self.onPenaltyBarPlus)
+			self.penaltybars[i].type = i
+			self.penaltybars[i].setupUi()
+			self.penaltybars[i].minusClicked.connect(self.onPenaltyBarMinus)
+			self.penaltybars[i].plusClicked.connect(self.onPenaltyBarPlus)
 
-		self.evidence_page = 0
-		self.evidencebtn = buttons.AIOButton(self)
-		evidencebtn = QtGui.QPixmap("data/misc/evidence_button.png")
-		self.evidencebtn.setPixmap(evidencebtn)
-		self.evidencebtn.move(self.oocwidget.x() - (evidencebtn.size().width() / 2), self.areainfo.y()-evidencebtn.size().height())
-		self.evidencebtn.clicked.connect(self.onEvidenceButton)
-		self.evidencebtn.hide()
+		self.wtceview = WTCEview(self.gameview)
+
 		self.evidencewidget = QtGui.QWidget(self)
 		self.evidencewidget.setGeometry((self.size().width() - (512-64))/2, (self.size().height() - (640-256))/2, 512-64, 640-256)
 		self.evidencewidget.setStyleSheet("background-color: rgb(45, 58, 66)")
 		self.evidencenamelabel = QtGui.QLabel(self.evidencewidget)
-		evidencenamelabel = QtGui.QPixmap("data/misc/evidence_name.png")
+		evidencenamelabel = QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png")
 		self.evidencenamelabel.setPixmap(evidencenamelabel)
 		self.evidencenamelabel.move((self.evidencewidget.size().width() - evidencenamelabel.size().width())/2, 0)
 		self.evidencename = QtGui.QLabel(self.evidencenamelabel)
@@ -1081,8 +948,8 @@ class GameWidget(QtGui.QWidget):
 		self.evidencename.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+getColor(3).name())
 		self.evidencenextpage = buttons.AIOButton(self.evidencewidget)
 		self.evidenceprevpage = buttons.AIOButton(self.evidencewidget)
-		rightarrow = QtGui.QPixmap("data/misc/arrow_right.png")
-		leftarrow = QtGui.QPixmap("data/misc/arrow_left.png")
+		rightarrow = QtGui.QPixmap("data/themes/"+theme+"/arrow_right.png")
+		leftarrow = QtGui.QPixmap("data/themes/"+theme+"/arrow_left.png")
 		self.evidencenextpage.setPixmap(rightarrow)
 		self.evidencenextpage.move(self.evidencewidget.size().width() - rightarrow.size().width() - 8, self.evidencewidget.size().height() - rightarrow.size().height() - 8)
 		self.evidencenextpage.clicked.connect(self.onNextEvidencePage)
@@ -1116,33 +983,6 @@ class GameWidget(QtGui.QWidget):
 				x_mod_count = 0
 				y_mod_count += 1
 		self.evidencewidget.hide()
-		
-		self.wt_button = buttons.AIOIndexButton(self, 0)
-		self.ce_button = buttons.AIOIndexButton(self, 1)
-		self.notguilty_button = buttons.AIOIndexButton(self, 2)
-		self.guilty_button = buttons.AIOIndexButton(self, 3)
-		self.wt_button.setPixmap(QtGui.QPixmap("data/misc/witnesstestimony.png"))
-		self.ce_button.setPixmap(QtGui.QPixmap("data/misc/crossexamination.png"))
-		self.notguilty_button.setPixmap(QtGui.QPixmap("data/misc/notguilty.png"))
-		self.guilty_button.setPixmap(QtGui.QPixmap("data/misc/guilty.png"))
-		self.wt_button.move(self.walkanim_dropdown.x() + self.walkanim_dropdown.size().width() + 20, self.walkanim_dropdown.y()-12)
-		self.ce_button.move(self.wt_button.x() + self.wt_button.pixmap().size().width(), self.wt_button.y())
-		self.notguilty_button.move(self.wt_button.x(), self.wt_button.y() + self.wt_button.pixmap().size().height())
-		self.guilty_button.move(self.ce_button.x(), self.ce_button.y() + self.ce_button.pixmap().size().height())
-		self.wt_button.clicked.connect(self.onWTCEButton)
-		self.ce_button.clicked.connect(self.onWTCEButton)
-		self.notguilty_button.clicked.connect(self.onWTCEButton)
-		self.guilty_button.clicked.connect(self.onWTCEButton)
-
-		self.ooclogin = QtGui.QPushButton("Login", self)
-		self.ooclogin.clicked.connect(self.onOOCLoginBtn)
-		self.ooclogin.setGeometry(self.wt_button.x()+2, self.evidencebtn.y()+2, 64, 22)
-
-		#self.logbtn = buttons.AIOButton(self)
-		#logbtn = QtGui.QPixmap("data/misc/chatlog_button.png")
-		#self.logbtn.setPixmap(logbtn)
-		#self.logbtn.move(self.gameview.x() + self.gameview.size().width() - logbtn.size().width(), 384-logbtn.size().height())
-		#self.logbtn.clicked.connect(self.onLogButton)
 		
 		self.charselect = charselect.CharSelect(self, _ao_app)
 		self.charselect.charClicked.connect(self.confirmChar_clicked)
@@ -1679,7 +1519,7 @@ class GameWidget(QtGui.QWidget):
 		self.ce_button.hide()
 		self.notguilty_button.hide()
 		self.guilty_button.hide()
-		self.pinglabel.move(512-96, self.ic_input.y())
+		#self.pinglabel.move(512-96, self.ic_input.y())
 	
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
@@ -1941,7 +1781,7 @@ class GameWidget(QtGui.QWidget):
 		self.notguilty_button.show()
 		self.guilty_button.show()
 		self.charselect.hide()
-		self.pinglabel.move(self.size().width() - 96, self.areainfo.y() - 16)
+		#self.pinglabel.move(self.size().width() - 96, self.areainfo.y() - 16)
 	
 	def ic_typing(self):
 		if self.ic_input.text():
@@ -2092,11 +1932,13 @@ class EvidenceDialog(QtGui.QWidget):
 	def __init__(self, parent, ao_app):
 		super(EvidenceDialog, self).__init__(parent)
 		self.ao_app = ao_app
-		
+
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+
 		self.setGeometry((parent.size().width() - (512-64))/2, (parent.size().height() - (640-256))/2, 512-64, 640-256)
 		
 		self.evidencenamelabel = QtGui.QLabel(self)
-		evidencenamelabel = QtGui.QPixmap("data/misc/evidence_name.png")
+		evidencenamelabel = QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png")
 		self.evidencenamelabel.setPixmap(evidencenamelabel)
 		self.evidencenamelabel.move((self.size().width() - evidencenamelabel.size().width())/2, 0)
 		self.evidencename = QtGui.QLineEdit(self.evidencenamelabel)
@@ -2116,27 +1958,27 @@ class EvidenceDialog(QtGui.QWidget):
 		self.evidencedesc.textChanged.connect(self.changesMade)
 		
 		self.evidenceclose = buttons.AIOButton(self)
-		evidenceclose = QtGui.QPixmap("data/misc/evidence_x.png")
+		evidenceclose = QtGui.QPixmap("data/themes/"+theme+"/evidence_x.png")
 		self.evidenceclose.setPixmap(evidenceclose)
 		self.evidenceclose.move(self.size().width()-evidenceclose.size().width()-8, 8)
 		self.evidenceclose.clicked.connect(self.closeDialog)
 		
 		self.savechanges = buttons.AIOButton(self)
-		savebtn = QtGui.QPixmap("data/misc/save_button.png")
+		savebtn = QtGui.QPixmap("data/themes/"+theme+"/save_button.png")
 		self.savechanges.setPixmap(savebtn)
 		self.savechanges.move(self.evidencedesc.x()+8, self.evidencedesc.y()+self.evidencedesc.size().height()+16)
 		self.savechanges.clicked.connect(self.saveChanges)
 		self.savechanges.hide()
 		
 		self.deletebtn = buttons.AIOButton(self)
-		deletebtn = QtGui.QPixmap("data/misc/delete_button.png")
+		deletebtn = QtGui.QPixmap("data/themes/"+theme+"/delete_button.png")
 		self.deletebtn.setPixmap(deletebtn)
 		self.deletebtn.move(self.evidencedesc.x() + self.evidencedesc.size().width() - deletebtn.size().width() - 8, self.savechanges.y())
 		self.deletebtn.clicked.connect(self.deleteEvidence)
 		self.deletebtn.hide()
 		
 		self.presentbtn = buttons.AIOButton(self)
-		presentbtn = QtGui.QPixmap("data/misc/present_button.png")
+		presentbtn = QtGui.QPixmap("data/themes/"+theme+"/present_button.png")
 		self.presentbtn.setPixmap(presentbtn)
 		self.presentbtn.move((self.evidencenamelabel.x() + evidencenamelabel.size().width())/2, self.evidencenamelabel.y() + evidencenamelabel.size().height())
 		self.presentbtn.clicked.connect(self.onPresentButton)

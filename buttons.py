@@ -5,7 +5,7 @@ import os, ini
 class AIOButton(QLabel):
 	clicked = pyqtSignal()
 	rightClicked = pyqtSignal()
-	def __init__(self, parent):
+	def __init__(self, parent=None):
 		QLabel.__init__(self, parent)
 
 	def mousePressEvent(self, ev):
@@ -19,7 +19,7 @@ class AIOIndexButton(QLabel):
 	rightClicked = pyqtSignal(int)
 	mouseEnter = pyqtSignal(int)
 	mouseLeave = pyqtSignal(int)
-	def __init__(self, parent, ind):
+	def __init__(self, parent=None, ind=-1):
 		super(AIOIndexButton, self).__init__(parent)
 		self.ind = ind
 	
@@ -87,33 +87,34 @@ class AIOCharButton(AIOIndexButton):
 class PenaltyBar(QLabel):
 	minusClicked = pyqtSignal(int)
 	plusClicked = pyqtSignal(int)
-	def __init__(self, parent, type):
+	def __init__(self, parent=None, type=0):
 		super(PenaltyBar, self).__init__(parent)
 		self.parent = parent
 		self.penaltybars = []
 		self.type = type
 		self.health = 10
 		self.resize(84, 14)
-		if type == 0: #defense bar.
+
+	def setupUi(self):
+		if self.type == 0: #defense bar.
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/misc/defensebar"+str(i)+".png"))
-			side = "def"
-		elif type == 1: #prosecution bar
+			self.side = "def"
+		elif self.type == 1: #prosecution bar
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
-			side = "pro"
-		self.side = side
-		self.minusbtn = AIOButton(parent)
-		self.plusbtn = AIOButton(parent)
-		self.minusbtn.setPixmap(QPixmap("data/misc/"+side+"minus.png"))
-		self.plusbtn.setPixmap(QPixmap("data/misc/"+side+"plus.png"))
+			self.side = "pro"
+		self.minusbtn = AIOButton(self.parent)
+		self.plusbtn = AIOButton(self.parent)
+		self.minusbtn.setPixmap(QPixmap("data/misc/"+self.side+"minus.png"))
+		self.plusbtn.setPixmap(QPixmap("data/misc/"+self.side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)
 		self.plusbtn.clicked.connect(self.plusClick)
 		self.setPixmap(self.penaltybars[10])
 		self.minusbtn.show()
 		self.plusbtn.show()
 		self.show()
-	
+
 	def move(self, x, y):
 		self.minusbtn.move(x-(9/2), y+(14/2)-(9/2))
 		self.plusbtn.move(x+84-(9/2), y+(14/2)-(9/2))

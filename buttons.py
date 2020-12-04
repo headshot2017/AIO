@@ -95,25 +95,27 @@ class PenaltyBar(QLabel):
 		self.health = 10
 		self.resize(84, 14)
 
-	def setupUi(self):
+	def setupUi(self, parent, theme):
+		self.parent = parent
 		if self.type == 0: #defense bar.
 			for i in range(11):
-				self.penaltybars.append(QPixmap("data/misc/defensebar"+str(i)+".png"))
+				self.penaltybars.append(QPixmap("data/themes/"+theme+"/defensebar"+str(i)+".png"))
 			self.side = "def"
 		elif self.type == 1: #prosecution bar
 			for i in range(11):
-				self.penaltybars.append(QPixmap("data/misc/prosecutionbar"+str(i)+".png"))
+				self.penaltybars.append(QPixmap("data/themes/"+theme+"/prosecutionbar"+str(i)+".png"))
 			self.side = "pro"
 		self.minusbtn = AIOButton(self.parent)
 		self.plusbtn = AIOButton(self.parent)
-		self.minusbtn.setPixmap(QPixmap("data/misc/"+self.side+"minus.png"))
-		self.plusbtn.setPixmap(QPixmap("data/misc/"+self.side+"plus.png"))
+		self.minusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"minus.png"))
+		self.plusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)
 		self.plusbtn.clicked.connect(self.plusClick)
 		self.setPixmap(self.penaltybars[10])
 		self.minusbtn.show()
 		self.plusbtn.show()
 		self.show()
+		self.move(self.x(), self.y())
 
 	def move(self, x, y):
 		self.minusbtn.move(x-(9/2), y+(14/2)-(9/2))

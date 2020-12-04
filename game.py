@@ -929,7 +929,7 @@ class GameWidget(QtGui.QWidget):
 		self.penaltybars = [self._penaltybar1, self._penaltybar2]
 		for i in range(2):
 			self.penaltybars[i].type = i
-			self.penaltybars[i].setupUi()
+			self.penaltybars[i].setupUi(self, theme)
 			self.penaltybars[i].minusClicked.connect(self.onPenaltyBarMinus)
 			self.penaltybars[i].plusClicked.connect(self.onPenaltyBarPlus)
 

@@ -118,8 +118,8 @@ class PenaltyBar(QLabel):
 		self.move(self.x(), self.y())
 
 	def move(self, x, y):
-		self.minusbtn.move(x-(9/2), y+(14/2)-(9/2))
-		self.plusbtn.move(x+84-(9/2), y+(14/2)-(9/2))
+		self.minusbtn.move(x - (self.minusbtn.pixmap().size().width()/2), y + (self.size().height()/2) - (self.minusbtn.pixmap().size().width()/2))
+		self.plusbtn.move(x + self.size().width() - (self.plusbtn.pixmap().size().width()/2), y + (self.size().height()/2) - (self.plusbtn.pixmap().size().width()/2))
 		super(PenaltyBar, self).move(x, y)
 	
 	def plusClick(self):

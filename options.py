@@ -95,10 +95,17 @@ class Options(QtGui.QWidget):
         self.themeview.setResizeMode(QtGui.QListWidget.Adjust)
         self.themeview.setMovement(QtGui.QListWidget.Static)
 
-        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img3.png"), "Default theme"))
-        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img4.png"), "Large theme"))
-        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img1.png"), "Test"))
-        self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon("tests/img2.png"), "noby big troll"))
+        self.themes = []
+        for theme in os.listdir("data/themes"):
+            if not os.path.exists("data/themes/"+theme+"/theme.ini"): continue
+
+            themename = ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "name", "unknown theme")
+            thumbnail = "data/themes/"+theme+"/thumbnail.png"
+            if not os.path.exists(thumbnail):
+                thumbnail = "data/misc/unknown_theme.png"
+
+            self.themes.append([theme, themename])
+            self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon(thumbnail), themename))
 
         themeview_layout.addWidget(self.themeview)
         
@@ -219,7 +226,15 @@ class Options(QtGui.QWidget):
                 self.defaultoocname.setText(ini.read_ini("aaio.ini", "General", "OOC name").decode("utf-8"))
             except:
                 self.defaultoocname.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
-            
+
+            selectedtheme = ini.read_ini("aaio.ini", "General", "Theme")
+            for i in range(len(self.themes)):
+                theme, themename = self.themes[i]
+
+                if theme == selectedtheme:
+                    self.themeview.setCurrentRow(i)
+                    break
+
             chatbox_ind = self.chatboximage_dropdown.findText(ini.read_ini("aaio.ini", "General", "Chatbox image"))
             if chatbox_ind > 0:
                 self.chatboximage_dropdown.setCurrentIndex(chatbox_ind)
@@ -242,6 +257,14 @@ class Options(QtGui.QWidget):
             
         else:
             self.defaultoocname.setText("")
+
+            for i in range(len(self.themes)):
+                theme, themename = self.themes[i]
+
+                if theme == "default":
+                    self.themeview.setCurrentRow(i)
+                    break
+
             self.chatboximage_dropdown.setCurrentIndex(0)
             self.ms_lineedit.setText("aaio-ms.aceattorneyonline.com:27011")
             self.device_list.setCurrentIndex(BASS_GetDevice())
@@ -268,6 +291,7 @@ class Options(QtGui.QWidget):
         if not self.inifile.has_section("Audio"): self.inifile.add_section("Audio")
         if not self.inifile.has_section("MasterServer"): self.inifile.add_section("MasterServer")
         self.inifile.set("General", "OOC name", self.defaultoocname.text().toUtf8())
+        self.inifile.set("General", "Theme", self.themes[self.themeview.currentRow()][0])
         self.inifile.set("General", "Chatbox image", self.chatboximage_dropdown.currentText())
         for i in range(len(self.up_buttons)): self.inifile.set("Controls", "up%d" % (i+1), self.ao_app.controls["up"][i])
         for i in range(len(self.down_buttons)): self.inifile.set("Controls", "down%d" % (i+1), self.ao_app.controls["down"][i])

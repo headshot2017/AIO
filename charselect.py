@@ -13,6 +13,8 @@ class CharSelect(QtGui.QWidget):
 		self.setGeometry(512, 8, parent.size().width()-512-40, parent.size().height()-40)
 		self.charscroller = QtGui.QScrollArea(self)
 		self.charscroller.setGeometry(4, 32, self.size().width()-8, self.size().height())
+		self.charscroller.setStyleSheet("background-color: transparent")
+		self.charscroller.setFrameStyle(QtGui.QFrame.NoFrame)
 		self.scrollwidget = QtGui.QWidget(self.charscroller)
 		self.scrollwidget.resize(self.charscroller.size().width()-24, self.size().height())
 		self.charscroller.setWidget(self.scrollwidget)

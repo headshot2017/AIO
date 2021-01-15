@@ -1,5 +1,5 @@
-from PyQt4 import QtCore, QtGui
-import buttons
+from PyQt4 import QtCore, QtGui, uic
+import ini, buttons
 
 class CharSelect(QtGui.QWidget):
 	charClicked = QtCore.pyqtSignal(int)
@@ -10,6 +10,10 @@ class CharSelect(QtGui.QWidget):
 		self.charbuttons = []
 		self.parent = parent
 
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+		uic.loadUi("data/themes/"+theme+"/charselect.ui", self) # plant the bomb
+
+		"""
 		self.setGeometry(512, 8, parent.size().width()-512-40, parent.size().height()-40)
 		self.charscroller = QtGui.QScrollArea(self)
 		self.charscroller.setGeometry(4, 32, self.size().width()-8, self.size().height())
@@ -21,16 +25,17 @@ class CharSelect(QtGui.QWidget):
 		
 		self.disconnectbtn = QtGui.QPushButton(self, text="Disconnect")
 		self.disconnectbtn.move(8, 8)
-		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 		
 		self.charnameimg = QtGui.QLabel(self)
-		self.charnameimg.setPixmap(QtGui.QPixmap("data/misc/evidence_name.png"))
+		self.charnameimg.setPixmap(QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png"))
 		self.charnameimg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
 		self.charnameimg.move((self.charnameimg.pixmap().size().width()/3), 4)
 		self.charname = QtGui.QLabel(self.charnameimg)
 		self.charname.setAlignment(QtCore.Qt.AlignCenter)
 		self.charname.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+QtGui.QColor(255, 165, 0).name())
 		self.charname.resize(self.charnameimg.pixmap().size().width(), self.charnameimg.size().height())
+		"""
+		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 	
 	def showCharList(self, chars):
 		self.charname.setText("Select your character...")

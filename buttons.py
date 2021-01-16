@@ -105,8 +105,8 @@ class PenaltyBar(QLabel):
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/themes/"+theme+"/prosecutionbar"+str(i)+".png"))
 			self.side = "pro"
-		self.minusbtn = AIOButton(self.parent)
-		self.plusbtn = AIOButton(self.parent)
+		self.minusbtn = AIOButton(self)
+		self.plusbtn = AIOButton(self)
 		self.minusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"minus.png"))
 		self.plusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)

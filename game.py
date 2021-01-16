@@ -705,12 +705,12 @@ class GamePort(QtGui.QWidget):
 
 				if old_dir_nr != player.dir_nr:
 					player.mustSend = True
-			
+
 		super(GamePort, self).mousePressEvent(event)
 	
 	def eventFilter(self, source, event):
 		if self.characters.has_key(self.ao_app.player_id):
-			if source == self.gameview:
+			if source == self.gameview or source == self.parent.chatboxwidget:
 				if event.type() == QtCore.QEvent.KeyPress:
 					try:
 						self.characters[self.ao_app.player_id].keyPressEvent(event)
@@ -984,8 +984,9 @@ class GameWidget(QtGui.QWidget):
 				y_mod_count += 1
 		self.evidencewidget.hide()
 		
-		self.charselect = charselect.CharSelect(self, _ao_app)
+		self.charselect.setupUi(self, _ao_app)
 		self.charselect.charClicked.connect(self.confirmChar_clicked)
+		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 		
 		self.chatTickTimer = QtCore.QTimer()
 		self.chatTickTimer.timeout.connect(self.chatTick)
@@ -1485,42 +1486,8 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.setChar(-1)
 	
 	def showCharSelect(self):
-		self.charselect.show()
-		self.ooclogin.hide()
-		self.musicslider.hide()
-		self.soundslider.hide()
-		self.blipslider.hide()
-		self.sliderlabel1.hide()
-		self.sliderlabel2.hide()
-		self.sliderlabel3.hide()
-		self.ic_input.hide()
-		self.showname_input.hide()
-		self.areainfo.hide()
-		self.emotebar.hide()
-		self.movebtn.hide()
-		self.switchbtn.hide()
-		self.examinebtn.hide()
-		self.musiclist.hide()
-		self.textcolorbtn.hide()
-		self.realizationbtn.hide()
-		self.evidencebtn.hide()
-		self.oocwidget.hide()
-		self.chatlog.hide()
-		self.evidencewidget.hide()
-		self.evidencedialog.setVisible(False)
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
-		self.walkanim_dropdown.hide()
-		self.runanim_dropdown.hide()
-		self.walkanim_label.hide()
-		self.runanim_label.hide()
-		for bar in self.penaltybars: bar.hide()
-		self.wt_button.hide()
-		self.ce_button.hide()
-		self.notguilty_button.hide()
-		self.guilty_button.hide()
-		#self.pinglabel.move(512-96, self.ic_input.y())
-	
+		self.IngameWidgets.setCurrentWidget(self.charselect)
+
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
 		self.aSound = ["data/sounds/general/"+filename+".wav", delay, zone]
@@ -1751,37 +1718,7 @@ class GameWidget(QtGui.QWidget):
 		self.ao_app.tcpthread.setChar(selection)
 		
 	def hideCharSelect(self):
-		self.ooclogin.show()
-		self.ic_input.show()
-		self.showname_input.show()
-		self.musicslider.show()
-		self.soundslider.show()
-		self.blipslider.show()
-		self.sliderlabel1.show()
-		self.sliderlabel2.show()
-		self.sliderlabel3.show()
-		self.areainfo.show()
-		self.movebtn.show()
-		self.switchbtn.show()
-		self.examinebtn.show()
-		self.emotebar.show()
-		self.musiclist.show()
-		self.textcolorbtn.show()
-		self.realizationbtn.show()
-		self.chatlog.show()
-		self.oocwidget.show()
-		self.evidencebtn.show()
-		self.walkanim_dropdown.show()
-		self.runanim_dropdown.show()
-		self.walkanim_label.show()
-		self.runanim_label.show()
-		for bar in self.penaltybars: bar.show()
-		self.wt_button.show()
-		self.ce_button.show()
-		self.notguilty_button.show()
-		self.guilty_button.show()
-		self.charselect.hide()
-		#self.pinglabel.move(self.size().width() - 96, self.areainfo.y() - 16)
+		self.IngameWidgets.setCurrentWidget(self.IngameUI)
 	
 	def ic_typing(self):
 		if self.ic_input.text():

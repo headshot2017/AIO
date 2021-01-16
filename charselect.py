@@ -4,41 +4,19 @@ import ini, buttons
 class CharSelect(QtGui.QWidget):
 	charClicked = QtCore.pyqtSignal(int)
 	
-	def __init__(self, parent, ao_app):
-		super(CharSelect, self).__init__(parent)
-		self.ao_app = ao_app
+	def __init__(self):
+		super(CharSelect, self).__init__()
 		self.charbuttons = []
+
+	def setupUi(self, parent, ao_app):
+		self.ao_app = ao_app
 		self.parent = parent
+		self.charname = parent.charnamelabel
+		self.charscroller = parent.charscroller
+		self.scrollwidget = parent.charscrollwidget
 
-		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
-		uic.loadUi("data/themes/"+theme+"/charselect.ui", self) # plant the bomb
-
-		"""
-		self.setGeometry(512, 8, parent.size().width()-512-40, parent.size().height()-40)
-		self.charscroller = QtGui.QScrollArea(self)
-		self.charscroller.setGeometry(4, 32, self.size().width()-8, self.size().height())
-		self.charscroller.setStyleSheet("background-color: transparent")
-		self.charscroller.setFrameStyle(QtGui.QFrame.NoFrame)
-		self.scrollwidget = QtGui.QWidget(self.charscroller)
-		self.scrollwidget.resize(self.charscroller.size().width()-24, self.size().height())
-		self.charscroller.setWidget(self.scrollwidget)
-		
-		self.disconnectbtn = QtGui.QPushButton(self, text="Disconnect")
-		self.disconnectbtn.move(8, 8)
-		
-		self.charnameimg = QtGui.QLabel(self)
-		self.charnameimg.setPixmap(QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png"))
-		self.charnameimg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
-		self.charnameimg.move((self.charnameimg.pixmap().size().width()/3), 4)
-		self.charname = QtGui.QLabel(self.charnameimg)
-		self.charname.setAlignment(QtCore.Qt.AlignCenter)
-		self.charname.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+QtGui.QColor(255, 165, 0).name())
-		self.charname.resize(self.charnameimg.pixmap().size().width(), self.charnameimg.size().height())
-		"""
-		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
-	
 	def showCharList(self, chars):
-		self.charname.setText("Select your character...")
+		self.charname.setText("Select your character")
 		
 		all = range(len(self.charbuttons))
 		for i in all:
@@ -61,12 +39,12 @@ class CharSelect(QtGui.QWidget):
 			if x_mod_count == columns:
 				x_mod_count = 0
 				y_mod_count += 1
-		
-		self.scrollwidget.resize(self.scrollwidget.size().width(), top+y_pos+64)
+
+		self.scrollwidget.setMinimumSize(self.scrollwidget.size().width(), top+y_pos+64)
 	
 	def charHovered(self, ind):
 		self.charname.setText(self.ao_app.charlist[ind])
-		self.ao_app.playGUISound("data\\sounds\\general\\sfx-selectblip.wav")
+		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip.wav")
 	
 	def confirmChar_clicked(self, ind):
 		self.charClicked.emit(ind)

@@ -867,6 +867,11 @@ class GameWidget(QtGui.QWidget):
 		self.broadcastObj.setPos(0, 64)
 		self.gameview.setupUi(_ao_app)
 
+		self.wt_button.ind = 0
+		self.ce_button.ind = 1
+		self.notguilty_button.ind = 2
+		self.guilty_button.ind = 3
+
 		self.ic_input.textChanged.connect(self.ic_typing)
 		self.chattext.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.chattext.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)

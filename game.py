@@ -888,6 +888,7 @@ class GameWidget(QtGui.QWidget):
 		self.notguilty_button.clicked.connect(self.onWTCEButton)
 		self.guilty_button.clicked.connect(self.onWTCEButton)
 		self.ooclogin.clicked.connect(self.onOOCLoginBtn)
+		self.musiclist.itemDoubleClicked.connect(self.onMusicClicked)
 
 		self.ic_input.ao_app = _ao_app
 

@@ -1529,7 +1529,8 @@ class GameWidget(QtGui.QWidget):
 			found_dir = getCompactDirection(self.player.dir_nr)
 		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
 		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
-		
+		self.player.mustSend = True
+
 		if sound:
 			self.onEmoteSound([self.player.charid, sound, sound_delay, self.player.zone])
 			self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)

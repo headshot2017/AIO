@@ -32,6 +32,10 @@ class AIOApplication(QtGui.QApplication):
 		self.udpthread = UDPThread()
 		self.udpthread.start()
 
+		self.musicvol = ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100)
+		self.sndvol = ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100)
+		self.blipvol = ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100)
+
 		self.mainwindow = AIOMainWindow(self)
 		self.mainwindow.show()
 	

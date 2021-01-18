@@ -1583,8 +1583,7 @@ class GameWidget(QtGui.QWidget):
 		else:
 			self.chatlog.append("The music was changed to %s" % filename.replace("<", "&#60;").replace(">", "&#62;"))
 			self.broadcastObj.showText("The music was changed to %s" % filename)
-		
-		self.ao_app.musicvol = self.musicslider.value()
+
 		self.ao_app.playMusic(filename)
 	
 	def onPlayerCreate(self, contents):
@@ -1821,10 +1820,10 @@ class GameWidget(QtGui.QWidget):
 		self.movemenuActions = []
 		self.evidencename.clear()
 		self.charselect.showCharList(self.ao_app.charlist)
-
-		self.changeMusicVolume(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
-		self.changeSoundVolume(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
-		self.changeBlipVolume(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
+        
+		self.musicslider.setValue(self.ao_app.musicvol)
+		self.soundslider.setValue(self.ao_app.sndvol)
+		self.blipslider.setValue(self.ao_app.blipvol)
 
 		aFont = QtGui.QFont("Tahoma", 8)
 		
@@ -1848,7 +1847,10 @@ class GameWidget(QtGui.QWidget):
 		self.oocnameinput.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
 		if not self.oocnameinput.text() or self.oocnameinput.text().startsWith("Player "):
 			self.oocnameinput.setText("Player %d" % self.ao_app.player_id)
-		
+
+		if not self.showname_input.text():
+			self.showname_input.setText(ini.read_ini("aaio.ini", "General", "Showname"))
+
 		self.gameview.initCharacter(self.ao_app.player_id)
 		self.player = self.gameview.characters[self.ao_app.player_id]
 		self.setZone(self.ao_app.defaultzoneid)

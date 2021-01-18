@@ -34,7 +34,6 @@ class HTMLDelegate(QtGui.QStyledItemDelegate): # https://stackoverflow.com/quest
         if index.column() != 0:
             textRect.adjust(5, 0, 0, 0)
         constant = 4
-        print text.count("<br/>")
         margin = (option.rect.height() - options.fontMetrics.height()) // 2 - (text.count("<br/>") * options.fontMetrics.height() // 2)
         margin = margin - constant
         textRect.setTop(textRect.top() + margin)
@@ -104,27 +103,19 @@ class Options(QtGui.QWidget):
         self.defaultoocname = QtGui.QLineEdit()
         defaultoocname_layout.addWidget(defaultoocname_label)
         defaultoocname_layout.addWidget(self.defaultoocname)
-        
-        chatboximage_layout = QtGui.QHBoxLayout()
-        chatboximage_label = QtGui.QLabel("Chatbox image")
-        self.chatboximage_dropdown = QtGui.QComboBox()
-        self.chatboximage_dropdown.currentIndexChanged.connect(self.onChangeChatbox)
-        chatboximage_layout.addWidget(chatboximage_label)
-        chatboximage_layout.addWidget(self.chatboximage_dropdown)
-        
-        self.chatboximage = QtGui.QLabel()
-        
-        for file in os.listdir("data/misc/"):
-            if file.lower().startswith("chatbox_") and file.lower().endswith(".png"):
-                self.chatboximage_dropdown.addItem(file)
+
+        defaultshowname_layout = QtGui.QHBoxLayout()
+        defaultshowname_label = QtGui.QLabel("Default showname")
+        self.defaultshowname = QtGui.QLineEdit()
+        defaultshowname_layout.addWidget(defaultshowname_label)
+        defaultshowname_layout.addWidget(self.defaultshowname)
         
         #savechangeswarn = QtGui.QLabel()
         #savechangeswarn.setText("* Change takes effect upon restarting the client")
         
         general_layout.addLayout(defaultoocname_layout)
-        general_layout.addWidget(separators[0])
-        general_layout.addLayout(chatboximage_layout)
-        general_layout.addWidget(self.chatboximage, 0, QtCore.Qt.AlignCenter)
+        general_layout.addLayout(defaultshowname_layout)
+        #general_layout.addWidget(separators[0])
         #general_layout.addWidget(savechangeswarn, 50, QtCore.Qt.AlignBottom)
 
         ###### Theme tab ######
@@ -266,9 +257,6 @@ class Options(QtGui.QWidget):
         
         ao_app.installEventFilter(self)
     
-    def onChangeChatbox(self, ind):
-        self.chatboximage.setPixmap(QtGui.QPixmap("data/misc/"+self.chatboximage_dropdown.itemText(ind)))
-    
     def showSettings(self):
         self.show()
         
@@ -279,6 +267,11 @@ class Options(QtGui.QWidget):
             except:
                 self.defaultoocname.setText(ini.read_ini("aaio.ini", "General", "OOC name"))
 
+            try:
+                self.defaultshowname.setText(ini.read_ini("aaio.ini", "General", "Showname").decode("utf-8"))
+            except:
+                self.defaultshowname.setText(ini.read_ini("aaio.ini", "General", "Showname"))
+
             selectedtheme = ini.read_ini("aaio.ini", "General", "Theme")
             for i in range(len(self.themes)):
                 theme, themename = self.themes[i]
@@ -286,10 +279,6 @@ class Options(QtGui.QWidget):
                 if theme == selectedtheme:
                     self.themeview.setCurrentRow(i)
                     break
-
-            chatbox_ind = self.chatboximage_dropdown.findText(ini.read_ini("aaio.ini", "General", "Chatbox image"))
-            if chatbox_ind > 0:
-                self.chatboximage_dropdown.setCurrentIndex(chatbox_ind)
             
             self.ms_lineedit.setText(ini.read_ini("aaio.ini", "MasterServer", "IP"))
             self.device_list.setCurrentIndex(ini.read_ini_int("aaio.ini", "Audio", "Device", BASS_GetDevice()))
@@ -309,6 +298,7 @@ class Options(QtGui.QWidget):
             
         else:
             self.defaultoocname.setText("")
+            self.defaultshowname.setText("")
 
             for i in range(len(self.themes)):
                 theme, themename = self.themes[i]
@@ -317,7 +307,6 @@ class Options(QtGui.QWidget):
                     self.themeview.setCurrentRow(i)
                     break
 
-            self.chatboximage_dropdown.setCurrentIndex(0)
             self.ms_lineedit.setText("aaio-ms.aceattorneyonline.com:27011")
             self.device_list.setCurrentIndex(BASS_GetDevice())
             self.musicslider.setValue(100)
@@ -343,8 +332,8 @@ class Options(QtGui.QWidget):
         if not self.inifile.has_section("Audio"): self.inifile.add_section("Audio")
         if not self.inifile.has_section("MasterServer"): self.inifile.add_section("MasterServer")
         self.inifile.set("General", "OOC name", self.defaultoocname.text().toUtf8())
+        self.inifile.set("General", "Showname", self.defaultshowname.text().toUtf8())
         self.inifile.set("General", "Theme", self.themes[self.themeview.currentRow()][0])
-        self.inifile.set("General", "Chatbox image", self.chatboximage_dropdown.currentText())
         for i in range(len(self.up_buttons)): self.inifile.set("Controls", "up%d" % (i+1), self.ao_app.controls["up"][i])
         for i in range(len(self.down_buttons)): self.inifile.set("Controls", "down%d" % (i+1), self.ao_app.controls["down"][i])
         for i in range(len(self.left_buttons)): self.inifile.set("Controls", "left%d" % (i+1), self.ao_app.controls["left"][i])

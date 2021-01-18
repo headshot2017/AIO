@@ -94,6 +94,7 @@ class lobby(QtGui.QWidget):
 	def __init__(self, _ao_app):
 		super(lobby, self).__init__()
 		self.ao_app = _ao_app
+		self.resize(960, 480)
 		
 		self.font = QtGui.QFont("Arial", 12)
 		

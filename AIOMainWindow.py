@@ -10,19 +10,19 @@ class AIOMainWindow(QtGui.QMainWindow):
 		self.stackwidget = QtGui.QStackedWidget(self)
 		self.lobbywidget = lobby.lobby(_ao_app)
 		self.gamewidget = game.GameWidget(_ao_app)
-		
+
 		self.setCentralWidget(self.stackwidget)
 		self.stackwidget.addWidget(self.lobbywidget)
 		self.stackwidget.addWidget(self.gamewidget)
-		self.stackwidget.setCurrentWidget(self.lobbywidget)
 		self.setWindowTitle("Attorney Investigations Online")
 		self.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint)
 		self.showServers()
 	
 	def startGame(self):
+		size = self.gamewidget.size()
 		self.gamewidget.startGame()
 		self.stackwidget.setCurrentWidget(self.gamewidget)
-		self.setFixedSize(1000, 512+20)
+		self.setFixedSize(size)
 		self.center()
 	
 	def stopGame(self):
@@ -30,9 +30,10 @@ class AIOMainWindow(QtGui.QMainWindow):
 		self.showServers()
 	
 	def showServers(self):
+		size = self.lobbywidget.size()
 		self.lobbywidget.showServers()
 		self.stackwidget.setCurrentWidget(self.lobbywidget)
-		self.setFixedSize(960, 480)
+		self.setFixedSize(size)
 		self.center()
 	
 	def center(self):

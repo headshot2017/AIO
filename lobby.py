@@ -1,4 +1,4 @@
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, uic
 from game_version import LOBBY_VERSION
 import os, socket, buttons, options, ini, zlib, struct
 import AIOprotocol
@@ -22,9 +22,9 @@ class ConnectingStatus(QtGui.QWidget):
 		super(ConnectingStatus, self).__init__(parent)
 		self.ao_app = _ao_app
 		
-		self.resize(960, 480)
+		self.resize(parent.size())
 		self.connectingmsg = QtGui.QLabel(self, text="Connecting...")
-		self.connectingmsg.resize(960, 320)
+		self.connectingmsg.resize(parent.size().width(), parent.size().height() / 1.5)
 		self.connectingmsg.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter)
 		self.connectingmsg.setFont(QtGui.QFont("Arial", 12))
 		self.connectingmsg.setStyleSheet("color: white")

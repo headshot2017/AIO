@@ -8,6 +8,46 @@ def getControlName(ind):
     for c in dir(QtCore.Qt):
         if "Key_" in c and getattr(QtCore.Qt, c) == ind: return c
 
+class HTMLDelegate(QtGui.QStyledItemDelegate): # https://stackoverflow.com/questions/53569768/how-to-display-partially-bold-text-in-qlistwidgetitem-with-qtcore-qt-userrole
+    def __init__(self, parent=None):
+        super(HTMLDelegate, self).__init__(parent)
+        self.doc = QtGui.QTextDocument(self)
+
+    def paint(self, painter, option, index):
+        painter.save()
+        options = QtGui.QStyleOptionViewItemV4(option)
+        self.initStyleOption(options, index)
+        self.doc.setHtml(options.text)
+        text = options.text.toUtf8()
+        options.text = ""
+        style = QtGui.QApplication.style() if options.widget is None else options.widget.style()
+        style.drawControl(QtGui.QStyle.CE_ItemViewItem, options, painter)
+
+        ctx = QtGui.QAbstractTextDocumentLayout.PaintContext()
+        if option.state & QtGui.QStyle.State_Selected:
+            ctx.palette.setColor(QtGui.QPalette.Text, option.palette.color(
+                QtGui.QPalette.Active, QtGui.QPalette.HighlightedText))
+        else:
+            ctx.palette.setColor(QtGui.QPalette.Text, option.palette.color(
+                QtGui.QPalette.Active, QtGui.QPalette.Text))
+        textRect = style.subElementRect(QtGui.QStyle.SE_ItemViewItemText, options, None)
+        if index.column() != 0:
+            textRect.adjust(5, 0, 0, 0)
+        constant = 4
+        print text.count("<br/>")
+        margin = (option.rect.height() - options.fontMetrics.height()) // 2 - (text.count("<br/>") * options.fontMetrics.height() // 2)
+        margin = margin - constant
+        textRect.setTop(textRect.top() + margin)
+
+        painter.translate(textRect.topLeft())
+        painter.setClipRect(textRect.translated(-textRect.topLeft()))
+        self.doc.documentLayout().draw(painter, ctx)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QtCore.QSize(self.doc.idealWidth(), 96)
+
+
 class Options(QtGui.QWidget):
     fileSaved = QtCore.pyqtSignal()
     
@@ -91,21 +131,33 @@ class Options(QtGui.QWidget):
         themeview_layout = QtGui.QHBoxLayout()
         self.themeview = QtGui.QListWidget()
         #self.themeview.setViewMode(QtGui.QListWidget.IconMode)
-        self.themeview.setIconSize(QtCore.QSize(128, 128))
-        self.themeview.setResizeMode(QtGui.QListWidget.Adjust)
+        self.themeview.setIconSize(QtCore.QSize(96, 96))
+        #self.themeview.setResizeMode(QtGui.QListWidget.Adjust)
         self.themeview.setMovement(QtGui.QListWidget.Static)
+        self.themeview.setItemDelegate(HTMLDelegate(self.themeview))
 
         self.themes = []
         for theme in os.listdir("data/themes"):
             if not os.path.exists("data/themes/"+theme+"/theme.ini"): continue
 
             themename = ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "name", "unknown theme")
+            themedesc = ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "description")
+            themeauthor = ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "author")
+
             thumbnail = "data/themes/"+theme+"/thumbnail.png"
             if not os.path.exists(thumbnail):
                 thumbnail = "data/misc/unknown_theme.png"
 
+            text = "<b>"+themename+"</b>"
+            if themedesc or themeauthor: text += "<br/>"
+            if themedesc:
+                text += themedesc+"<br/>"
+            if themeauthor:
+                text += "Author: "+themeauthor
+
+            item = QtGui.QListWidgetItem(QtGui.QIcon(thumbnail), text)
             self.themes.append([theme, themename])
-            self.themeview.addItem(QtGui.QListWidgetItem(QtGui.QIcon(thumbnail), themename))
+            self.themeview.addItem(item)
 
         themeview_layout.addWidget(self.themeview)
         

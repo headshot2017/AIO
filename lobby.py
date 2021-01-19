@@ -94,87 +94,18 @@ class lobby(QtGui.QWidget):
 	def __init__(self, _ao_app):
 		super(lobby, self).__init__()
 		self.ao_app = _ao_app
-		self.resize(960, 480)
-		
-		self.font = QtGui.QFont("Arial", 12)
-		
-		self.text = QtGui.QLabel(self, text="Attorney Investigations Online\nv"+str(LOBBY_VERSION))
-		self.text.setFont(self.font)
-		self.text.move(8, 8)
-		
-		#self.serverlistwidget = QtGui.QListWidget(self)
-		self.serverlistwidget = QtGui.QTreeWidget(self)
-		self.serverlistwidget.setSortingEnabled(True)
-		self.serverlistwidget.setGeometry(32, 64, 512+144+16, 240)
+
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+		uic.loadUi("data/themes/"+theme+"/lobby.ui", self) # plant the bomb
+
+		self.versiontext.setText("Attorney Investigations Online\nv"+str(LOBBY_VERSION))
+
 		self.serverlistwidget.setHeaderItem(ServerItem(["Name", "Players", "Version", "Ping"]))
 		self.serverlistwidget.header().resizeSection(0, 448)
 		self.serverlistwidget.header().resizeSection(1, 64)
 		self.serverlistwidget.header().resizeSection(2, 80)
 		self.serverlistwidget.header().resizeSection(3, 64)
 		self.serverlistwidget.itemClicked.connect(self.serverItemClicked)
-		
-		desc_x, desc_y, desc_w, desc_h = 800-64+8, 16, 256-48, 480-128
-		
-		self.connectingstatus = ConnectingStatus(self, _ao_app)
-		self.connectingstatus.hide()
-		
-		self.addtofav = buttons.AIOButton(self)
-		self.connectbtn = buttons.AIOButton(self)
-		self.refreshbtn = buttons.AIOButton(self)
-		self.newsbtn = buttons.AIOButton(self)
-		self.allservers = buttons.AIOButton(self)
-		self.LANbtn = buttons.AIOButton(self)
-		self.favoritesbtn = buttons.AIOButton(self)
-		self.joinipaddress = buttons.AIOButton(self)
-		self.optionsbtn = buttons.AIOButton(self)
-		self.aboutbtn = buttons.AIOButton(self)
-		self.startserverbtn = buttons.AIOButton(self)
-		
-		self.addtofav.setPixmap(QtGui.QPixmap("data/misc/add_to_favorites.png"))
-		self.addtofav.move(800-16, desc_y+desc_h+4)
-		self.connectbtn.setPixmap(QtGui.QPixmap("data/misc/connect_button.png"))
-		self.connectbtn.move(800-16, desc_y+desc_h+4+48)
-		self.refreshbtn.setPixmap(QtGui.QPixmap("data/misc/refresh.png"))
-		self.refreshbtn.move((self.serverlistwidget.x()+self.serverlistwidget.size().width())/2 - 32, self.serverlistwidget.y()+self.serverlistwidget.size().height()+16)
-		self.allservers.setPixmap(QtGui.QPixmap("data/misc/all_servers.png"))
-		self.allservers.move(self.refreshbtn.x() - 128 - 8, self.refreshbtn.y() + 64)
-		self.favoritesbtn.setPixmap(QtGui.QPixmap("data/misc/favorites.png"))
-		self.favoritesbtn.move(self.refreshbtn.x() + 128 + 8, self.refreshbtn.y() + 64)
-		self.LANbtn.setPixmap(QtGui.QPixmap("data/misc/lan.png"))
-		self.LANbtn.move(self.refreshbtn.x(), self.refreshbtn.y() + 64)
-		self.newsbtn.setPixmap(QtGui.QPixmap("data/misc/news_button.png"))
-		self.newsbtn.move(self.refreshbtn.x() - (self.newsbtn.pixmap().size().width())/2, self.favoritesbtn.y() + 32)
-		self.joinipaddress.setPixmap(QtGui.QPixmap("data/misc/joinip_button.png"))
-		self.joinipaddress.move(self.newsbtn.x() + self.newsbtn.pixmap().size().width() + 8, self.newsbtn.y())
-		self.optionsbtn.setPixmap(QtGui.QPixmap("data/misc/options_button.png"))
-		self.optionsbtn.move(8, self.size().height()-40)
-		self.aboutbtn.setPixmap(QtGui.QPixmap("data/misc/about_button.png"))
-		self.aboutbtn.move(self.optionsbtn.x() + self.optionsbtn.pixmap().size().width() + 8, self.size().height()-40)
-		self.startserverbtn.setPixmap(QtGui.QPixmap("data/misc/start_server.png"))
-		self.startserverbtn.move(960-160-64 - self.startserverbtn.pixmap().size().width() - 20, self.size().height()-40)
-		
-		self.description = QtGui.QTextEdit(self)
-		self.description.setFont(self.font)
-		self.description.setGeometry(desc_x, desc_y, desc_w, desc_h)
-		self.description.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-		self.description.setFrameStyle(QtGui.QFrame.NoFrame)
-		self.description.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-		self.description.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-		self.description.setReadOnly(True)
-		self.description.setStyleSheet("background-color: rgba(0, 0, 0, 0);"
-														"color: white")
-		
-		self.newstext = QtGui.QTextEdit(self)
-		self.newstext.setFont(self.font)
-		self.newstext.move(self.serverlistwidget.x(), self.serverlistwidget.y())
-		self.newstext.resize(self.serverlistwidget.size())
-		self.newstext.setReadOnly(True)
-		self.newslabel = QtGui.QLabel(self)
-		self.newslabel.setFont(self.font)
-		self.newslabel.setText("News")
-		self.newslabel.move(self.newstext.x(), self.newstext.y() - 20)
-		self.newstext.hide()
-		self.newslabel.hide()
 
 		if os.path.exists("data/aaio_news.txt"):
 			self.newstext.setText(open("data/aaio_news.txt").read())
@@ -191,7 +122,9 @@ class lobby(QtGui.QWidget):
 		self.aboutbtn.clicked.connect(self.on_about_button)
 		self.startserverbtn.clicked.connect(self.on_startserver_button)
 		
-		self.connectingstatus.raise_()
+		self.connectingstatus = ConnectingStatus(self, _ao_app)
+		self.connectingstatus.hide()
+		self.newswidget.hide()
 		
 		self.optionsgui = options.Options(_ao_app)
 		self.optionsgui.fileSaved.connect(self.onOptionsSave)
@@ -242,7 +175,8 @@ class lobby(QtGui.QWidget):
 
 	def onOptionsSave(self):
 		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
-		
+
+	""" so long, brother
 	def paintEvent(self, event):
 		painter = QtGui.QPainter(self)
 		painterpath = QtGui.QPainterPath()
@@ -251,6 +185,7 @@ class lobby(QtGui.QWidget):
 		
 		painter.fillRect(0, 0, 960, 480, QtGui.QColor(255, 255, 255))
 		painter.fillPath(painterpath, QtGui.QColor(64, 64, 64))
+	"""
 
 	def showServers(self):
 		self.connectingstatus.showServers()
@@ -413,7 +348,6 @@ class lobby(QtGui.QWidget):
 		for server in servers:
 			#item = QtGui.QListWidgetItem(server[0])
 			item = ServerItem(server)
-			item.setFont(0, self.font)
 			self.serverlistwidget.addTopLevelItem(item)
 	
 	def serverItemClicked(self, item):

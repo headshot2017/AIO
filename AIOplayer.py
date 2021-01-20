@@ -42,8 +42,8 @@ class AIOplayer(object):
     
     def player_thread(self):
         for i in range(len(self.ratelimits)):
-            if self.ratelimits[i] > 0: self.ratelimits[i] -= 0.1
-        if self.pingpong > 0: self.pingpong -= 0.1
+            if self.ratelimits[i] > 0: self.ratelimits[i] -= 1
+        if self.pingpong > 0: self.pingpong -= 1
     
     def isBot(self):
         return not bool(self.sock)

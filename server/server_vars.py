@@ -7,7 +7,7 @@ MusicRateLimit = 3 #same as above, to prevent spam, but for music
 ExamineRateLimit = 2 #same as above, but for Examine
 OOCRateLimit = 1 # amount of seconds to wait before allowing another OOC message (anti spam)
 WTCERateLimit = 10 # amount of seconds to wait before allowing another testimony button (anti spam)
-ClientPingTime = 30 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
+ClientPingTime = 60 # amount of seconds to wait before kicking a player that hasn't sent the ping packet
 ShowNameLength = 16 # maximum amount of characters (or letters if you're computer illiterate) a showname can have, it is trimmed down if exceeded
 ################################
 

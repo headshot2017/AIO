@@ -240,7 +240,7 @@ class AIOserver(object):
                 client.settimeout(0.1)
                 self.clients[i].is_authed = ipaddr[0].startswith("127.") # automatically make localhost an admin
                 #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                self.clients[i].pingpong = ClientPingTime
+                self.clients[i].pingpong = ClientPingTime * 20 # tickspeed
                 thread.start_new_thread(self.clientLoop, (i,))
                 return
         
@@ -1004,20 +1004,10 @@ class AIOserver(object):
                 f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
 
     def clientLoop(self, client):
-        lastSendTime = time.time()
-
         try:
             while True:
                 if not self.clients.has_key(client): #if that CID suddendly disappeared possibly due to '/bot remove' or some other reason
                     return
-                
-                self.clients[client].player_thread()
-
-                if self.clients[client].ready and len(self.clients) > 1:
-                    if self.clients[client].isBot():
-                        self.sendBotMovement(client)
-                    elif (time.time() - lastSendTime) > 150./1000:
-                        self.sendMovement(client)
 
                 if not self.clients.has_key(client) or self.clients[client].isBot(): #trust no one, not even myself.
                     continue
@@ -1275,7 +1265,7 @@ class AIOserver(object):
                         if not self.clients[client].OOCname:
                             self.sendOOC(self.ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
                         else:
-                            self.clients[client].ratelimits[3] = OOCRateLimit
+                            self.clients[client].ratelimits[3] = OOCRateLimit * 20 # tickspeed
                             if chatmsg[0] != "/": # normal chat
                                 if self.rcon and self.rcon in chatmsg: continue # NO LEAK PASSWORD
 
@@ -1309,7 +1299,7 @@ class AIOserver(object):
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
-                        self.clients[client].ratelimits[2] = ExamineRateLimit
+                        self.clients[client].ratelimits[2] = ExamineRateLimit * 20 # tickspeed
 
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientExamine"):
@@ -1353,7 +1343,7 @@ class AIOserver(object):
                                 if plug[1].running and hasattr(plug[1], "onClientMusic"):
                                     plug[1].onClientMusic(self, self.clients[client], songname, showname, False)
 
-                        self.clients[client].ratelimits[0] = MusicRateLimit
+                        self.clients[client].ratelimits[0] = MusicRateLimit * 20 # tickspeed
                     
                     elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
                         try:
@@ -1383,7 +1373,7 @@ class AIOserver(object):
                             continue
                         
                         self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
-                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit
+                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * 20 # tickspeed
                         
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientEmoteSound"):
@@ -1470,7 +1460,7 @@ class AIOserver(object):
                         if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
                             continue
 
-                        self.clients[client].ratelimits[4] = WTCERateLimit
+                        self.clients[client].ratelimits[4] = WTCERateLimit * 20 # tickspeed
                         self.sendWTCE(wtcetype, self.clients[client].zone)
                         
                         for plug in self.plugins:
@@ -1478,7 +1468,7 @@ class AIOserver(object):
                                 plug[1].onClientWTCE(self, self.clients[client], self.clients[client].zone, wtcetype)
 
                     elif header == AIOprotocol.PING: #pong
-                        self.clients[client].pingpong = ClientPingTime
+                        self.clients[client].pingpong = ClientPingTime * 20 # tickspeed
                         self.sendPong(client)
         
         except Exception as e: # an error occurred on this client
@@ -1504,6 +1494,7 @@ class AIOserver(object):
                     super(plug[0], plug[1]).onPluginStop(self, False)
                     plug[1].onPluginStop(self, False)
 
+        self.tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.tcp.bind(("", self.port))
         self.tcp.listen(5)
         self.udp.bind(("", self.port))
@@ -1527,7 +1518,9 @@ class AIOserver(object):
 
         if "noinput" not in sys.argv:
             thread.start_new_thread(self.chatThread, ())
-        
+
+        thread.start_new_thread(self.tickThread, ())
+
         while True:
             if self.publish:
                 if not MSretryTick:
@@ -1539,16 +1532,16 @@ class AIOserver(object):
                     MSretryTick -= 1
                     if MSretryTick == 0:
                         loopMS = self.startMasterServerAdverter()
-            
+
             if self.MSstate == MASTER_PUBLISHED:
                 if self.MStick > 0:
                     self.MStick -= 1
                     if not self.MStick:
                         self.MSkeepAlive()
-            
+
             if self.econ_password:
                 self.econTick()
-            
+
             for i in range(len(self.banlist)):
                 ban = self.banlist[i]
                 if ban[1] > 0 and time.time() > ban[1]:
@@ -1559,7 +1552,7 @@ class AIOserver(object):
                         break
                     i -= 1
                     continue
-                    
+
             self.acceptClient()
             self.udpLoop()
 
@@ -1744,7 +1737,22 @@ class AIOserver(object):
                         self.econ_clients[dest][0].send(send)
                     except:
                         pass
-    
+
+    def tickThread(self):
+        ticks = 0
+        while True:
+            time.sleep(1./60)
+            ticks += 1
+            if ticks % 20 == 0:
+                for client in self.clients.keys():
+                    self.clients[client].player_thread()
+
+                    if self.clients[client].ready and len(self.clients) > 1:
+                        if self.clients[client].isBot():
+                            self.sendBotMovement(client)
+                        else:
+                            self.sendMovement(client)
+
     def chatThread(self):
         while True:
             txt = raw_input()

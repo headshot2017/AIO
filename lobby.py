@@ -154,7 +154,9 @@ class lobby(QtGui.QWidget):
 		try:
 			for line in open("data/serverlist.txt"):
 				server = line.rstrip("\n").split(":")[:2]
-				self.favorites.append([server[0]+":"+server[1], "", "", "pinging", "", server[0], server[1]])
+				try: ip = socket.gethostbyname(server[0])
+				except: ip = server[0]
+				self.favorites.append([ip+":"+server[1], "", "", "pinging", "", ip, server[1]])
 
 		except IOError:
 			open("data/serverlist.txt", "w").write("localhost:27010\n")

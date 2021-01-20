@@ -844,7 +844,8 @@ class GameWidget(QtGui.QWidget):
 		
 		self.testtimer = QtCore.QBasicTimer()
 		self.tcptimer = QtCore.QBasicTimer()
-		
+		self.ticks = 0
+
 		self.chatbubbletimer = QtCore.QTimer()
 		self.chatbubbletimer.setSingleShot(True)
 		self.chatbubbletimer.timeout.connect(partial(self.ao_app.tcpthread.sendChatBubble, 0))
@@ -1754,11 +1755,14 @@ class GameWidget(QtGui.QWidget):
 			self.testtimer.stop()
 			self.tcptimer.stop()
 		
-		if event.timerId() == self.testtimer.timerId(): #game
+		if event.timerId() == self.testtimer.timerId(): # game
 			self.updateGame()
-		elif event.timerId() == self.tcptimer.timerId() and self.player.mustSend: #player movement
-			self.player.mustSend = False
-			self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
+		elif event.timerId() == self.tcptimer.timerId(): # networking
+			self.ticks += 1
+			if self.ticks % 20 == 0: # send movement
+				self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
+			if self.ticks % (60*3) == 0: # ping
+				self.ao_app.tcpthread.sendPing()
 	
 	def mousePressEvent(self, event):
 		focused_widget = self.ao_app.focusWidget()
@@ -1856,7 +1860,8 @@ class GameWidget(QtGui.QWidget):
 		self.setZone(self.ao_app.defaultzoneid)
 		self.player.setPlayer(True)
 		self.testtimer.start(1000./30, self)
-		self.tcptimer.start(150, self)
+		self.tcptimer.start(1./60 * 1000, self) # ticks 1/60 per sec
+		self.ticks = 0
 		self.playing = True
         
 		self.showCharSelect()

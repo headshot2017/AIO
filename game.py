@@ -879,6 +879,7 @@ class GameWidget(QtGui.QWidget):
 		self.movebtn.clicked.connect(self.onMoveButton)
 		self.switchbtn.clicked.connect(self.onSwitchButton)
 		self.examinebtn.clicked.connect(self.onExamineButton)
+		self.evidencebtn.clicked.connect(self.onEvidenceButton)
 		self.textcolorbtn.clicked.connect(self.onTextColorButton)
 		self.realizationbtn.clicked.connect(self.onRealizationButton)
 		self.prevemotepage.clicked.connect(self.onPrevEmotePage)
@@ -941,6 +942,10 @@ class GameWidget(QtGui.QWidget):
 			self.penaltybars[i].plusClicked.connect(self.onPenaltyBarPlus)
 
 		self.wtceview = WTCEview(self.gameview)
+		
+		self.charselect.setupUi(self, _ao_app)
+		self.charselect.charClicked.connect(self.confirmChar_clicked)
+		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 
 		self.evidencewidget = QtGui.QWidget(self)
 		self.evidencewidget.setGeometry((self.size().width() - (512-64))/2, (self.size().height() - (640-256))/2, 512-64, 640-256)
@@ -966,7 +971,7 @@ class GameWidget(QtGui.QWidget):
 		
 		self.evidencedialog = EvidenceDialog(self, _ao_app)
 		self.evidencedialog.presentClicked.connect(self.onPresentButton)
-		self.evidenceanim = EvidenceAnim(self, _ao_app)
+		self.evidenceanim = EvidenceAnim(self.gameview, _ao_app)
 		self.evidenceanim.move(32, 32)
 
 		self.evidencebuttons = []
@@ -990,11 +995,7 @@ class GameWidget(QtGui.QWidget):
 				x_mod_count = 0
 				y_mod_count += 1
 		self.evidencewidget.hide()
-		
-		self.charselect.setupUi(self, _ao_app)
-		self.charselect.charClicked.connect(self.confirmChar_clicked)
-		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
-		
+
 		self.chatTickTimer = QtCore.QTimer()
 		self.chatTickTimer.timeout.connect(self.chatTick)
 		
@@ -1494,6 +1495,8 @@ class GameWidget(QtGui.QWidget):
 	
 	def showCharSelect(self):
 		self.IngameWidgets.setCurrentWidget(self.charselect)
+		self.evidencewidget.hide()
+		self.evidencedialog.hide()
 
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents

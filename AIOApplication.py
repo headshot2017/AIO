@@ -1,9 +1,12 @@
+import socket, select, struct, os, time, zlib, ini
+
 from PyQt4 import QtCore, QtGui
-from game_version import GAME_VERSION
 from ConfigParser import ConfigParser
-import socket, select, struct, AIOprotocol, os, time, zlib, ini
-from AIOMainWindow import AIOMainWindow
 from pybass import *
+
+import AIOprotocol
+from game_version import GAME_VERSION
+from AIOMainWindow import AIOMainWindow
 from packing import *
 
 

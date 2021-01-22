@@ -1,4 +1,5 @@
 from PyQt4 import QtCore, QtGui
+
 import lobby, game
 
 class AIOMainWindow(QtGui.QMainWindow):

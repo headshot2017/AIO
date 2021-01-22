@@ -1,7 +1,10 @@
-from PyQt4 import QtCore, QtGui, QtOpenGL, uic
+import random, os, math
 from functools import partial
+
+from PyQt4 import QtCore, QtGui, QtOpenGL, uic
 from pybass import *
-import random, os, AIOprotocol, buttons, math, charselect, ini
+
+import AIOprotocol, buttons, charselect, ini
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1

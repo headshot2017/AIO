@@ -1,8 +1,11 @@
-from PyQt4 import QtCore, QtGui, uic
-from game_version import LOBBY_VERSION
-import os, socket, buttons, options, ini, zlib, struct
-import AIOprotocol
+import os, socket, zlib, struct
 from packing import *
+
+from PyQt4 import QtCore, QtGui, uic
+
+import AIOprotocol, buttons, ini, options
+from game_version import LOBBY_VERSION
+
 
 class ServerItem(QtGui.QTreeWidgetItem):
     def __lt__(self, other):

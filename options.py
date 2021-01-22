@@ -1,8 +1,11 @@
+import os, platform
+from functools import partial
+
 from PyQt4 import QtCore, QtGui
 from ConfigParser import ConfigParser
 from pybass import *
-from functools import partial
-import os, ini, platform
+
+import ini
 
 def getControlName(ind):
     for c in dir(QtCore.Qt):

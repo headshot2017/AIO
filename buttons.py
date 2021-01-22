@@ -1,6 +1,9 @@
+import os
+
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import os, ini
+
+import ini
 
 class AIOButton(QLabel):
 	clicked = pyqtSignal()

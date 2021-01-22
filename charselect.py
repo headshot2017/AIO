@@ -1,4 +1,5 @@
 from PyQt4 import QtCore, QtGui, uic
+
 import ini, buttons
 
 class CharSelect(QtGui.QWidget):

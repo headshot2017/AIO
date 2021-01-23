@@ -14,23 +14,33 @@ INLINE_GRAY = 3
 def plural(text, value):
 	return text+"s" if value != 1 else text
 
+directions = [
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast",
+    "east",
+    "southeast"
+]
+
+qtcolors = {
+    0: QtGui.QColor(255, 255, 255),
+    1: QtGui.QColor(0, 255, 0),
+    2: QtGui.QColor(255, 0, 0),
+    3: QtGui.QColor(255, 165, 0),
+    4: QtGui.QColor(45, 150, 255),
+    5: QtGui.QColor(255, 255, 0),
+    6: 691337, # rainbow
+    7: QtGui.QColor(255, 192, 203),
+    8: QtGui.QColor(0, 255, 255),
+    "_inline_grey": QtGui.QColor(187, 187, 187)
+}
+
 def getDirection(dir):
-	if dir == 0:
-		return "south"
-	elif dir == 1:
-		return "southwest"
-	elif dir == 2:
-		return "west"
-	elif dir == 3:
-		return "northwest"
-	elif dir == 4:
-		return "north"
-	elif dir == 5:
-		return "northeast"
-	elif dir == 6:
-		return "east"
-	elif dir == 7:
-		return "southeast"
+	if dir >= 0 and dir < len(directions):
+		return directions[dir]
 	return ""
 
 def getCompactDirection(dir):
@@ -39,26 +49,8 @@ def getCompactDirection(dir):
 	return "east"
 
 def getColor(number):
-	if number == 0:
-		return QtGui.QColor(255, 255, 255)
-	elif number == 1:
-		return QtGui.QColor(0, 255, 0)
-	elif number == 2:
-		return QtGui.QColor(255, 0, 0)
-	elif number == 3:
-		return QtGui.QColor(255, 165, 0)
-	elif number == 4:
-		return QtGui.QColor(45, 150, 255)
-	elif number == 5:
-		return QtGui.QColor(255, 255, 0)
-	elif number == 6:
-		return 691337
-	elif number == 7:
-		return QtGui.QColor(255, 192, 203)
-	elif number == 8:
-		return QtGui.QColor(0, 255, 255)
-	elif number == "_inline_grey":
-		return QtGui.QColor(187, 187, 187)
+	if number in qtcolors:
+    	return qtcolors[number]
 	return QtGui.QColor(0,0,0)
 
 class ICLineEdit(QtGui.QLineEdit):

@@ -1,7 +1,9 @@
-import socket, thread, iniconfig, os, sys, struct, urllib, time, traceback, zlib
+import socket, thread, os, sys, struct, urllib, time, traceback, zlib
+
+import iniconfig
+
 import AIOprotocol
 from AIOplayer import *
-
 sys.path.append("./server/")
 sys.path.append("./server/plugins")
 from plugin import Plugin, PluginError

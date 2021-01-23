@@ -241,15 +241,17 @@ class WTCEview(QtGui.QLabel):
 		self.hide()
 
 	def showWTCE(self, wtce):
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+
 		self.finished()
 		if wtce == 0:
-			self.movie.setFileName("data/misc/witnesstestimony.gif")
+			self.movie.setFileName("data/themes/"+theme+"/witnesstestimony.gif")
 		elif wtce == 1:
-			self.movie.setFileName("data/misc/crossexamination.gif")
+			self.movie.setFileName("data/themes/"+theme+"/crossexamination.gif")
 		elif wtce == 2:
-			self.movie.setFileName("data/misc/notguilty.gif")
+			self.movie.setFileName("data/themes/"+theme+"/notguilty.gif")
 		elif wtce == 3:
-			self.movie.setFileName("data/misc/guilty.gif")
+			self.movie.setFileName("data/themes/"+theme+"/guilty.gif")
 		else:
 			return
 		self.show()

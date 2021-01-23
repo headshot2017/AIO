@@ -96,10 +96,10 @@ class PenaltyBar(QLabel):
 		self.penaltybars = []
 		self.type = type
 		self.health = 10
-		self.resize(84, 14)
 
 	def setupUi(self, parent, theme):
 		self.parent = parent
+
 		if self.type == 0: #defense bar.
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/themes/"+theme+"/defensebar"+str(i)+".png"))
@@ -108,8 +108,10 @@ class PenaltyBar(QLabel):
 			for i in range(11):
 				self.penaltybars.append(QPixmap("data/themes/"+theme+"/prosecutionbar"+str(i)+".png"))
 			self.side = "pro"
-		self.minusbtn = AIOButton(self)
-		self.plusbtn = AIOButton(self)
+
+		self.minusbtn = AIOButton(parent.IngameUI)
+		self.plusbtn = AIOButton(parent.IngameUI)
+		self.resize(self.penaltybars[0].size())
 		self.minusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"minus.png"))
 		self.plusbtn.setPixmap(QPixmap("data/themes/"+theme+"/"+self.side+"plus.png"))
 		self.minusbtn.clicked.connect(self.minusClick)

@@ -60,7 +60,6 @@ class Options(QtGui.QWidget):
         self.inifile = ConfigParser()
         self.setWindowTitle("Settings")
         self.setFixedSize(400, 400)
-        self.hide()
         
         main_layout = QtGui.QVBoxLayout(self)
         save_layout = QtGui.QHBoxLayout()
@@ -259,6 +258,7 @@ class Options(QtGui.QWidget):
         main_layout.addLayout(save_layout)
         
         ao_app.installEventFilter(self)
+        self.hide()
     
     def showSettings(self):
         self.show()
@@ -354,13 +354,16 @@ class Options(QtGui.QWidget):
     
     def onCancelClicked(self):
         self.hide()
-    
+
     def changeBind(self, button, name, ind):
+        if self.changingBind:
+            self.changingBind[0].setText(getControlName(self.ao_app.controls[self.changingBind[1]][self.changingBind[2]]))
+
         self.changingBind = [button, name, ind]
         button.setText("Press any key or ESC to cancel...")
 
     def eventFilter(self, source, event):
-        if self.tabs.currentIndex() == 1 and self.changingBind and event.type() == QtCore.QEvent.KeyPress:
+        if self.tabs.currentIndex() == 2 and self.changingBind and event.type() == QtCore.QEvent.KeyPress:
             key = event.key()
             if key != QtCore.Qt.Key_Escape:
                 self.ao_app.controls[self.changingBind[1]][self.changingBind[2]] = key
@@ -369,3 +372,10 @@ class Options(QtGui.QWidget):
                 self.changingBind[0].setText(getControlName(self.ao_app.controls[self.changingBind[1]][self.changingBind[2]]))
             self.changingBind = []
         return super(Options, self).eventFilter(source, event)
+
+    def hide(self):
+        if self.changingBind:
+            self.changingBind[0].setText(getControlName(self.ao_app.controls[self.changingBind[1]][self.changingBind[2]]))
+            self.changingBind = []
+
+        super(Options, self).hide()

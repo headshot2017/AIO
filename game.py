@@ -944,30 +944,12 @@ class GameWidget(QtGui.QWidget):
 		self.charselect.charClicked.connect(self.confirmChar_clicked)
 		self.disconnectbtn.clicked.connect(self.ao_app.stopGame)
 
-		self.evidencewidget = QtGui.QWidget(self)
-		self.evidencewidget.setGeometry((self.size().width() - (512-64))/2, (self.size().height() - (640-256))/2, 512-64, 640-256)
-		self.evidencewidget.setStyleSheet("background-color: rgb(45, 58, 66)")
-		self.evidencenamelabel = QtGui.QLabel(self.evidencewidget)
-		evidencenamelabel = QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png")
-		self.evidencenamelabel.setPixmap(evidencenamelabel)
-		self.evidencenamelabel.move((self.evidencewidget.size().width() - evidencenamelabel.size().width())/2, 0)
-		self.evidencename = QtGui.QLabel(self.evidencenamelabel)
-		self.evidencename.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignTop)
-		self.evidencename.setGeometry(0, 4, evidencenamelabel.size().width(), 20)
-		self.evidencename.setStyleSheet("background-color: rgba(0, 0, 0, 0);\ncolor: "+getColor(3).name())
-		self.evidencenextpage = buttons.AIOButton(self.evidencewidget)
-		self.evidenceprevpage = buttons.AIOButton(self.evidencewidget)
-		rightarrow = QtGui.QPixmap("data/themes/"+theme+"/arrow_right.png")
-		leftarrow = QtGui.QPixmap("data/themes/"+theme+"/arrow_left.png")
-		self.evidencenextpage.setPixmap(rightarrow)
-		self.evidencenextpage.move(self.evidencewidget.size().width() - rightarrow.size().width() - 8, self.evidencewidget.size().height() - rightarrow.size().height() - 8)
-		self.evidencenextpage.clicked.connect(self.onNextEvidencePage)
-		self.evidenceprevpage.setPixmap(leftarrow)
-		self.evidenceprevpage.move(8, self.evidencewidget.size().height() - leftarrow.size().height() - 8)
-		self.evidenceprevpage.clicked.connect(self.onPrevEvidencePage)
-		
-		self.evidencedialog = EvidenceDialog(self, _ao_app)
+		self.evidencedialog = EvidenceDialog(self, _ao_app) # use None instead of self for a separate window
+		self.evidencedialog.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint)
+		self.evidencedialog.move((self.size().width() - self.evidencedialog.size().width()) / 2, (self.size().height() - self.evidencedialog.size().height()) / 2)
+		self.evidencedialog.setFixedSize(self.evidencedialog.size())
 		self.evidencedialog.presentClicked.connect(self.onPresentButton)
+
 		self.evidenceanim = EvidenceAnim(self.gameview, _ao_app)
 		self.evidenceanim.move(32, 32)
 
@@ -975,14 +957,14 @@ class GameWidget(QtGui.QWidget):
 		spacing = 4
 		x_mod_count = y_mod_count = 0
 		left, top = 40, 40
-		width, height = self.evidencewidget.size().width()-64, self.evidencewidget.size().height()-64
+		width, height = self.evidencedialog.size().width()-64, self.evidencedialog.size().height()-64
 		columns = (width - 70) / (spacing + 70) + 1
 		rows = (height - 70) / (spacing + 70) + 1
 		self.max_evidence_on_page = columns * rows
 		for i in range(self.max_evidence_on_page):
 			x_pos = (70 + spacing) * x_mod_count
 			y_pos = (70 + spacing) * y_mod_count
-			self.evidencebuttons.append(buttons.AIOIndexButton(self.evidencewidget, i))
+			self.evidencebuttons.append(buttons.AIOIndexButton(self.evidencedialog.evidence_list, i))
 			self.evidencebuttons[i].setGeometry(left+x_pos, top+y_pos, 70, 70)
 			self.evidencebuttons[i].clicked.connect(self.onEvidenceClicked)
 			self.evidencebuttons[i].mouseEnter.connect(self.onEvidenceMouseEnter)
@@ -991,7 +973,7 @@ class GameWidget(QtGui.QWidget):
 			if x_mod_count == columns:
 				x_mod_count = 0
 				y_mod_count += 1
-		self.evidencewidget.hide()
+		self.evidencedialog.hide()
 
 		self.chatTickTimer = QtCore.QTimer()
 		self.chatTickTimer.timeout.connect(self.chatTick)
@@ -1041,8 +1023,6 @@ class GameWidget(QtGui.QWidget):
 	def onPresentButton(self, ind):
 		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip2.wav")
 		self.myevidence = ind
-		self.evidencewidget.hide()
-		self.evidencedialog.hide()
 	
 	def onPenaltyBar(self, contents):
 		bar, health = contents
@@ -1083,8 +1063,8 @@ class GameWidget(QtGui.QWidget):
 		self.set_evidence_page()
 	
 	def set_evidence_page(self):
-		self.evidenceprevpage.hide()
-		self.evidencenextpage.hide()
+		self.evidencedialog.evidenceprevpage.hide()
+		self.evidencedialog.evidencenextpage.hide()
 		
 		total_evidence = len(self.ao_app.evidencelist)+1
 		for button in self.evidencebuttons:
@@ -1103,9 +1083,9 @@ class GameWidget(QtGui.QWidget):
 			evidence_on_page = self.max_evidence_on_page
 			
 		if total_pages > self.evidence_page + 1:
-			self.evidencenextpage.show()
+			self.evidencedialog.evidencenextpage.show()
 		if self.evidence_page > 0:
-			self.evidenceprevpage.show()
+			self.evidencedialog.evidenceprevpage.show()
 			
 		for n_evidence in range(evidence_on_page):
 			n_real_evidence = n_evidence + self.evidence_page * self.max_evidence_on_page
@@ -1141,17 +1121,13 @@ class GameWidget(QtGui.QWidget):
 	def onEvidenceMouseEnter(self, ind):
 		real_ind = ind + self.evidence_page * self.max_evidence_on_page
 		if not self.evidencebuttons[ind].isAddButton:
-			self.evidencename.setText(self.ao_app.evidencelist[real_ind][0])
+			self.evidencedialog.evidencelist_name.setText(self.ao_app.evidencelist[real_ind][0])
 		else:
-			self.evidencename.setText("Add evidence...")
+			self.evidencedialog.evidencelist_name.setText("Add evidence...")
 		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip.wav")
 	
 	def onEvidenceButton(self):
-		self.evidencewidget.setVisible(not self.evidencewidget.isVisible())
-		self.evidencedialog.setVisible(False)
-		#self.musiclist.hide()
-		#self.oocwidget.hide()
-		#self.chatlog.hide()
+		self.evidencedialog.setVisible(not self.evidencedialog.isVisible())
 	
 	def onChatBubble(self, contents):
 		cid, on = contents
@@ -1174,15 +1150,13 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.setVisible(not self.chatlog.isVisible())
 		self.musiclist.hide()
 		self.oocwidget.hide()
-		self.evidencewidget.hide()
-		self.evidencedialog.setVisible(False)
+		self.evidencedialog.hide()
 	
 	def onOOCButton(self):
 		self.oocwidget.setVisible(not self.oocwidget.isVisible())
 		self.musiclist.hide()
 		self.chatlog.hide()
-		self.evidencewidget.hide()
-		self.evidencedialog.setVisible(False)
+		self.evidencedialog.hide()
 	
 	def onOOCReturn(self):
 		name = str(self.oocnameinput.text().toUtf8())
@@ -1492,7 +1466,6 @@ class GameWidget(QtGui.QWidget):
 	
 	def showCharSelect(self):
 		self.IngameWidgets.setCurrentWidget(self.charselect)
-		self.evidencewidget.hide()
 		self.evidencedialog.hide()
 
 	def onEmoteSound(self, contents):
@@ -1569,7 +1542,6 @@ class GameWidget(QtGui.QWidget):
 		self.musiclist.setVisible(not self.musiclist.isVisible())
 		self.oocwidget.hide()
 		self.chatlog.hide()
-		self.evidencewidget.hide()
 		self.evidencedialog.hide()
 	
 	def onMusicChange(self, msg):
@@ -1822,7 +1794,6 @@ class GameWidget(QtGui.QWidget):
 		self.musiclist.clear()
 		self.movemenu.clear()
 		self.movemenuActions = []
-		self.evidencename.clear()
 		self.charselect.showCharList(self.ao_app.charlist)
         
 		self.musicslider.setValue(self.ao_app.musicvol)
@@ -1885,69 +1856,25 @@ class EvidenceDialog(QtGui.QWidget):
 		self.ao_app = ao_app
 
 		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+		uic.loadUi("data/themes/"+theme+"/court_record.ui", self)
 
-		self.setGeometry((parent.size().width() - (512-64))/2, (parent.size().height() - (640-256))/2, 512-64, 640-256)
-		
-		self.evidencenamelabel = QtGui.QLabel(self)
-		evidencenamelabel = QtGui.QPixmap("data/themes/"+theme+"/evidence_name.png")
-		self.evidencenamelabel.setPixmap(evidencenamelabel)
-		self.evidencenamelabel.move((self.size().width() - evidencenamelabel.size().width())/2, 0)
-		self.evidencename = QtGui.QLineEdit(self.evidencenamelabel)
-		self.evidencename.setAlignment(QtCore.Qt.AlignCenter)
-		self.evidencename.setGeometry(0, 2, evidencenamelabel.size().width()-1, 22)
-		self.evidencename.setStyleSheet("QLineEdit{background-color: rgba(0, 0, 0, 0); color: "+getColor(3).name()+"} QLineEdit:hover{border: 1px solid gray; background-color: rgba(0, 0, 0, 0)}")
-		self.evidencename.textChanged.connect(self.changesMade)
-		
-		self.evidencepicture = QtGui.QLabel(self)
-		self.evidencepicture.setGeometry(48, 48, 70, 70)
-		self.evidencepicdropdown = QtGui.QComboBox(self)
-		self.evidencepicdropdown.setGeometry(192, 48+35-10, 192, 20)
+		self.evidenceeditor_name.textChanged.connect(self.changesMade)
 		self.evidencepicdropdown.currentIndexChanged.connect(self.changeDropdown)
-		
-		self.evidencedesc = QtGui.QTextEdit(self)
-		self.evidencedesc.setGeometry(48, 128, self.size().width()-(48*2), 192)
 		self.evidencedesc.textChanged.connect(self.changesMade)
-		
-		self.evidenceclose = buttons.AIOButton(self)
-		evidenceclose = QtGui.QPixmap("data/themes/"+theme+"/evidence_x.png")
-		self.evidenceclose.setPixmap(evidenceclose)
-		self.evidenceclose.move(self.size().width()-evidenceclose.size().width()-8, 8)
 		self.evidenceclose.clicked.connect(self.closeDialog)
-		
-		self.savechanges = buttons.AIOButton(self)
-		savebtn = QtGui.QPixmap("data/themes/"+theme+"/save_button.png")
-		self.savechanges.setPixmap(savebtn)
-		self.savechanges.move(self.evidencedesc.x()+8, self.evidencedesc.y()+self.evidencedesc.size().height()+16)
 		self.savechanges.clicked.connect(self.saveChanges)
-		self.savechanges.hide()
-		
-		self.deletebtn = buttons.AIOButton(self)
-		deletebtn = QtGui.QPixmap("data/themes/"+theme+"/delete_button.png")
-		self.deletebtn.setPixmap(deletebtn)
-		self.deletebtn.move(self.evidencedesc.x() + self.evidencedesc.size().width() - deletebtn.size().width() - 8, self.savechanges.y())
 		self.deletebtn.clicked.connect(self.deleteEvidence)
-		self.deletebtn.hide()
-		
-		self.presentbtn = buttons.AIOButton(self)
-		presentbtn = QtGui.QPixmap("data/themes/"+theme+"/present_button.png")
-		self.presentbtn.setPixmap(presentbtn)
-		self.presentbtn.move((self.evidencenamelabel.x() + evidencenamelabel.size().width())/2, self.evidencenamelabel.y() + evidencenamelabel.size().height())
 		self.presentbtn.clicked.connect(self.onPresentButton)
-		self.presentbtn.hide()
-		
+
 		imgfiles = os.listdir("data/evidence")
 		self.imgfiles = []
 		for file in imgfiles:
 			if file.lower().endswith(".png") and file.lower() != "unknown.png":
 				self.imgfiles.append(file)
 				self.evidencepicdropdown.addItem(file)
-		
-		self.setStyleSheet("background-color: rgb(112, 112, 112);\ncolor: white")
+
+		self.savechanges.hide()
 		self.hide()
-	
-	def paintEvent(self, event):
-		painter = QtGui.QPainter(self)
-		painter.fillRect(0, 0, self.size().width(), self.size().height(), QtGui.QColor(112, 112, 112))
 	
 	def changesMade(self, *args, **kwargs):
 		if not self.isVisible():
@@ -1956,13 +1883,15 @@ class EvidenceDialog(QtGui.QWidget):
 	
 	def onPresentButton(self):
 		self.presentClicked.emit(self.ind)
+		self.stackedWidget.setCurrentWidget(self.evidence_list)
+		self.hide()
 	
 	def closeDialog(self, playSnd=True):
 		if playSnd:
 			self.ao_app.playGUISound("data/sounds/general/sfx-cancel.wav")
 		self.savechanges.hide()
 		self.deletebtn.hide()
-		self.hide()
+		self.stackedWidget.setCurrentWidget(self.evidence_list)
 	
 	def changeDropdown(self, ind):
 		if not self.isVisible():
@@ -1977,24 +1906,26 @@ class EvidenceDialog(QtGui.QWidget):
 			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
 	
 	def saveChanges(self):
-		name, desc, image = str(self.evidencename.text().toUtf8()), str(self.evidencedesc.toPlainText().toUtf8()), self.imgfiles[self.evidencepicdropdown.currentIndex()]
+		name, desc, image = str(self.evidenceeditor_name.text().toUtf8()), str(self.evidencedesc.toPlainText().toUtf8()), self.imgfiles[self.evidencepicdropdown.currentIndex()]
+		if not name: return
+
 		if not self.creatingEvidence:
 			self.ao_app.tcpthread.sendEvidence(AIOprotocol.EV_EDIT, self.ind, name, desc, image)
 		else:
 			self.ao_app.tcpthread.sendEvidence(AIOprotocol.EV_ADD, name, desc, image)
-			self.hide()
+			self.stackedWidget.setCurrentWidget(self.evidence_list)
 		self.savechanges.hide()
 	
 	def deleteEvidence(self):
 		self.ao_app.tcpthread.sendEvidence(AIOprotocol.EV_DELETE, self.ind)
 		self.savechanges.hide()
 		self.deletebtn.hide()
-		self.hide()
+		self.stackedWidget.setCurrentWidget(self.evidence_list)
 	
 	def showEvidence(self, ev):
 		self.ind, name, desc, image = ev
-		self.evidencename.setText(name)
-		self.evidencedesc.setText(desc)
+		self.evidenceeditor_name.setText(name)
+		self.evidencedesc.setPlainText(desc)
 		
 		if os.path.exists("data/evidence/"+image):
 			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/"+image))
@@ -2011,16 +1942,33 @@ class EvidenceDialog(QtGui.QWidget):
 		self.creatingEvidence = False
 		self.deletebtn.show()
 		self.presentbtn.show()
-		self.show()
+		self.savechanges.hide()
+		self.stackedWidget.setCurrentWidget(self.evidence_editor)
 	
 	def createEvidence(self):
-		self.evidencename.setText("name")
-		self.evidencedesc.setText("description")
-		self.evidencepicture.setPixmap(QtGui.QPixmap("empty.png"))
+		self.evidenceeditor_name.clear()
+		self.evidencedesc.clear()
+		self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/empty.png"))
 		self.evidencepicdropdown.setCurrentIndex(self.imgfiles.index("empty.png"))
 		self.creatingEvidence = True
 		self.presentbtn.hide()
-		self.show()
+		self.deletebtn.hide()
+		self.savechanges.hide()
+		self.stackedWidget.setCurrentWidget(self.evidence_editor)
+
+	def setVisible(self, visible):
+		super(EvidenceDialog, self).setVisible(visible)
+		self.stackedWidget.setCurrentWidget(self.evidence_list)
+		self.evidencelist_name.clear()
+
+	def hide(self):
+		super(EvidenceDialog, self).hide()
+		self.stackedWidget.setCurrentWidget(self.evidence_list)
+
+	def show(self):
+		super(EvidenceDialog, self).show()
+		self.evidencelist_name.clear()
+
 
 class EvidenceAnim(QtGui.QLabel):
 	def __init__(self, parent, ao_app):

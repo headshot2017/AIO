@@ -328,12 +328,13 @@ class ClientThread(QtCore.QThread):
 			try:
 				data = self.tcp.recv(4096*4)
 			except socket.error, err:
-				if err.args[0] == 10035 or err.errno == 11 or err.args[0] == "timed out":
+				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
 				else:
-					self.connectionError.emit("The connection to the server has been lost.\nAdditional information: %s" % err)
-					self.disconnect()
-					break
+					if self.connected:
+						self.connectionError.emit("The connection to the server has been lost.\nAdditional information: %s" % err)
+						self.disconnect()
+						break
 
 			if not data.endswith("\r"):
 				tempdata += data

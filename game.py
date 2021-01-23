@@ -50,7 +50,7 @@ def getCompactDirection(dir):
 
 def getColor(number):
 	if number in qtcolors:
-    	return qtcolors[number]
+		return qtcolors[number]
 	return QtGui.QColor(0,0,0)
 
 class ICLineEdit(QtGui.QLineEdit):

@@ -554,9 +554,7 @@ class ClientThread(QtCore.QThread):
 				
 				if data:
 					if data[0] == "\r":
-						l = list(data)
-						del l[0]
-						data = "".join(l)
+						data = data[1:]
 
 
 class UDPThread(QtCore.QThread):

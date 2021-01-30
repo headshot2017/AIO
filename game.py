@@ -333,7 +333,6 @@ class Character(BaseCharacter):
 	walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
 	emotes = [[], [], [], [], []] #value 0 contains the emotes, value 1 contains loop values, value 2 contains directions (east, west...), value 3 contains sound names and value 4 sound delays
 	isPlayer = False
-	mustSend = False # if this char is the player and a value (pos, speed, emote, etc) changed, send new data
 	maxwidth = 0
 	maxheight = 0
 	chatbubble = 0
@@ -462,13 +461,6 @@ class Character(BaseCharacter):
 			currsprite = os.path.basename(str(self.movie.fileName().toUtf8()))
 			self.run = self.ao_app.controls["run"][0] in self.pressed_keys
 			anim = self.walkanims[1] if self.run else self.walkanims[2]
-
-			# checks for self.mustSend
-			old_hspeed = self.hspeed
-			old_vspeed = self.vspeed
-			old_sprite = self.sprite
-			old_emoting = self.emoting
-			old_dir_nr = self.dir_nr
 
 			up = self.ao_app.controls["up"]
 			down = self.ao_app.controls["down"]
@@ -611,9 +603,6 @@ class Character(BaseCharacter):
 			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
 				self.ao_app.tcpthread.sendChatBubble(0)
-
-			if self.hspeed != old_hspeed or self.vspeed != old_vspeed or self.sprite != old_sprite or self.emoting != old_emoting or self.dir_nr != old_dir_nr: # send new data
-				self.mustSend = True
 			
 		if self.playFile[0]:
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
@@ -699,9 +688,6 @@ class GamePort(QtGui.QWidget):
 				elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
 					player.dir_nr = AIOprotocol.NORTH
 				player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
-
-				if old_dir_nr != player.dir_nr:
-					player.mustSend = True
 
 		super(GamePort, self).mousePressEvent(event)
 	
@@ -1503,7 +1489,6 @@ class GameWidget(QtGui.QWidget):
 			found_dir = getCompactDirection(self.player.dir_nr)
 		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
 		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
-		self.player.mustSend = True
 
 		if sound:
 			self.onEmoteSound([self.player.charid, sound, sound_delay, self.player.zone])
@@ -1627,7 +1612,6 @@ class GameWidget(QtGui.QWidget):
 				char.hspeed = (x - char.xx) / 3.0
 				char.vspeed = (y - char.yy) / 3.0
 			char.sprite = sprite
-			char.emoting = emoting
 
 			if self.player:
 				if char.zone != self.player.zone:
@@ -1642,8 +1626,9 @@ class GameWidget(QtGui.QWidget):
 					if not os.path.exists(fullpath):
 						fullpath = "data/misc/error.gif"
 
-					if oldpath != fullpath or char.dir_nr != dir_nr: # "The other player's game sometimes fails to show the right direction the character's looking at." fixed
+					if oldpath != fullpath or char.dir_nr != dir_nr or char.emoting != emoting: # "The other player's game sometimes fails to show the right direction the character's looking at." fixed
 						char.dir_nr = dir_nr
+						char.emoting = emoting
 						if aSprite[1].lower() == "spin.gif":
 							char.playSpin(fullpath, dir_nr)
 						else:

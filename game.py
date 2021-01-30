@@ -641,7 +641,7 @@ class Character(BaseCharacter):
 		
 		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
-			if self.smoothmoves >= 4:
+			if self.smoothmoves >= 3:
 				self.hspeed = self.vspeed = 0
 				self.smoothmoves = 0
 		
@@ -1624,8 +1624,8 @@ class GameWidget(QtGui.QWidget):
 
 			char = self.gameview.characters[client]
 			if not char.isPlayer and char.smoothmoves <= 0:
-				char.hspeed = (x - char.xx) / 4.0
-				char.vspeed = (y - char.yy) / 4.0
+				char.hspeed = (x - char.xx) / 3.0
+				char.vspeed = (y - char.yy) / 3.0
 			char.sprite = sprite
 			char.emoting = emoting
 
@@ -1731,7 +1731,7 @@ class GameWidget(QtGui.QWidget):
 			self.updateGame()
 		elif event.timerId() == self.tcptimer.timerId(): # networking
 			self.ticks += 1
-			if self.ticks % 20 == 0: # send movement
+			if self.ticks % 10 == 0: # send movement
 				self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
 			if self.ticks % (60*3) == 0: # ping
 				self.ao_app.tcpthread.sendPing()

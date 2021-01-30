@@ -42,20 +42,21 @@ class AIOserver(object):
             print "[warning]", "server/base.ini not found, creating file..."
             with open("server/base.ini", "w") as f:
                 f.write("[Server]\n")
-                f.write("name=unnamed server\n")
-                f.write("desc=automatically generated base.ini file\n")
+                f.write("name=Unnamed AIO server\n")
+                f.write("desc=Automatically generated server/base.ini file\n")
                 f.write("port=27010\n")
                 f.write("scene=default\n")
                 f.write("motd=Welcome to my server!##Overview of in-game controls:#WASD keys - move#Shift - run##Have fun!\n")
                 f.write("publish=1\n")
                 f.write("rcon=theadminpassword\n")
                 f.write("maxplayers=100\n")
+                f.write("max_multiclients=4\n")
                 f.write("evidence_limit=255\n")
                 f.write("log=1\n")
                 f.write("\n")
-                f.write(";you cannot set the evidence limit higher than 255. it's the max.\n")
-                f.write(";you can set \"maxplayers\" to 0 to use the total number of characters\n")
-                f.write(";defined in the scene's init.ini file.\n")
+                f.write("#you cannot set the evidence limit higher than 255. it's the max.\n")
+                f.write("#you can set \"maxplayers\" to 0 to use the total number of characters\n")
+                f.write("#defined in the scene's init.ini file.\n")
                 f.write("\n")
                 f.write("[MasterServer]\n")
                 f.write("ip=aaio-ms.aceattorneyonline.com:27011\n")
@@ -67,8 +68,7 @@ class AIOserver(object):
                 f.write(";through the command line. leave the password empty to disable.\n")
                 f.write("\n")
                 f.write("[Advanced]\n")
-                f.write("TickRate=20\n")
-                f.write("MaxMultiClients=4\n")
+                f.write("TickRate=10\n")
                 f.write("ServerOOCName = $SERVER\n")
                 f.write("AllowBots=0\n")
 
@@ -105,8 +105,7 @@ class AIOserver(object):
         self.econ_password = ini.get("ECON", "password", "")
         self.econ_tcp = None
 
-        self.tickspeed = ini.get("Advanced", "TickRate", 20, int)
-        self.max_clients_per_ip = ini.get("Advanced", "MaxMultiClients", 4, int)
+        self.tickspeed = ini.get("Advanced", "TickRate", 10, int)
         self.ServerOOCName = ini.get("Advanced", "ServerOOCName", "$SERVER")
         self.allow_bots = ini.get("Advanced", "AllowBots", "0") == "1"
         if self.allow_bots and not os.path.exists("data/characters"):
@@ -123,6 +122,7 @@ class AIOserver(object):
         scene_ini = iniconfig.IniConfig("server/scene/"+self.scene+"/init.ini")
         
         self.maxplayers = ini.get("Server", "maxplayers", -1, int)
+        self.max_clients_per_ip = ini.get("Server", "max_multiclients", 4, int)
         if self.maxplayers < 0:
             self.maxplayers = scene_ini.get("chars", "total", 3, int)
         self.maxchars = scene_ini.get("chars", "total", 3, int)

@@ -22,7 +22,6 @@ class AIOplayer(object):
     emoting = 0
     currentemote = 0
     run = 0
-    mustSend = False
     OOCname = ""
     loginfails = 0
     close = False
@@ -30,6 +29,7 @@ class AIOplayer(object):
     use_adverts = True
     use_global = True
     pingpong = 0
+    unpredicted_shadow = None
 
     def __init__(self, sock, ip, id=-1):
         self.ratelimits = [0, 0, 0, 0, 0]

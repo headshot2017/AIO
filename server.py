@@ -307,52 +307,73 @@ class AIOserver(object):
         else:
             return self.sendBuffer(ClientID, buffer)
     
-    def sendCreate(self, ClientID):
+    def sendCreate(self, ClientID, sendTo=-1):
         if not self.running:
             print "[error]", "tried to use sendCreate() without server running"
             return
         
-        for client in self.clients.keys():
-            if client == ClientID:
-                continue
+        if sendTo == -1:
+            for client in self.clients.keys():
+                if client == ClientID or (isinstance(ClientID, AIOplayer) and client == ClientID.id):
+                    continue
             
-            if not self.clients[client].isBot():
+                if not self.clients[client].isBot():
+                    buffer = ""
+                    buffer += struct.pack("B", AIOprotocol.CREATE)
+                    buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
+                    buffer += struct.pack("h", ClientID.CharID if isinstance(ClientID, AIOplayer) else self.clients[ClientID].CharID)
+                    buffer += struct.pack("H", ClientID.zone if isinstance(ClientID, AIOplayer) else self.clients[ClientID].zone)
+                    buff = struct.pack("I", len(buffer)+1)
+                    buff += buffer
+                    self.sendBuffer(client, buffer)
+            
+                if not isinstance(ClientID, AIOplayer) and not self.clients[ClientID].isBot():
+                    buffer = ""
+                    buffer += struct.pack("B", AIOprotocol.CREATE)
+                    buffer += struct.pack("I", client)
+                    buffer += struct.pack("h", self.clients[client].CharID)
+                    buffer += struct.pack("H", self.clients[client].zone)
+                    buff = struct.pack("I", len(buffer)+1)
+                    buff += buffer
+                    self.sendBuffer(ClientID, buffer)
+
+        else:
+            if not self.clients[sendTo].isBot():
                 buffer = ""
                 buffer += struct.pack("B", AIOprotocol.CREATE)
-                buffer += struct.pack("I", ClientID)
-                buffer += struct.pack("h", self.clients[ClientID].CharID)
-                buffer += struct.pack("H", self.clients[ClientID].zone)
+                buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
+                buffer += struct.pack("h", ClientID.CharID if isinstance(ClientID, AIOplayer) else self.clients[ClientID].CharID)
+                buffer += struct.pack("H", ClientID.zone if isinstance(ClientID, AIOplayer) else self.clients[ClientID].zone)
                 buff = struct.pack("I", len(buffer)+1)
                 buff += buffer
-                self.sendBuffer(client, buffer)
-            
-            if not self.clients[ClientID].isBot():
-                buffer = ""
-                buffer += struct.pack("B", AIOprotocol.CREATE)
-                buffer += struct.pack("I", client)
-                buffer += struct.pack("h", self.clients[client].CharID)
-                buffer += struct.pack("H", self.clients[client].zone)
-                buff = struct.pack("I", len(buffer)+1)
-                buff += buffer
-                self.sendBuffer(ClientID, buffer)
+                self.sendBuffer(sendTo, buffer)
     
-    def sendDestroy(self, ClientID):
+    def sendDestroy(self, ClientID, target=-1):
         if not self.running:
             print "[error]", "tried to use sendDestroy() without server running"
             return
-        
-        for client in self.clients.keys():
-            if client == ClientID:
-                continue
+
+        if target == -1:
+            for client in self.clients.keys():
+                if client == ClientID or (isinstance(ClientID, AIOplayer) and client == ClientID.id):
+                    continue
             
-            if not self.clients[client].isBot():
+                if not self.clients[client].isBot():
+                    buffer = ""
+                    buffer += struct.pack("B", AIOprotocol.DESTROY)
+                    buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
+                    buff = struct.pack("I", len(buffer)+1)
+                    buff += buffer
+                    self.sendBuffer(client, buffer)
+
+        else:
+            if not self.clients[target].isBot():
                 buffer = ""
                 buffer += struct.pack("B", AIOprotocol.DESTROY)
-                buffer += struct.pack("I", ClientID)
+                buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
                 buff = struct.pack("I", len(buffer)+1)
                 buff += buffer
-                self.sendBuffer(client, buffer)
-            
+                self.sendBuffer(target, buffer)
     
     def sendCharList(self, ClientID):
         if not self.running:
@@ -793,45 +814,66 @@ class AIOserver(object):
                 else:
                     return self.sendBuffer(ClientID, buffer)
     
-    def setPlayerZone(self, ClientID, zone):
+    def setPlayerZone(self, ClientID, zone, target=-1):
         if not self.running:
             print "[error]", "tried to use setPlayerZone() without server running"
             return
-            
-        self.clients[ClientID].zone = zone
+
+        if isinstance(ClientID, AIOplayer):
+            ClientID.zone = zone
+        else:
+            self.clients[ClientID].zone = zone
+
         buffer = struct.pack("B", AIOprotocol.SETZONE)
-        buffer += struct.pack("H", ClientID)
+        buffer += struct.pack("H", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
         buffer += struct.pack("H", zone)
         buff = struct.pack("I", len(buffer)+1)
         buff += buffer
         
         for plug in self.plugins:
             if plug[1].running and hasattr(plug[1], "onClientSetZone"):
-                plug[1].onClientSetZone(self, self.clients[ClientID], zone)
+                plug[1].onClientSetZone(self, ClientID if isinstance(ClientID, AIOplayer) else self.clients[ClientID], zone, target)
+
+        if target == -1:
+            for client in self.clients.keys():
+                if self.clients[client].ready and not self.clients[client].isBot():
+                    if self.clients[client].unpredicted_shadow:
+                        self.setPlayerZone(self.clients[client].unpredicted_shadow, self.clients[client].zone, client)
+                    self.sendBuffer(client, buffer)
+        else:
+            if self.clients[target].ready and not self.clients[target].isBot():
+                self.sendBuffer(target, buffer)
         
-        for client in self.clients.keys():
-            if self.clients[client].ready and not self.clients[client].isBot():
-                self.sendBuffer(client, buffer)
-        
-    def setPlayerChar(self, ClientID, charid):
+    def setPlayerChar(self, ClientID, charid, target=-1):
         if not self.running:
             print "[error]", "tried to use setPlayerChar() without server running"
             return
         
-        self.clients[ClientID].CharID = charid
+        if isinstance(ClientID, AIOplayer):
+            ClientID.CharID = charid
+        else:
+            self.clients[ClientID].CharID = charid
+
         buffer = struct.pack("B", AIOprotocol.SETCHAR)
-        buffer += struct.pack("H", ClientID)
+        buffer += struct.pack("H", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
         buffer += struct.pack("h", charid)
         buff = struct.pack("I", len(buffer)+1)
         buff += buffer
         
         for plug in self.plugins:
             if plug[1].running and hasattr(plug[1], "onClientSetChar"):
-                plug[1].onClientSetZone(self, self.clients[ClientID], charid)
+                plug[1].onClientSetChar(self, ClientID if isinstance(ClientID, AIOplayer) else self.clients[ClientID], charid, target)
 
-        for client in self.clients.keys():
-            if self.clients[client].ready and not self.clients[client].isBot():
-                self.sendBuffer(client, buffer)
+        if target == -1:
+            for client in self.clients.keys():
+                if self.clients[client].ready and not self.clients[client].isBot():
+                    if self.clients[client].unpredicted_shadow:
+                        self.setPlayerChar(self.clients[client].unpredicted_shadow, self.clients[client].CharID, client)
+                        self.setPlayerChar(self.clients[client].unpredicted_shadow, -1, client)
+                    self.sendBuffer(client, buffer)
+        else:
+            if self.clients[target].ready and not self.clients[target].isBot():
+                self.sendBuffer(target, buffer)
     
     def sendExamine(self, charid, zone, x, y, showname, ClientID=-1):
         if not self.running:
@@ -881,7 +923,22 @@ class AIOserver(object):
         
         if sourceID == -1:
             for client in self.clients.keys():
-                if client == ClientID or not self.clients[client].ready or not self.clients[client].first_picked or not self.clients[client].sprite or not self.clients[client].mustSend:
+                if not self.clients[client].ready or not self.clients[client].first_picked or not self.clients[client].sprite:
+                    continue
+
+                if self.clients[client].unpredicted_shadow:
+                    shadow_id = self.clients[client].unpredicted_shadow.id
+                    
+                    buffer += struct.pack("I", shadow_id)
+                    buffer += struct.pack("f", self.clients[client].x)
+                    buffer += struct.pack("f", self.clients[client].y)
+                    buffer += struct.pack("h", self.clients[client].hspeed)
+                    buffer += struct.pack("h", self.clients[client].vspeed)
+                    buffer += self.clients[client].sprite+"\0"
+                    buffer += struct.pack("B", self.clients[client].emoting)
+                    buffer += struct.pack("B", self.clients[client].dir_nr)
+                
+                if client == ClientID:
                     continue
                 
                 buffer += struct.pack("I", client)
@@ -1170,9 +1227,6 @@ class AIOserver(object):
                         self.clients[client].sprite = sprite
                         self.clients[client].emoting = emoting
                         self.clients[client].dir_nr = dir_nr
-
-                        if old_x != x or old_y != y or old_hspeed != hspeed or old_vspeed != vspeed or old_emoting != emoting or old_dir_nr != dir_nr or old_sprite != sprite:
-                            self.clients[client].mustSend = True
 
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientMovement"):
@@ -1751,7 +1805,7 @@ class AIOserver(object):
                 for client in self.clients.keys():
                     self.clients[client].player_thread()
 
-                    if self.clients[client].ready and len(self.clients) > 1:
+                    if self.clients[client].ready:
                         if self.clients[client].isBot():
                             self.sendBotMovement(client)
                         else:

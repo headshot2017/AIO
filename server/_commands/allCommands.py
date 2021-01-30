@@ -3,9 +3,11 @@ from server_vars import *
 import time, thread, sys
 
 try:
-    from AIOplayer import AIObot
+    from AIOplayer import AIOplayer, AIObot
 except ImportError: # pyinstaller goes apeshit
-    AIObot = sys.modules["AIOplayer"].AIObot # a little hack, it works
+    # a little hack, it works
+    AIObot = sys.modules["AIOplayer"].AIObot
+    AIOplayer = sys.modules["AIOplayer"].AIOplayer
 
 def ooc_cmd_login(server, client, consoleUser, args):
     """
@@ -372,6 +374,7 @@ Usage: /status"""
 
     message = ""
     for client2 in server.clients.keys():
+        if server.clients[client2].isBot(): continue
         message += "\n[%d][%s][%s][%s] version=%s zone=%d authed=%r" % (client2, server.clients[client2].ip, server.getCharName(server.clients[client2].CharID), server.clients[client2].OOCname, server.clients[client2].ClientVersion, server.clients[client2].zone, server.clients[client2].is_authed)
     return message
 
@@ -529,6 +532,39 @@ Usage: /bot <add/remove/type>"""
         server.clients[botid].type = bottype
         server.clients[botid].interact = server.clients[client]
         return "Bot type set to '%s'" % bottype
+
+def ooc_cmd_extras(server, client, consoleUser, args):
+    """
+Toggles some extra features.
+Usage: /extras <type>
+Types:
+    "unpredictedshadow": Displays a 'ghost' of your player. This 'ghost' is what other players see on their end."""
+
+    if consoleUser > 0: return "You can't use /extras from the console."
+    elif not args: return _help("extras")
+
+    inputtype = args.pop(0).lower()
+
+    if inputtype == "unpredictedshadow":
+        if server.clients[client].unpredicted_shadow < 0:
+            idattempt = server.maxplayers
+            while server.clients.has_key(idattempt):
+                idattempt += 1
+
+            server.clients[client].unpredicted_shadow = AIOplayer(None, "SHADOW", idattempt)
+            server.sendCreate(server.clients[client].unpredicted_shadow, client)
+            server.setPlayerZone(server.clients[client].unpredicted_shadow, server.clients[client].zone, client)
+            server.setPlayerChar(server.clients[client].unpredicted_shadow, server.clients[client].CharID, client)
+            server.setPlayerChar(server.clients[client].unpredicted_shadow, -1, client) # make the unpredicted shadow "transparent" on the client side
+
+        else:
+            server.sendDestroy(server.clients[client].unpredicted_shadow, client)
+            del server.clients[client].unpredicted_shadow
+            server.clients[client].unpredicted_shadow = None
+
+        return "Unpredicted shadow: %r" % (server.clients[client].unpredicted_shadow != -1)
+
+    return _help("extras")
 
 def ooc_cmd_plugins(server, client, consoleUser, args):
     """

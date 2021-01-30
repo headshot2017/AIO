@@ -151,7 +151,6 @@ class ClientThread(QtCore.QThread):
 		self.tcp = None
 		self.ip = "0"
 		self.port = 0
-		self.newPackets = ini.read_ini("aaio.ini", "Advanced", "0.5 packets", "0") == "1"
 		
 	def __del__(self):
 		self.disconnect()

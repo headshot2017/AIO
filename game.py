@@ -653,18 +653,45 @@ class AIOGraphicsView(QtGui.QGraphicsView):
     def setupUi(self, ao_app):
         self.ao_app = ao_app
 
+    def playerLookDirection(self, pos):
+        x2, y2 = pos.x(), pos.y()
+        player = self.parent.characters[self.ao_app.player_id]
+        x1 = player.x()+(player.maxwidth/2)
+        y1 = player.y()+(player.maxheight/4)
+
+        old_dir_nr = player.dir_nr
+
+        if x2 > x1 and y2 > y1-64 and y2 < y1+64:
+            player.dir_nr = AIOprotocol.EAST
+        elif x2 > x1+64 and y2 > y1+64:
+            player.dir_nr = AIOprotocol.SOUTHEAST
+        elif x2 > x1+64 and y2 < y1-64:
+            player.dir_nr = AIOprotocol.NORTHEAST
+        elif x2 < x1 and y2 > y1-64 and y2 < y1+64:
+            player.dir_nr = AIOprotocol.WEST
+        elif x2 < x1-64 and y2 > y1+64:
+            player.dir_nr = AIOprotocol.SOUTHWEST
+        elif x2 < x1-64 and y2 < y1-64:
+            player.dir_nr = AIOprotocol.NORTHWEST
+        elif y2 > y1 and x2 > x1-64 and x2 < x1+64:
+            player.dir_nr = AIOprotocol.SOUTH
+        elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
+            player.dir_nr = AIOprotocol.NORTH
+        player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
+
     def mouseMoveEvent(self, event):
-        if self.dyncam and self.parent.characters[self.ao_app.player_id].charid != -1:
+        player = self.parent.characters[self.ao_app.player_id]
+        if self.dyncam and player.charid != -1:
             clickpoint = event.pos()
             x2, y2 = clickpoint.x(), clickpoint.y()
 
             mouse = vmath.vec2(x2 - (self.parent.size().width()/2), y2 - (self.parent.size().height()/2))
             
             length = vmath.length(mouse)
-            CameraMaxDistance = 300.
-            DeadZone = 100.
-            FollowFactor = 100. / 100.
-            MaxDistance = 300.
+            CameraMaxDistance = 200.
+            DeadZone = 50.
+            FollowFactor = 200. / 100.
+            MaxDistance = 200.
             MouseMax = min(CameraMaxDistance/FollowFactor + DeadZone, MaxDistance);
 
             if length > MouseMax:
@@ -672,10 +699,10 @@ class AIOGraphicsView(QtGui.QGraphicsView):
                 length = MouseMax
 
             OffsetAmount = max(length-DeadZone, 0.0) * FollowFactor
-            CameraOffset = vmath.normalize(mouse) * OffsetAmount
-            
-            self.dynOffset.x = CameraOffset.x
-            self.dynOffset.y = CameraOffset.y
+            self.dynOffset = vmath.normalize(mouse) * OffsetAmount
+
+            if player.hspeed == 0 and player.vspeed == 0: # standing still
+                self.playerLookDirection(clickpoint)
 
     def mouseDoubleClickEvent(self, event):
         self.dyncam = True
@@ -684,31 +711,11 @@ class AIOGraphicsView(QtGui.QGraphicsView):
         if event.button() == QtCore.Qt.LeftButton and self.parent.characters.has_key(self.ao_app.player_id): # click to look at that direction
             if self.parent.characters[self.ao_app.player_id].charid != -1:
                 clickpoint = event.pos()
-                x2, y2 = clickpoint.x(), clickpoint.y()
-                #x1, y1 = 256, 192
-                player = self.parent.characters[self.ao_app.player_id]
-                x1 = player.x()+(player.maxwidth/2)
-                y1 = player.y()+(player.maxheight/4)
+                self.playerLookDirection(clickpoint)
 
-                old_dir_nr = player.dir_nr
-
-                if x2 > x1 and y2 > y1-64 and y2 < y1+64:
-                    player.dir_nr = AIOprotocol.EAST
-                elif x2 > x1+64 and y2 > y1+64:
-                    player.dir_nr = AIOprotocol.SOUTHEAST
-                elif x2 > x1+64 and y2 < y1-64:
-                    player.dir_nr = AIOprotocol.NORTHEAST
-                elif x2 < x1 and y2 > y1-64 and y2 < y1+64:
-                    player.dir_nr = AIOprotocol.WEST
-                elif x2 < x1-64 and y2 > y1+64:
-                    player.dir_nr = AIOprotocol.SOUTHWEST
-                elif x2 < x1-64 and y2 < y1-64:
-                    player.dir_nr = AIOprotocol.NORTHWEST
-                elif y2 > y1 and x2 > x1-64 and x2 < x1+64:
-                    player.dir_nr = AIOprotocol.SOUTH
-                elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
-                    player.dir_nr = AIOprotocol.NORTH
-                player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
+            if self.parent.parent.examining: # omfg this is ugly
+                a = QtCore.QPointF(self.parent.parent.examiner.pos() - self.parent.zonebackground.pos()) # UGLY
+                self.parent.parent.examineSpot(a) # UGLY
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and self.dyncam:
@@ -736,9 +743,6 @@ class GamePort(QtGui.QWidget):
 		self.ao_app = ao_app
 		self.gameview.setupUi(ao_app)
 		ao_app.installEventFilter(self)
-
-	def mousePressEvent(self, event):
-		super(GamePort, self).mousePressEvent(event)
 	
 	def eventFilter(self, source, event):
 		if self.characters.has_key(self.ao_app.player_id):
@@ -1774,16 +1778,15 @@ class GameWidget(QtGui.QWidget):
 				self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
 			if self.ticks % (60*3) == 0: # ping
 				self.ao_app.tcpthread.sendPing()
-	
+
+	def examineSpot(self, pos):
+		self.ao_app.tcpthread.sendExamine(pos.x(), pos.y(), str(self.showname_input.text().toUtf8()))
+		self.onExamineButton(True)
+
 	def mousePressEvent(self, event):
 		focused_widget = self.ao_app.focusWidget()
 		if isinstance(focused_widget, QtGui.QLineEdit):
 			focused_widget.clearFocus()
-		elif isinstance(focused_widget, QtGui.QGraphicsView):
-			if self.examining:
-				a = QtCore.QPointF(self.examiner.pos() - self.gameview.zonebackground.pos())
-				self.ao_app.tcpthread.sendExamine(a.x(), a.y(), str(self.showname_input.text().toUtf8()))
-				self.onExamineButton(True)
 	
 	def updateGame(self):
 		if self.ic_delay > 0:

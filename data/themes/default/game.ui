@@ -25,7 +25,7 @@
      <height>384</height>
     </rect>
    </property>
-   <widget class="ChatboxWidget" name="chatboxwidget" native="true">
+   <widget class="QWidget" name="chatboxwidget" native="true">
     <property name="geometry">
      <rect>
       <x>128</x>
@@ -840,12 +840,6 @@ color: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,
    <class>CharSelect</class>
    <extends>QWidget</extends>
    <header>charselect</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ChatboxWidget</class>
-   <extends>QWidget</extends>
-   <header>game</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

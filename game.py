@@ -1,10 +1,10 @@
-import random, os, math, time
+import random, os, math
 from functools import partial
 
 from PyQt4 import QtCore, QtGui, QtOpenGL, uic
 from pybass import *
 
-import AIOprotocol, buttons, charselect, ini, vmath
+import AIOprotocol, buttons, charselect, ini
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1
@@ -633,87 +633,7 @@ class Character(BaseCharacter):
 			if self.smoothmoves >= 3:
 				self.hspeed = self.vspeed = 0
 				self.smoothmoves = 0
-
-class ChatboxWidget(QtGui.QWidget):
-    def __init__(self, parent):
-        super(ChatboxWidget, self).__init__(parent)
-        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents) # capture mouseMoveEvents on AIOGraphicsView below
-
-class AIOGraphicsView(QtGui.QGraphicsView):
-    def __init__(self, scene, parent):
-        super(AIOGraphicsView, self).__init__(scene, parent)
-        self.parent = parent
-        self.setMouseTracking(True)
-        if ini.read_ini_int("aaio.ini", "Advanced", "opengl", 0): # render with OpenGL (experimental)
-            self.gameview.setViewport(QtOpenGL.QGLWidget())
-
-        self.dyncam = False
-        self.dynOffset = vmath.vec2()
-
-    def setupUi(self, ao_app):
-        self.ao_app = ao_app
-
-    def mouseMoveEvent(self, event):
-        if self.dyncam and self.parent.characters[self.ao_app.player_id].charid != -1:
-            clickpoint = event.pos()
-            x2, y2 = clickpoint.x(), clickpoint.y()
-
-            mouse = vmath.vec2(x2 - (self.parent.size().width()/2), y2 - (self.parent.size().height()/2))
-            
-            length = vmath.length(mouse)
-            CameraMaxDistance = 300.
-            DeadZone = 100.
-            FollowFactor = 100. / 100.
-            MaxDistance = 300.
-            MouseMax = min(CameraMaxDistance/FollowFactor + DeadZone, MaxDistance);
-
-            if length > MouseMax:
-                mouse = vmath.normalize(mouse) * MouseMax
-                length = MouseMax
-
-            OffsetAmount = max(length-DeadZone, 0.0) * FollowFactor
-            CameraOffset = vmath.normalize(mouse) * OffsetAmount
-            
-            self.dynOffset.x = CameraOffset.x
-            self.dynOffset.y = CameraOffset.y
-
-    def mouseDoubleClickEvent(self, event):
-        self.dyncam = True
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton and self.parent.characters.has_key(self.ao_app.player_id): # click to look at that direction
-            if self.parent.characters[self.ao_app.player_id].charid != -1:
-                clickpoint = event.pos()
-                x2, y2 = clickpoint.x(), clickpoint.y()
-                #x1, y1 = 256, 192
-                player = self.parent.characters[self.ao_app.player_id]
-                x1 = player.x()+(player.maxwidth/2)
-                y1 = player.y()+(player.maxheight/4)
-
-                old_dir_nr = player.dir_nr
-
-                if x2 > x1 and y2 > y1-64 and y2 < y1+64:
-                    player.dir_nr = AIOprotocol.EAST
-                elif x2 > x1+64 and y2 > y1+64:
-                    player.dir_nr = AIOprotocol.SOUTHEAST
-                elif x2 > x1+64 and y2 < y1-64:
-                    player.dir_nr = AIOprotocol.NORTHEAST
-                elif x2 < x1 and y2 > y1-64 and y2 < y1+64:
-                    player.dir_nr = AIOprotocol.WEST
-                elif x2 < x1-64 and y2 > y1+64:
-                    player.dir_nr = AIOprotocol.SOUTHWEST
-                elif x2 < x1-64 and y2 < y1-64:
-                    player.dir_nr = AIOprotocol.NORTHWEST
-                elif y2 > y1 and x2 > x1-64 and x2 < x1+64:
-                    player.dir_nr = AIOprotocol.SOUTH
-                elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
-                    player.dir_nr = AIOprotocol.NORTH
-                player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton and self.dyncam:
-            self.dyncam = False
-
+		
 class GamePort(QtGui.QWidget):
 	def __init__(self, parent, ao_app=None):
 		super(GamePort, self).__init__(parent)
@@ -721,7 +641,9 @@ class GamePort(QtGui.QWidget):
 		self.ao_app = ao_app
 		self.resize(512, 384)
 		self.gamescene = QtGui.QGraphicsScene(0, 0, 512, 384, self)
-		self.gameview = AIOGraphicsView(self.gamescene, self)
+		self.gameview = QtGui.QGraphicsView(self.gamescene, self)
+		if ini.read_ini_int("aaio.ini", "Advanced", "opengl", 0): # render with OpenGL (experimental)
+			self.gameview.setViewport(QtOpenGL.QGLWidget())
 		self.gameview.show()
 		
 		self.zonebackground = QtGui.QGraphicsPixmapItem(scene=self.gamescene)
@@ -734,10 +656,39 @@ class GamePort(QtGui.QWidget):
 
 	def setupUi(self, ao_app):
 		self.ao_app = ao_app
-		self.gameview.setupUi(ao_app)
 		ao_app.installEventFilter(self)
 
 	def mousePressEvent(self, event):
+		self.clearFocus()
+		if event.buttons() == QtCore.Qt.LeftButton and self.characters.has_key(self.ao_app.player_id): # click to look at that direction
+			if self.characters[self.ao_app.player_id].charid != -1:
+				clickpoint = event.pos()
+				x2, y2 = clickpoint.x(), clickpoint.y()
+				#x1, y1 = 256, 192
+				player = self.characters[self.ao_app.player_id]
+				x1 = player.x()+(player.maxwidth/2)
+				y1 = player.y()+(player.maxheight/4)
+
+				old_dir_nr = player.dir_nr
+
+				if x2 > x1 and y2 > y1-64 and y2 < y1+64:
+					player.dir_nr = AIOprotocol.EAST
+				elif x2 > x1+64 and y2 > y1+64:
+					player.dir_nr = AIOprotocol.SOUTHEAST
+				elif x2 > x1+64 and y2 < y1-64:
+					player.dir_nr = AIOprotocol.NORTHEAST
+				elif x2 < x1 and y2 > y1-64 and y2 < y1+64:
+					player.dir_nr = AIOprotocol.WEST
+				elif x2 < x1-64 and y2 > y1+64:
+					player.dir_nr = AIOprotocol.SOUTHWEST
+				elif x2 < x1-64 and y2 < y1-64:
+					player.dir_nr = AIOprotocol.NORTHWEST
+				elif y2 > y1 and x2 > x1-64 and x2 < x1+64:
+					player.dir_nr = AIOprotocol.SOUTH
+				elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
+					player.dir_nr = AIOprotocol.NORTH
+				player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
+
 		super(GamePort, self).mousePressEvent(event)
 	
 	def eventFilter(self, source, event):
@@ -753,7 +704,6 @@ class GamePort(QtGui.QWidget):
 						self.characters[self.ao_app.player_id].keyReleaseEvent(event)
 					except:
 						pass
-
 		return super(GamePort, self).eventFilter(source, event)
 	
 	def initCharacter(self, ind):
@@ -778,11 +728,7 @@ class GamePort(QtGui.QWidget):
 		else:
 			viewX = self.characters[player_id].xx - 256
 			viewY = self.characters[player_id].yy-(384/1.25)
-
-		if self.gameview.dyncam:
-			viewX += self.gameview.dynOffset.x
-			viewY += self.gameview.dynOffset.y
-
+		
 		if not outOfBounds:
 			if viewX > width-512:
 				viewX = width-512

@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>lobbywidget</class>
+ <widget class="QWidget" name="lobbywidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>960</width>
+    <height>480</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QLabel" name="versiontext">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>8</y>
+     <width>241</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>DejaVu Sans</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Attorney Investigations Online
+Version number</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lobbybg">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>960</width>
+     <height>480</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>lobbybg.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="QTreeWidget" name="serverlistwidget">
+   <property name="geometry">
+    <rect>
+     <x>32</x>
+     <y>64</y>
+     <width>672</width>
+     <height>240</height>
+    </rect>
+   </property>
+   <property name="autoScrollMargin">
+    <number>16</number>
+   </property>
+   <property name="selectionBehavior">
+    <enum>QAbstractItemView::SelectRows</enum>
+   </property>
+   <property name="indentation">
+    <number>0</number>
+   </property>
+   <property name="itemsExpandable">
+    <bool>true</bool>
+   </property>
+   <property name="sortingEnabled">
+    <bool>true</bool>
+   </property>
+   <property name="animated">
+    <bool>true</bool>
+   </property>
+   <property name="allColumnsShowFocus">
+    <bool>false</bool>
+   </property>
+   <property name="columnCount">
+    <number>4</number>
+   </property>
+   <column>
+    <property name="text">
+     <string notr="true">1</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string notr="true">2</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string notr="true">3</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string notr="true">4</string>
+    </property>
+   </column>
+  </widget>
+  <widget class="AIOButton" name="addtofav">
+   <property name="geometry">
+    <rect>
+     <x>784</x>
+     <y>372</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>add_to_favorites.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="connectbtn">
+   <property name="geometry">
+    <rect>
+     <x>784</x>
+     <y>420</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>connect_button.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="refreshbtn">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>320</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>refresh.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="allservers">
+   <property name="geometry">
+    <rect>
+     <x>184</x>
+     <y>384</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>all_servers.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="LANbtn">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>384</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>lan.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="favoritesbtn">
+   <property name="geometry">
+    <rect>
+     <x>456</x>
+     <y>384</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>favorites.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="newsbtn">
+   <property name="geometry">
+    <rect>
+     <x>252</x>
+     <y>416</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>news_button.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="joinipaddress">
+   <property name="geometry">
+    <rect>
+     <x>388</x>
+     <y>416</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>joinip_button.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="optionsbtn">
+   <property name="geometry">
+    <rect>
+     <x>8</x>
+     <y>440</y>
+     <width>32</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>options_button.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="aboutbtn">
+   <property name="geometry">
+    <rect>
+     <x>48</x>
+     <y>440</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>about_button.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="AIOButton" name="startserverbtn">
+   <property name="geometry">
+    <rect>
+     <x>588</x>
+     <y>440</y>
+     <width>128</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>start_server.png</pixmap>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+   </property>
+  </widget>
+  <widget class="QTextEdit" name="description">
+   <property name="geometry">
+    <rect>
+     <x>744</x>
+     <y>16</y>
+     <width>208</width>
+     <height>352</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgba(0, 0, 0,64);
+color: white</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
+   </property>
+   <property name="verticalScrollBarPolicy">
+    <enum>Qt::ScrollBarAlwaysOn</enum>
+   </property>
+   <property name="horizontalScrollBarPolicy">
+    <enum>Qt::ScrollBarAlwaysOff</enum>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QWidget" name="newswidget" native="true">
+   <property name="geometry">
+    <rect>
+     <x>32</x>
+     <y>32</y>
+     <width>672</width>
+     <height>272</height>
+    </rect>
+   </property>
+   <widget class="QTextEdit" name="newstext">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>32</y>
+      <width>672</width>
+      <height>240</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="newslabel">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>14</y>
+      <width>672</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>News</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+  </widget>
+  <zorder>lobbybg</zorder>
+  <zorder>versiontext</zorder>
+  <zorder>serverlistwidget</zorder>
+  <zorder>addtofav</zorder>
+  <zorder>connectbtn</zorder>
+  <zorder>refreshbtn</zorder>
+  <zorder>allservers</zorder>
+  <zorder>LANbtn</zorder>
+  <zorder>favoritesbtn</zorder>
+  <zorder>newsbtn</zorder>
+  <zorder>joinipaddress</zorder>
+  <zorder>optionsbtn</zorder>
+  <zorder>aboutbtn</zorder>
+  <zorder>startserverbtn</zorder>
+  <zorder>description</zorder>
+  <zorder>newswidget</zorder>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>AIOButton</class>
+   <extends>QLabel</extends>
+   <header>buttons</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

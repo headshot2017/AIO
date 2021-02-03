@@ -74,6 +74,7 @@ class Broadcast(QtGui.QGraphicsItem):
 	fadeType = 0
 	def __init__(self, scene):
 		super(Broadcast, self).__init__(scene=scene)
+		self.scene = scene
 		self.pixmap = QtGui.QGraphicsPixmapItem(self)
 		self.orig_pixmap = QtGui.QPixmap("data/misc/broadcast.png")
 		self.pixmap.setPixmap(self.orig_pixmap)
@@ -122,7 +123,7 @@ class Broadcast(QtGui.QGraphicsItem):
 		
 		self.pixmap.setPixmap(apixmap)
 		
-		self.pixmap.setPos(256 - (apixmap.size().width()/2), 0)
+		self.pixmap.setPos(self.scene.sceneRect().width()/2 - (apixmap.size().width()/2), 0)
 		self.text.setPos(self.pixmap.x() + ((self.pixmap.pixmap().size().width()/2) - (self.fontmetrics.boundingRect(text).width()/2)), 1)
 		self.text.setText(text)
 		self.fadeType = 0
@@ -730,7 +731,6 @@ class GamePort(QtGui.QWidget):
 		super(GamePort, self).__init__(parent)
 		self.parent = parent
 		self.ao_app = ao_app
-		self.resize(512, 384)
 		self.gamescene = QtGui.QGraphicsScene(0, 0, 512, 384, self)
 		self.gameview = AIOGraphicsView(self.gamescene, self)
 		self.gameview.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.black))
@@ -746,7 +746,10 @@ class GamePort(QtGui.QWidget):
 
 	def setupUi(self, ao_app):
 		self.ao_app = ao_app
+		self.gamescene.setSceneRect(0, 0, self.size().width(), self.size().height())
+		self.gameview.resize(self.size().width()+2, self.size().height()+2)
 		self.gameview.setupUi(ao_app)
+		self.parent.chatboxwidget.move(self.size().width()/2 - (self.parent.chatboxwidget.size().width()/2), self.size().height() - self.parent.chatboxwidget.size().height())
 		ao_app.installEventFilter(self)
 	
 	def eventFilter(self, source, event):
@@ -782,25 +785,31 @@ class GamePort(QtGui.QWidget):
 		height = self.img.height()*2
 		
 		if self.characters[player_id].charid != -1:
-			viewX = self.characters[player_id].xx-256
-			viewY = self.characters[player_id].yy-(384-32)
+			viewX = self.characters[player_id].xx - (self.size().width()/2)
+			viewY = self.characters[player_id].yy-(self.size().height()-48)
 		else:
-			viewX = self.characters[player_id].xx - 256
-			viewY = self.characters[player_id].yy-(384/1.25)
+			viewX = self.characters[player_id].xx - (self.size().width()/2)
+			viewY = self.characters[player_id].yy-(self.size().height()/1.25)
 
 		if self.gameview.dyncam:
 			viewX += self.gameview.dynOffset.x
 			viewY += self.gameview.dynOffset.y
 
 		if not outOfBounds:
-			if viewX > width-512:
-				viewX = width-512
+			if viewX > width-self.size().width():
+				viewX = width-self.size().width()
 			if viewX < 0:
 				viewX = 0
-			if viewY > height-384:
-				viewY = height-384
+			if viewY > height-self.size().height():
+				viewY = height-self.size().height()
 			if viewY < 0:
 				viewY = 0
+
+			# center the camera if the viewport is bigger than background
+			if self.size().width() > width:
+				viewX = -self.size().width()/2 + (width/2)
+			if self.size().height() > height:
+				viewY = -self.size().height()/2 + (height/2)
 		
 		return viewX, viewY
 	
@@ -910,9 +919,9 @@ class GameWidget(QtGui.QWidget):
 		for color in self.colors:
 			self.textcolormenu.addAction(color)
 
+		self.gameview.setupUi(_ao_app)
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
 		self.broadcastObj.setPos(0, 64)
-		self.gameview.setupUi(_ao_app)
 
 		self.wt_button.ind = 0
 		self.ce_button.ind = 1

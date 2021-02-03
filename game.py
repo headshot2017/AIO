@@ -733,6 +733,7 @@ class GamePort(QtGui.QWidget):
 		self.resize(512, 384)
 		self.gamescene = QtGui.QGraphicsScene(0, 0, 512, 384, self)
 		self.gameview = AIOGraphicsView(self.gamescene, self)
+		self.gameview.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.black))
 		self.gameview.show()
 		
 		self.zonebackground = QtGui.QGraphicsPixmapItem(scene=self.gamescene)

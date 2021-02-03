@@ -130,7 +130,7 @@ class lobby(QtGui.QWidget):
 		self.newswidget.hide()
 		
 		self.optionsgui = options.Options(_ao_app)
-		self.optionsgui.fileSaved.connect(self.onOptionsSave)
+		#self.optionsgui.fileSaved.connect(self.onOptionsSave)
 		
 		a = ini.read_ini("aaio.ini", "MasterServer", "IP", "aaio-ms.aceattorneyonline.com:27011").split(":")
 		ip = a[0]
@@ -177,9 +177,6 @@ class lobby(QtGui.QWidget):
 
 	def MSError(self, msg):
 		QtGui.QMessageBox.critical(None, "Error connecting to master", "Failed to connect to the master server.\nCheck your antivirus, internet connection or firewall?\n\nAdditional info:\n"+msg)
-
-	def onOptionsSave(self):
-		self.ao_app.mainwindow.gamewidget.chatbox.setPixmap(QtGui.QPixmap("data/misc/"+ini.read_ini("aaio.ini", "General", "Chatbox image")))
 
 	""" so long, brother
 	def paintEvent(self, event):

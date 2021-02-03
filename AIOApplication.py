@@ -22,6 +22,7 @@ class AIOApplication(QtGui.QApplication):
 	sndvol = 100
 	musicvol = 100
 	blipvol = 100
+	fps = 30
 	controls = {"up": [QtCore.Qt.Key_W, QtCore.Qt.Key_Up],
                 "down": [QtCore.Qt.Key_S, QtCore.Qt.Key_Down],
                 "left": [QtCore.Qt.Key_A, QtCore.Qt.Key_Left],
@@ -38,6 +39,7 @@ class AIOApplication(QtGui.QApplication):
 		self.musicvol = ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100)
 		self.sndvol = ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100)
 		self.blipvol = ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100)
+		self.fps = 60 if ini.read_ini_bool("aaio.ini", "General", "High FPS", True) else 30
 
 		self.mainwindow = AIOMainWindow(self)
 		self.mainwindow.show()

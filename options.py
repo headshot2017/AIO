@@ -210,7 +210,7 @@ class Options(QtGui.QWidget):
         audio_layout.setWidget(0, QtGui.QFormLayout.LabelRole, device_label)
         audio_layout.setWidget(0, QtGui.QFormLayout.FieldRole, self.device_list)
         
-        audio_layout.setWidget(1, QtGui.QFormLayout.FieldRole, separators[1])
+        audio_layout.setWidget(1, QtGui.QFormLayout.FieldRole, separators[0])
         
         volumelabel = QtGui.QLabel("Sound volume")
         musiclabel = QtGui.QLabel("Music")
@@ -243,7 +243,11 @@ class Options(QtGui.QWidget):
         ms_layout.addWidget(ms_label)
         ms_layout.addWidget(self.ms_lineedit)
 
+        self.fps_checkbox = QtGui.QCheckBox("60 FPS mode", self)
+
         advanced_layout.addLayout(ms_layout)
+        advanced_layout.addWidget(separators[1])
+        advanced_layout.addWidget(self.fps_checkbox)
 
 
         self.tabs.addTab(general_tab, "General")
@@ -299,6 +303,8 @@ class Options(QtGui.QWidget):
             self.right_buttons[1].setText(getControlName(ini.read_ini_int("aaio.ini", "Controls", "right2", QtCore.Qt.Key_Right)))
             self.run_button.setText(getControlName(ini.read_ini_int("aaio.ini", "Controls", "run", QtCore.Qt.Key_Shift)))
             
+            self.fps_checkbox.setChecked(ini.read_ini_bool("aaio.ini", "General", "High FPS", True))
+
         else:
             self.defaultoocname.setText("")
             self.defaultshowname.setText("")
@@ -325,6 +331,8 @@ class Options(QtGui.QWidget):
             self.right_buttons[0].setText("Key_D")
             self.right_buttons[1].setText("Key_Right")
             self.run_button.setText("Key_Shift")
+            
+            self.fps_checkbox.setChecked(True)
         
         self.tabs.setCurrentIndex(0)
         self.show()
@@ -337,6 +345,8 @@ class Options(QtGui.QWidget):
         self.inifile.set("General", "OOC name", self.defaultoocname.text().toUtf8())
         self.inifile.set("General", "Showname", self.defaultshowname.text().toUtf8())
         self.inifile.set("General", "Theme", self.themes[self.themeview.currentRow()][0])
+        self.inifile.set("General", "High FPS", str(self.fps_checkbox.isChecked()))
+        self.ao_app.fps = 60 if self.fps_checkbox.isChecked() else 30
         for i in range(len(self.up_buttons)): self.inifile.set("Controls", "up%d" % (i+1), self.ao_app.controls["up"][i])
         for i in range(len(self.down_buttons)): self.inifile.set("Controls", "down%d" % (i+1), self.ao_app.controls["down"][i])
         for i in range(len(self.left_buttons)): self.inifile.set("Controls", "left%d" % (i+1), self.ao_app.controls["left"][i])

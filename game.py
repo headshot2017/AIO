@@ -468,8 +468,8 @@ class Character(BaseCharacter):
 			right = self.ao_app.controls["right"]
 
 			if (up[0] in self.pressed_keys and right[0] in self.pressed_keys) or (up[1] in self.pressed_keys and right[1] in self.pressed_keys):
-				self.vspeed = -self.runspd if self.run else -self.walkspd
-				self.hspeed = self.runspd if self.run else self.walkspd
+				self.vspeed = -self.runspd if self.run else -self.walkspd / 2.
+				self.hspeed = self.runspd if self.run else self.walkspd / 2.
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -483,8 +483,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (up[0] in self.pressed_keys and left[0] in self.pressed_keys) or (up[1] in self.pressed_keys and left[1] in self.pressed_keys):
-				self.vspeed = -self.runspd if self.run else -self.walkspd
-				self.hspeed = -self.runspd if self.run else -self.walkspd
+				self.vspeed = -self.runspd if self.run else -self.walkspd / 2.
+				self.hspeed = -self.runspd if self.run else -self.walkspd / 2.
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -498,8 +498,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and right[0] in self.pressed_keys) or (down[1] in self.pressed_keys and right[1] in self.pressed_keys):
-				self.vspeed = self.runspd if self.run else self.walkspd
-				self.hspeed = self.runspd if self.run else self.walkspd
+				self.vspeed = self.runspd if self.run else self.walkspd / 2.
+				self.hspeed = self.runspd if self.run else self.walkspd / 2.
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -513,8 +513,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and left[0] in self.pressed_keys) or (down[1] in self.pressed_keys and left[1] in self.pressed_keys):
-				self.vspeed = self.runspd if self.run else self.walkspd
-				self.hspeed = -self.runspd if self.run else -self.walkspd
+				self.vspeed = self.runspd if self.run else self.walkspd / 2.
+				self.hspeed = -self.runspd if self.run else -self.walkspd / 2.
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -593,7 +593,11 @@ class Character(BaseCharacter):
 				newsprite = self.charprefix+"spin.gif"
 				if self.emoting == 0 and self.currentemote == -1:
 					self.sprite = self.ao_app.charlist[self.charid]+"/spin.gif"
-			
+
+			is30 = (self.ao_app.fps == 30)
+			self.hspeed /= self.ao_app.fps / 30. * (1 if is30 else 1.4)
+			self.vspeed /= self.ao_app.fps / 30. * (1 if is30 else 1.4)
+
 			if currsprite != newsprite and self.emoting == 0 and self.currentemote == -1:
 				if self.hspeed == 0 and self.vspeed == 0:
 					self.playSpin("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, self.dir_nr)
@@ -630,7 +634,7 @@ class Character(BaseCharacter):
 		
 		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
-			if self.smoothmoves >= 3:
+			if self.smoothmoves >= 3 / (self.ao_app.fps / 30.):
 				self.hspeed = self.vspeed = 0
 				self.smoothmoves = 0
 
@@ -1872,7 +1876,7 @@ class GameWidget(QtGui.QWidget):
 		self.player = self.gameview.characters[self.ao_app.player_id]
 		self.setZone(self.ao_app.defaultzoneid)
 		self.player.setPlayer(True)
-		self.testtimer.start(1000./30, self)
+		self.testtimer.start(1000./self.ao_app.fps, self)
 		self.tcptimer.start(1./60 * 1000, self) # ticks 1/60 per sec
 		self.ticks = 0
 		self.playing = True

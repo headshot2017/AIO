@@ -469,8 +469,8 @@ class Character(BaseCharacter):
 			right = self.ao_app.controls["right"]
 
 			if (up[0] in self.pressed_keys and right[0] in self.pressed_keys) or (up[1] in self.pressed_keys and right[1] in self.pressed_keys):
-				self.vspeed = -self.runspd if self.run else -self.walkspd / 2.
-				self.hspeed = self.runspd if self.run else self.walkspd / 2.
+				self.vspeed = -self.runspd if self.run else -self.walkspd
+				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -484,8 +484,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (up[0] in self.pressed_keys and left[0] in self.pressed_keys) or (up[1] in self.pressed_keys and left[1] in self.pressed_keys):
-				self.vspeed = -self.runspd if self.run else -self.walkspd / 2.
-				self.hspeed = -self.runspd if self.run else -self.walkspd / 2.
+				self.vspeed = -self.runspd if self.run else -self.walkspd
+				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -499,8 +499,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and right[0] in self.pressed_keys) or (down[1] in self.pressed_keys and right[1] in self.pressed_keys):
-				self.vspeed = self.runspd if self.run else self.walkspd / 2.
-				self.hspeed = self.runspd if self.run else self.walkspd / 2.
+				self.vspeed = self.runspd if self.run else self.walkspd
+				self.hspeed = self.runspd if self.run else self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -514,8 +514,8 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			elif (down[0] in self.pressed_keys and left[0] in self.pressed_keys) or (down[1] in self.pressed_keys and left[1] in self.pressed_keys):
-				self.vspeed = self.runspd if self.run else self.walkspd / 2.
-				self.hspeed = -self.runspd if self.run else -self.walkspd / 2.
+				self.vspeed = self.runspd if self.run else self.walkspd
+				self.hspeed = -self.runspd if self.run else -self.walkspd
 				self.emoting = 0
 				self.currentemote = -1
 				if self.moonwalk:
@@ -744,12 +744,16 @@ class GamePort(QtGui.QWidget):
 		self.zonebackground.setZValue(-10000)
 		self.characters = {}
 
+	def resize(self, width, height):
+		super(GamePort, self).resize(width, height)
+		self.gamescene.setSceneRect(0, 0, width, height)
+		self.gameview.resize(width+2, height+2)
+		self.parent.chatboxwidget.move(width/2 - (self.parent.chatboxwidget.size().width()/2), height - self.parent.chatboxwidget.size().height())
+
 	def setupUi(self, ao_app):
 		self.ao_app = ao_app
-		self.gamescene.setSceneRect(0, 0, self.size().width(), self.size().height())
-		self.gameview.resize(self.size().width()+2, self.size().height()+2)
 		self.gameview.setupUi(ao_app)
-		self.parent.chatboxwidget.move(self.size().width()/2 - (self.parent.chatboxwidget.size().width()/2), self.size().height() - self.parent.chatboxwidget.size().height())
+		self.resize(self.size().width(), self.size().height())
 		ao_app.installEventFilter(self)
 	
 	def eventFilter(self, source, event):
@@ -786,7 +790,7 @@ class GamePort(QtGui.QWidget):
 		
 		if self.characters[player_id].charid != -1:
 			viewX = self.characters[player_id].xx - (self.size().width()/2)
-			viewY = self.characters[player_id].yy-(self.size().height()-48)
+			viewY = self.characters[player_id].yy-(self.size().height()-(self.characters[player_id].maxheight/3))
 		else:
 			viewX = self.characters[player_id].xx - (self.size().width()/2)
 			viewY = self.characters[player_id].yy-(self.size().height()/1.25)

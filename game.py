@@ -339,8 +339,9 @@ class Character(BaseCharacter):
 	chatbubble = 0
 	playFile = ["", 0]
 	moonwalk = False #are you ok Annie
-	def __init__(self, scene, ao_app):
+	def __init__(self, scene, gameport, ao_app):
 		super(Character, self).__init__(scene=scene)
+		self.gameport = gameport
 		self.ao_app = ao_app
 		self.setPos(0, 0)
 		self.pressed_keys = set()
@@ -354,7 +355,7 @@ class Character(BaseCharacter):
 			chatbubbl = QtGui.QImage("data/misc/chatbubble_green.png")
 		else:
 			chatbubbl = QtGui.QImage("data/misc/chatbubble.png")
-		self.chatbubblepix.setPixmap(QtGui.QPixmap.fromImage(chatbubbl.scaled(chatbubbl.width()*2, chatbubbl.height()*2)))
+		self.chatbubblepix.setPixmap(QtGui.QPixmap.fromImage(chatbubbl.scaled(chatbubbl.width() * self.gameport.gameScale, chatbubbl.height() * self.gameport.gameScale)))
 	
 	def afterStop(self):
 		self.emoting = 2
@@ -381,14 +382,14 @@ class Character(BaseCharacter):
 		
 		imgsize = QtGui.QPixmap("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif").size()
 		self.scale = ini.read_ini_float(inipath, "Options", "scale", 1.0)
-		self.setScale(self.scale*2)
+		self.setScale(self.scale * self.gameport.gameScale)
 		
 		if self.translated:
-			self.translate(0, self.maxheight/4)
+			self.translate(0, self.maxheight / (self.gameport.gameScale * 2))
 		
-		self.maxwidth = imgsize.width()*(self.scale*2)
-		self.maxheight = imgsize.height()*(self.scale*2)
-		self.translate(0, -self.maxheight/4)
+		self.maxwidth = imgsize.width()*(self.scale * self.gameport.gameScale)
+		self.maxheight = imgsize.height()*(self.scale * self.gameport.gameScale)
+		self.translate(0, -self.maxheight / (self.gameport.gameScale * 2))
 		self.translated = True
 		self.setSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif")
 		
@@ -399,8 +400,8 @@ class Character(BaseCharacter):
 		self.currentemote = -1
 		self.blip = ini.read_ini(inipath, "Options", "blip", "male")
 		
-		self.walkspd = ini.read_ini_int(inipath, "Options", "walkspeed", 6)
-		self.runspd = ini.read_ini_int(inipath, "Options", "runspeed", 12)
+		self.walkspd = ini.read_ini_int(inipath, "Options", "walkspeed", 6) * (self.gameport.gameScale / 2.)
+		self.runspd = ini.read_ini_int(inipath, "Options", "runspeed", 12) * (self.gameport.gameScale / 2.)
 		
 		self.walkanims[0] = []
 		for i in range(ini.read_ini_int(inipath, "WalkAnims", "total", 1)):
@@ -611,9 +612,9 @@ class Character(BaseCharacter):
 			
 		if self.playFile[0]:
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
-			aWidth = aSize.width()*self.scale
-			aHeight = aSize.height()*self.scale
-			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
+			aWidth = aSize.width() * self.scale
+			aHeight = aSize.height() * self.scale
+			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight * self.gameport.gameScale))
 
 			if not self.playFile[2]:
 				super(Character, self).play(self.playFile[0], self.playFile[1])
@@ -622,9 +623,9 @@ class Character(BaseCharacter):
 			self.playFile[0] = ""
 		else:
 			aSize = self.pixmap().size()
-			aWidth = aSize.width()*self.scale
-			aHeight = aSize.height()*self.scale
-			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
+			aWidth = aSize.width() * self.scale
+			aHeight = aSize.height() * self.scale
+			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight * self.gameport.gameScale))
 		
 		self.xprevious2 = self.xprevious
 		self.yprevious2 = self.yprevious
@@ -661,8 +662,8 @@ class AIOGraphicsView(QtGui.QGraphicsView):
     def playerLookDirection(self, pos):
         x2, y2 = pos.x(), pos.y()
         player = self.parent.characters[self.ao_app.player_id]
-        x1 = player.x()+(player.maxwidth/2)
-        y1 = player.y()+(player.maxheight/4)
+        x1 = player.x()+(player.maxwidth / self.parent.gameScale)
+        y1 = player.y()+(player.maxheight / (self.parent.gameScale * 2))
 
         old_dir_nr = player.dir_nr
 
@@ -735,14 +736,16 @@ class GamePort(QtGui.QWidget):
 		self.gameview = AIOGraphicsView(self.gamescene, self)
 		self.gameview.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.black))
 		self.gameview.show()
-		
+
 		self.zonebackground = QtGui.QGraphicsPixmapItem(scene=self.gamescene)
 		self.zonewalls = QtGui.QGraphicsPixmapItem(scene=self.gamescene)
 		self.zonewalls.hide()
 		self.zoneforegrounds = []
-		
+
 		self.zonebackground.setZValue(-10000)
 		self.characters = {}
+
+		self.gameScale = 2
 
 	def resize(self, width, height):
 		super(GamePort, self).resize(width, height)
@@ -773,7 +776,7 @@ class GamePort(QtGui.QWidget):
 		return super(GamePort, self).eventFilter(source, event)
 	
 	def initCharacter(self, ind):
-		self.characters[ind] = Character(ao_app=self.ao_app, scene=self.gamescene)
+		self.characters[ind] = Character(self.gamescene, self, self.ao_app)
 		self.characters[ind].show()
 		return self.characters[ind]
 	
@@ -785,15 +788,15 @@ class GamePort(QtGui.QWidget):
 	
 	def getViewCoords(self, outOfBounds=False):
 		player_id = self.ao_app.player_id
-		width = self.img.width()*2
-		height = self.img.height()*2
+		width = self.img.width() * self.gameScale
+		height = self.img.height() * self.gameScale
 		
 		if self.characters[player_id].charid != -1:
-			viewX = self.characters[player_id].xx - (self.size().width()/2)
-			viewY = self.characters[player_id].yy-(self.size().height()-(self.characters[player_id].maxheight/3))
+			viewX = self.characters[player_id].xx - (self.size().width() / 2)
+			viewY = self.characters[player_id].yy-(self.size().height()-(self.characters[player_id].maxheight / (self.gameScale * 2)))
 		else:
-			viewX = self.characters[player_id].xx - (self.size().width()/2)
-			viewY = self.characters[player_id].yy-(self.size().height()/1.25)
+			viewX = self.characters[player_id].xx - (self.size().width() / 2)
+			viewY = self.characters[player_id].yy-(self.size().height() / 1.25)
 
 		if self.gameview.dyncam:
 			viewX += self.gameview.dynOffset.x
@@ -811,9 +814,9 @@ class GamePort(QtGui.QWidget):
 
 			# center the camera if the viewport is bigger than background
 			if self.size().width() > width:
-				viewX = -self.size().width()/2 + (width/2)
+				viewX = -self.size().width()/2 + (width / self.gameScale)
 			if self.size().height() > height:
-				viewY = -self.size().height()/2 + (height/2)
+				viewY = -self.size().height()/2 + (height / self.gameScale)
 		
 		return viewX, viewY
 	
@@ -825,14 +828,14 @@ class GamePort(QtGui.QWidget):
 		
 		player_id = self.ao_app.player_id
 		mychar = self.characters[player_id]
-		if mychar.collidesWithItem(self.zonewalls) and mychar.isPlayer: # good lord why
+		if mychar.isPlayer and mychar.collidesWithItem(self.zonewalls): # good lord why
 			mychar.xx = mychar.xprevious
 			mychar.yy = mychar.yprevious
 		
 		for char in self.characters.values():
-			char.setZValue(char.yy  - (char.pixmap().size().height()*2) + (char.maxheight*0.75))
+			char.setZValue(char.yy  - (char.pixmap().size().height()*self.gameScale) + (char.maxheight*0.75))
 			char.chatbubblepix.setZValue(char.zValue())
-			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
+			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/self.gameScale), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
 			if char.chatbubble:
 				char.chatbubblepix.show()
 			else:
@@ -847,7 +850,7 @@ class GamePort(QtGui.QWidget):
 			print "[client]", "load gif background \"%s\", exists: %s" % (bg+".gif", os.path.exists(bg+".gif"))
 
 		print "[client]", "background QImage is null: %s" % self.img.isNull()
-		self.zonebackground.setPixmap(QtGui.QPixmap.fromImage(self.img.scaled(self.img.width()*2, self.img.height()*2)))
+		self.zonebackground.setPixmap(QtGui.QPixmap.fromImage(self.img.scaled(self.img.width() * self.gameScale, self.img.height() * self.gameScale)))
 
 class GameWidget(QtGui.QWidget):
 	ao_app = None
@@ -1670,7 +1673,7 @@ class GameWidget(QtGui.QWidget):
 				if not self.spawned_once:
 					inipath = "data/zones/"+self.ao_app.zonelist[self.player.zone][0]+".ini"
 					x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
-					self.player.moveReal(float(x), float(y))
+					self.player.moveReal(float(x)/2*self.gameview.gameScale, float(y)/2*self.gameview.gameScale)
 					self.spawned_once = True
 
 				self.showname_input.setPlaceholderText(self.ao_app.charlist[char])
@@ -1734,10 +1737,10 @@ class GameWidget(QtGui.QWidget):
 		inipath = zone+".ini"
 		x, y = ini.read_ini(inipath, "Game", "spawn", "0,0").split(",")
 		if self.spawned_once:
-			self.player.moveReal(float(x), float(y))
+			self.player.moveReal(float(x)/2*self.gameview.gameScale, float(y)/2*self.gameview.gameScale)
 		
 		walls = QtGui.QImage(zone+"_solids.png")
-		self.gameview.zonewalls.setPixmap(QtGui.QPixmap.fromImage(walls.scaled(walls.width()*2, walls.height()*2)))
+		self.gameview.zonewalls.setPixmap(QtGui.QPixmap.fromImage(walls.scaled(walls.width() * self.gameview.gameScale, walls.height() * self.gameview.gameScale)))
 		
 		for fg in self.gameview.zoneforegrounds:
 			self.gameview.gamescene.removeItem(fg[0])
@@ -1745,13 +1748,13 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.zoneforegrounds = []
 		for i in range(ini.read_ini_int(inipath, "Background", "foregrounds")):
 			file = ini.read_ini(inipath, "Background", str(i+1))
-			fg_x = ini.read_ini_float(inipath, "Background", str(i+1)+"_x")
-			fg_y = ini.read_ini_float(inipath, "Background", str(i+1)+"_y")
+			fg_x = ini.read_ini_float(inipath, "Background", str(i+1)+"_x") / 2 * self.gameview.gameScale
+			fg_y = ini.read_ini_float(inipath, "Background", str(i+1)+"_y") / 2 * self.gameview.gameScale
 			fg_image = QtGui.QImage(zone+"_"+file+".png")
 			
 			self.gameview.zoneforegrounds.append([QtGui.QGraphicsPixmapItem(scene=self.gameview.gamescene), fg_x, fg_y])
-			self.gameview.zoneforegrounds[i][0].setPixmap(QtGui.QPixmap.fromImage(fg_image.scaled(fg_image.width()*2, fg_image.height()*2)))
-			self.gameview.zoneforegrounds[i][0].setOffset(0, -fg_image.height()*2)
+			self.gameview.zoneforegrounds[i][0].setPixmap(QtGui.QPixmap.fromImage(fg_image.scaled(fg_image.width() * self.gameview.gameScale, fg_image.height() * self.gameview.gameScale)))
+			self.gameview.zoneforegrounds[i][0].setOffset(0, -fg_image.height() * self.gameview.gameScale)
 			self.gameview.zoneforegrounds[i][0].setZValue(fg_y)
 	
 	def confirmChar_clicked(self, selection):

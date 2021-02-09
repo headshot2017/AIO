@@ -342,8 +342,8 @@ class ClientThread(QtCore.QThread):
 
 			try:
 				data, bufflength = buffer_read("I", data)
-				data = self.tcp.recv(bufflength+1)
-			except socket.error as e:
+				data += self.tcp.recv(bufflength+1)
+			except socket.error as err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
 				else:
@@ -353,7 +353,7 @@ class ClientThread(QtCore.QThread):
 						break
 			except (MemoryError, OverflowError, struct.error):
 				continue
-			
+
 			while data:
 				data, header = buffer_read("B", data)
 

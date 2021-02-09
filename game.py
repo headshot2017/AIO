@@ -648,15 +648,25 @@ class AIOGraphicsView(QtGui.QGraphicsView):
     def __init__(self, scene, parent):
         super(AIOGraphicsView, self).__init__(scene, parent)
         self.parent = parent
+        self.scene = scene
         self.setMouseTracking(True)
         if ini.read_ini_int("aaio.ini", "Advanced", "opengl", 0): # render with OpenGL (experimental)
             self.gameview.setViewport(QtOpenGL.QGLWidget())
+
+        theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+        self.gameScale = ini.read_ini_float("data/themes/"+theme+"/theme.ini", "Theme", "scale", 1.0)
+        self.scale(self.gameScale)
 
         self.dyncam = False
         self.dynOffset = vmath.vec2()
 
     def setupUi(self, ao_app):
         self.ao_app = ao_app
+
+    def scale(self, newScale):
+        self.resetMatrix()
+        super(AIOGraphicsView, self).scale(newScale, newScale)
+        self.gameScale = newScale
 
     def playerLookDirection(self, pos):
         x2, y2 = pos.x(), pos.y()
@@ -687,10 +697,12 @@ class AIOGraphicsView(QtGui.QGraphicsView):
     def mouseMoveEvent(self, event):
         player = self.parent.characters[self.ao_app.player_id]
         if self.dyncam and player.charid != -1:
-            clickpoint = event.pos()
+            remapped = self.mapFromParent(event.pos())
+            clickpoint = self.mapToScene(remapped)
+
             x2, y2 = clickpoint.x(), clickpoint.y()
 
-            mouse = vmath.vec2(x2 - (self.parent.size().width()/2), y2 - (self.parent.size().height()/2))
+            mouse = vmath.vec2(x2 - (self.scene.sceneRect().width()/2), y2 - (self.scene.sceneRect().height()/2))
             
             length = vmath.length(mouse)
             CameraMaxDistance = 200.
@@ -715,8 +727,8 @@ class AIOGraphicsView(QtGui.QGraphicsView):
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and self.parent.characters.has_key(self.ao_app.player_id): # click to look at that direction
             if self.parent.characters[self.ao_app.player_id].charid != -1:
-                clickpoint = event.pos()
-                self.playerLookDirection(clickpoint)
+                remapped = self.mapFromParent(event.pos())
+                self.playerLookDirection(self.mapToScene(remapped))
 
             if self.parent.parent.examining: # omfg this is ugly
                 a = QtCore.QPointF(self.parent.parent.examiner.pos() - self.parent.zonebackground.pos()) # UGLY
@@ -746,9 +758,13 @@ class GamePort(QtGui.QWidget):
 
 	def resize(self, width, height):
 		super(GamePort, self).resize(width, height)
-		self.gamescene.setSceneRect(0, 0, width, height)
+		self.gamescene.setSceneRect(0, 0, width / self.gameview.gameScale, height / self.gameview.gameScale)
 		self.gameview.resize(width+2, height+2)
 		self.parent.chatboxwidget.move(width/2 - (self.parent.chatboxwidget.size().width()/2), height - self.parent.chatboxwidget.size().height())
+
+	def scale(self, newScale):
+		self.gameview.scale(newScale)
+		self.resize(self.size().width(), self.size().height())
 
 	def setupUi(self, ao_app):
 		self.ao_app = ao_app
@@ -789,8 +805,8 @@ class GamePort(QtGui.QWidget):
 		height = self.img.height()*2
 		
 		if self.characters[player_id].charid != -1:
-			viewX = self.characters[player_id].xx - (self.size().width()/2)
-			viewY = self.characters[player_id].yy-(self.size().height()-(self.characters[player_id].maxheight/3))
+			viewX = self.characters[player_id].xx - (self.size().width()/(self.gameview.gameScale*2))
+			viewY = self.characters[player_id].yy-(self.size().height()/(self.gameview.gameScale*2))-(self.characters[player_id].maxheight)
 		else:
 			viewX = self.characters[player_id].xx - (self.size().width()/2)
 			viewY = self.characters[player_id].yy-(self.size().height()/1.25)
@@ -800,20 +816,20 @@ class GamePort(QtGui.QWidget):
 			viewY += self.gameview.dynOffset.y
 
 		if not outOfBounds:
-			if viewX > width-self.size().width():
-				viewX = width-self.size().width()
+			if viewX > width-(self.size().width() / self.gameview.gameScale):
+				viewX = width-(self.size().width() / self.gameview.gameScale)
 			if viewX < 0:
 				viewX = 0
-			if viewY > height-self.size().height():
-				viewY = height-self.size().height()
+			if viewY > height-(self.size().height() / self.gameview.gameScale):
+				viewY = height-(self.size().height() / self.gameview.gameScale)
 			if viewY < 0:
 				viewY = 0
 
 			# center the camera if the viewport is bigger than background
-			if self.size().width() > width:
-				viewX = -self.size().width()/2 + (width/2)
-			if self.size().height() > height:
-				viewY = -self.size().height()/2 + (height/2)
+			if (self.size().width() / self.gameview.gameScale) > width:
+				viewX = -(self.size().width() / self.gameview.gameScale)/2 + (width/2)
+			if (self.size().height() / self.gameview.gameScale) > height:
+				viewY = -(self.size().height() / self.gameview.gameScale)/2 + (height/2)
 		
 		return viewX, viewY
 	
@@ -947,6 +963,7 @@ class GameWidget(QtGui.QWidget):
 		self.musicslider.valueChanged.connect(self.changeMusicVolume)
 		self.soundslider.valueChanged.connect(self.changeSoundVolume)
 		self.blipslider.valueChanged.connect(self.changeBlipVolume)
+		self.scaleslider.valueChanged.connect(self.gameview.scale)
 		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
 		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
 		self.wt_button.clicked.connect(self.onWTCEButton)
@@ -1825,7 +1842,9 @@ class GameWidget(QtGui.QWidget):
 			self.movemenuActions[i].setText(str(i)+": "+self.ao_app.zonelist[i][1]+" ("+plural("%d player" % (zoneamount[i]), zoneamount[i])+")")
 		
 		if self.examining:
-			self.examiner.setPos(self.gameview.mapFromGlobal(QtGui.QCursor.pos()))
+			clickpoint = self.gameview.mapFromGlobal(QtGui.QCursor.pos())
+			remapped = self.gameview.gameview.mapFromParent(clickpoint)
+			self.examiner.setPos(self.gameview.gameview.mapToScene(remapped))
 			self.examiner.show()
 		
 		if self.aSound[1] > -1 and self.aSound[2] == self.player.zone: # "An SFX, that a player makes in any area, plays everywhere, in every other and its' own area." fixed

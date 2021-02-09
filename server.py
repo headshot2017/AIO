@@ -251,10 +251,12 @@ class AIOserver(object):
         self.kick(client, "Server is full.")
     
     def sendBuffer(self, clientID, buffer):
+        actualbuf = struct.pack("I", len(buffer))
+        actualbuf += buffer
         try:
             if isinstance(clientID, AIOplayer):
-                return clientID.sock.sendall(buffer+"\r")
-            return self.clients[clientID].sock.sendall(buffer+"\r")
+                return clientID.sock.sendall(actualbuf+"\r")
+            return self.clients[clientID].sock.sendall(actualbuf+"\r")
         except (socket.error, socket.timeout) as e:
             #print "socket error %d" % e.args[0]
             return 0
@@ -1133,14 +1135,6 @@ class AIOserver(object):
                     continue
                 
                 while self.readbuffer:
-                    if self.readbuffer.endswith("\r"):
-                        self.readbuffer = self.readbuffer.rstrip("\r")
-                    if self.readbuffer.startswith("\r"):
-                        temp = list(self.readbuffer)
-                        del temp[0]
-                        self.readbuffer = "".join(temp)
-                        del temp
-                    
                     try:
                         self.readbuffer, header = buffer_read("B", self.readbuffer)
                     except struct.error: # wtf?

@@ -327,7 +327,7 @@ class ClientThread(QtCore.QThread):
 				continue
 
 			try:
-				data = self.tcp.recv(4096*4)
+				data = self.tcp.recv(4)
 			except socket.error, err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
@@ -337,13 +337,22 @@ class ClientThread(QtCore.QThread):
 						self.disconnect()
 						break
 
-			if not data.endswith("\r"):
-				tempdata += data
+			if len(data) < 4: # we need these 4 bytes to read the packet length
 				continue
-			else:
-				if tempdata:
-					data = tempdata+data
-					tempdata = ""
+
+			try:
+				data, bufflength = buffer_read("I", data)
+				data = self.tcp.recv(bufflength+1)
+			except socket.error as e:
+				if err.errno in (10035, 11) or err.args[0] == "timed out":
+					continue
+				else:
+					if self.connected:
+						self.connectionError.emit("The connection to the server has been lost.\nAdditional information: %s" % err)
+						self.disconnect()
+						break
+			except (MemoryError, OverflowError, struct.error):
+				continue
 			
 			while data:
 				data, header = buffer_read("B", data)

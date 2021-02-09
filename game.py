@@ -635,7 +635,7 @@ class Character(BaseCharacter):
 		
 		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
-			if self.smoothmoves >= 3 / (self.ao_app.fps / 30.):
+			if self.smoothmoves >= 3 * (self.ao_app.fps / 30.):
 				self.hspeed = self.vspeed = 0
 				self.smoothmoves = 0
 
@@ -1702,8 +1702,8 @@ class GameWidget(QtGui.QWidget):
 
 			char = self.gameview.characters[client]
 			if not char.isPlayer and char.smoothmoves <= 0:
-				char.hspeed = (x - char.xx) / 3.0
-				char.vspeed = (y - char.yy) / 3.0
+				char.hspeed = (x - char.xx) / (3 * (self.ao_app.fps / 30.))
+				char.vspeed = (y - char.yy) / (3 * (self.ao_app.fps / 30.))
 			char.sprite = sprite
 
 			if self.player:

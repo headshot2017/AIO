@@ -255,8 +255,8 @@ class AIOserver(object):
         actualbuf += buffer
         try:
             if isinstance(clientID, AIOplayer):
-                return clientID.sock.sendall(actualbuf+"\r")
-            return self.clients[clientID].sock.sendall(actualbuf+"\r")
+                return clientID.sock.sendall(actualbuf)
+            return self.clients[clientID].sock.sendall(actualbuf)
         except (socket.error, socket.timeout) as e:
             #print "socket error %d" % e.args[0]
             return 0

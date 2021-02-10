@@ -253,6 +253,7 @@ class AIOserver(object):
     def sendBuffer(self, clientID, buffer):
         actualbuf = struct.pack("I", len(buffer))
         actualbuf += buffer
+
         try:
             if isinstance(clientID, AIOplayer):
                 return clientID.sock.sendall(actualbuf)
@@ -274,8 +275,6 @@ class AIOserver(object):
         buffer += struct.pack("I", len(self.musiclist))
         buffer += struct.pack("I", len(self.zonelist))
         buffer += self.motd+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         return self.sendBuffer(ClientID, buffer)
     
@@ -298,8 +297,6 @@ class AIOserver(object):
         buffer += struct.pack("B", realization)
         buffer += struct.pack("I", clientid)
         buffer += struct.pack("B", evidence)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients.keys():
@@ -325,8 +322,6 @@ class AIOserver(object):
                     buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
                     buffer += struct.pack("h", ClientID.CharID if isinstance(ClientID, AIOplayer) else self.clients[ClientID].CharID)
                     buffer += struct.pack("H", ClientID.zone if isinstance(ClientID, AIOplayer) else self.clients[ClientID].zone)
-                    buff = struct.pack("I", len(buffer)+1)
-                    buff += buffer
                     self.sendBuffer(client, buffer)
             
                 if not isinstance(ClientID, AIOplayer) and not self.clients[ClientID].isBot():
@@ -335,8 +330,6 @@ class AIOserver(object):
                     buffer += struct.pack("I", client)
                     buffer += struct.pack("h", self.clients[client].CharID)
                     buffer += struct.pack("H", self.clients[client].zone)
-                    buff = struct.pack("I", len(buffer)+1)
-                    buff += buffer
                     self.sendBuffer(ClientID, buffer)
 
         else:
@@ -346,8 +339,6 @@ class AIOserver(object):
                 buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
                 buffer += struct.pack("h", ClientID.CharID if isinstance(ClientID, AIOplayer) else self.clients[ClientID].CharID)
                 buffer += struct.pack("H", ClientID.zone if isinstance(ClientID, AIOplayer) else self.clients[ClientID].zone)
-                buff = struct.pack("I", len(buffer)+1)
-                buff += buffer
                 self.sendBuffer(sendTo, buffer)
     
     def sendDestroy(self, ClientID, target=-1):
@@ -364,8 +355,6 @@ class AIOserver(object):
                     buffer = ""
                     buffer += struct.pack("B", AIOprotocol.DESTROY)
                     buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
-                    buff = struct.pack("I", len(buffer)+1)
-                    buff += buffer
                     self.sendBuffer(client, buffer)
 
         else:
@@ -373,8 +362,6 @@ class AIOserver(object):
                 buffer = ""
                 buffer += struct.pack("B", AIOprotocol.DESTROY)
                 buffer += struct.pack("I", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
-                buff = struct.pack("I", len(buffer)+1)
-                buff += buffer
                 self.sendBuffer(target, buffer)
     
     def sendCharList(self, ClientID):
@@ -387,8 +374,6 @@ class AIOserver(object):
         buffer += struct.pack("B", 0)
         for char in self.charlist:
             buffer += char+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         self.sendBuffer(ClientID, buffer)
     
     def sendMusicList(self, ClientID):
@@ -401,8 +386,6 @@ class AIOserver(object):
         buffer += struct.pack("B", 1)
         for song in self.musiclist:
             buffer += song+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         self.sendBuffer(ClientID, buffer)
     
@@ -418,8 +401,6 @@ class AIOserver(object):
             buffer += zone[0]+"\0"
             buffer += zone[1]+"\0"
         buffer += struct.pack("H", self.defaultzone)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         self.sendBuffer(ClientID, buffer)
     
@@ -436,9 +417,7 @@ class AIOserver(object):
             buffer += evidence[0]+"\0"
             buffer += evidence[1]+"\0"
             buffer += evidence[2]+"\0"
-        
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
+
         self.sendBuffer(ClientID, buffer)
     
     def sendEvidenceList(self, ClientID, zone):
@@ -455,8 +434,6 @@ class AIOserver(object):
             buffer += evidence[1]+"\0"
             buffer += evidence[2]+"\0"
         
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         self.sendBuffer(ClientID, buffer)
     
     def addEvidence(self, zone, name, desc, image):
@@ -534,8 +511,6 @@ class AIOserver(object):
         buffer += filename+"\0"
         buffer += struct.pack("I", delay)
         buffer += struct.pack("H", zone)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients:
@@ -556,8 +531,6 @@ class AIOserver(object):
         buffer += filename+"\0"
         buffer += struct.pack("I", delay)
         buffer += struct.pack("H", zone)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         for client in self.clients:
             if self.clients[client].isBot() or owner == client:
@@ -573,8 +546,6 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.CHATBUBBLE)
         buffer += struct.pack("I", ClientID)
         buffer += struct.pack("B", on)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         for client in self.clients:
             if self.clients[client].isBot():
@@ -606,8 +577,6 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.OOC)
         buffer += name+"\0"
         buffer += chatmsg+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -2:
             for client in self.clients:
@@ -636,8 +605,6 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.BROADCAST)
         buffer += struct.pack("h", zone)
         buffer += message+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients:
@@ -665,11 +632,9 @@ class AIOserver(object):
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.KICK)
         buffer += reason+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if isinstance(ClientID, socket.socket):
-            ClientID.sendall(buffer+"\r")
+            ClientID.sendall(buffer)
             if printMsg:
                 self.Print("server", "kicked client %s: %s" % (ClientID.getpeername()[0], reason))
         else:
@@ -735,8 +700,6 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.BARS)
         buffer += struct.pack("B", bar)
         buffer += struct.pack("B", health)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients:
@@ -764,8 +727,6 @@ class AIOserver(object):
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.WTCE)
         buffer += struct.pack("B", wtcetype)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients:
@@ -795,8 +756,6 @@ class AIOserver(object):
         buffer += filename+"\0"
         buffer += struct.pack("I", charid)
         buffer += showname+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID == -1:
             for client in self.clients:
@@ -829,8 +788,6 @@ class AIOserver(object):
         buffer = struct.pack("B", AIOprotocol.SETZONE)
         buffer += struct.pack("H", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
         buffer += struct.pack("H", zone)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         for plug in self.plugins:
             if plug[1].running and hasattr(plug[1], "onClientSetZone"):
@@ -859,8 +816,6 @@ class AIOserver(object):
         buffer = struct.pack("B", AIOprotocol.SETCHAR)
         buffer += struct.pack("H", ClientID.id if isinstance(ClientID, AIOplayer) else ClientID)
         buffer += struct.pack("h", charid)
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         for plug in self.plugins:
             if plug[1].running and hasattr(plug[1], "onClientSetChar"):
@@ -888,8 +843,6 @@ class AIOserver(object):
         buffer += struct.pack("f", x)
         buffer += struct.pack("f", y)
         buffer += showname+"\0"
-        buff = struct.pack("I", len(buffer)+1)
-        buff += buffer
         
         if ClientID != -1:
             self.sendBuffer(ClientID, buffer)
@@ -1019,7 +972,7 @@ class AIOserver(object):
 
         try:
             data, bufflength = buffer_read("I", data)
-            data = self.ms_tcp.recv(bufflength+1)
+            data = self.ms_tcp.recv(bufflength)
         except socket.error as e:
             if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
                 return True
@@ -1114,7 +1067,7 @@ class AIOserver(object):
                     
                 try:
                     self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
-                    self.readbuffer = sock.recv(bufflength+1)
+                    self.readbuffer = sock.recv(bufflength)
                 except socket.error as e:
                     if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
                         continue

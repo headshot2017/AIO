@@ -342,7 +342,7 @@ class ClientThread(QtCore.QThread):
 
 			try:
 				data, bufflength = buffer_read("I", data)
-				data += self.tcp.recv(bufflength+1)
+				data = self.tcp.recv(bufflength)
 			except socket.error as err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
@@ -356,7 +356,6 @@ class ClientThread(QtCore.QThread):
 
 			while data:
 				data, header = buffer_read("B", data)
-
 				#for a in dir(AIOprotocol):
 					#if getattr(AIOprotocol, a) == header and not "EV_" in a and not a in ("SOUTH", "SOUTHWEST", "SOUTHEAST", "EAST", "NORTH", "NORTHWEST", "NORTHEAST", "WEST"): print repr(a), repr(data)
 				

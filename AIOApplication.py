@@ -341,8 +341,15 @@ class ClientThread(QtCore.QThread):
 				continue
 
 			try:
+				#print "get new bufflength"
 				data, bufflength = buffer_read("I", data)
-				data = self.tcp.recv(bufflength)
+				while len(data) < bufflength:
+					ready = select.select([self.tcp], [], [], 3)
+					if not ready[0]:
+						continue
+					recvd = self.tcp.recv(bufflength)
+					data += recvd
+					#print len(data), bufflength
 			except socket.error as err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue

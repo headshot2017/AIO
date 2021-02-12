@@ -734,6 +734,8 @@ class AIOGraphicsView(QtGui.QGraphicsView):
                 a = QtCore.QPointF(self.parent.parent.examiner.pos() - self.parent.zonebackground.pos()) # UGLY
                 self.parent.parent.examineSpot(a) # UGLY
 
+        super(AIOGraphicsView, self).mousePressEvent(event)
+
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and self.dyncam:
             self.dyncam = False
@@ -933,6 +935,38 @@ class GameWidget(QtGui.QWidget):
 		self.realizationbtn_off = QtGui.QPixmap("data/themes/"+theme+"/realization.png")
 		self.realizationbtn_on = QtGui.QPixmap("data/themes/"+theme+"/realization_pressed.png")
 
+		self.useMusicToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "music_toggle") == "1")
+		self.useOOCToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "ooc_toggle") == "1")
+		self.useChatlogToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "chatlog_toggle") == "1")
+		if self.useMusicToggle:
+			if not hasattr(self, "musiclist"):
+				self.musiclist = QtGui.QListWidget(self)
+				self.musiclist.resize(0,0)
+			if self.musiclist.size() == QtCore.QSize(0,0):
+				self.musiclist.resize(self.size().width()/2, self.size().height()/2)
+			self.musiclist.move(self.size().width()/2 - (self.musiclist.size().width()/2), self.size().height()/2 - (self.musiclist.size().height()/2))
+			self.musiclist.hide()
+			self.musicToggle.clicked.connect(self.toggleMusicList)
+		if self.useOOCToggle:
+			if not hasattr(self, "oocwidget"):
+				self.oocwidget = QtGui.QWidget(self)
+				uic.loadUi("data/themes/"+theme+"/ooc.ui", self.oocwidget)
+				self.oocinput = self.oocwidget.oocinput
+				self.oocnameinput = self.oocwidget.oocnameinput
+				self.oocchat = self.oocwidget.oocchat
+			self.oocwidget.move(self.size().width()/2 - (self.oocwidget.size().width()/2), self.size().height()/2 - (self.oocwidget.size().height()/2))
+			self.oocwidget.hide()
+			self.oocToggle.clicked.connect(self.onOOCButton)
+		if self.useChatlogToggle:
+			if not hasattr(self, "chatlog"):
+				self.chatlog = QtGui.QTextEdit(self)
+				self.chatlog.setReadOnly(True)
+			if self.chatlog.size() == QtCore.QSize(0,0):
+				self.chatlog.resize(self.size().width()/2, self.size().height()/2)
+			self.chatlog.move(self.size().width()/2 - (self.chatlog.size().width()/2), self.size().height()/2 - (self.chatlog.size().height()/2))
+			self.chatlog.hide()
+			self.chatlogToggle.clicked.connect(self.onLogButton)
+
 		self.movemenu = QtGui.QMenu()
 		self.textcolormenu = QtGui.QMenu()
 		self.colors = ["white", "green", "red", "orange", "blue", "yellow", "rainbow", "pink", "cyan"]
@@ -1056,7 +1090,11 @@ class GameWidget(QtGui.QWidget):
 
 		self.chatTickTimer = QtCore.QTimer()
 		self.chatTickTimer.timeout.connect(self.chatTick)
-		
+
+		if self.useMusicToggle: self.musiclist.raise_()
+		if self.useOOCToggle: self.oocwidget.raise_()
+		if self.useChatlogToggle: self.chatlog.raise_()
+
 		self.examines = []
 		self.examining = False
 		self.spawned_once = False
@@ -1207,7 +1245,28 @@ class GameWidget(QtGui.QWidget):
 	
 	def onEvidenceButton(self):
 		self.evidencedialog.setVisible(not self.evidencedialog.isVisible())
+		if self.useMusicToggle: self.musiclist.hide()
+		if self.useOOCToggle: self.oocwidget.hide()
+		if self.useChatlogToggle: self.chatlog.hide()
+
+	def toggleMusicList(self):
+		self.musiclist.setVisible(not self.musiclist.isVisible())
+		self.oocwidget.hide()
+		self.chatlog.hide()
+		self.evidencedialog.hide()
+
+	def onLogButton(self):
+		self.chatlog.setVisible(not self.chatlog.isVisible())
+		self.musiclist.hide()
+		self.oocwidget.hide()
+		self.evidencedialog.hide()
 	
+	def onOOCButton(self):
+		self.oocwidget.setVisible(not self.oocwidget.isVisible())
+		self.musiclist.hide()
+		self.chatlog.hide()
+		self.evidencedialog.hide()
+
 	def onChatBubble(self, contents):
 		cid, on = contents
 		if not self.gameview.characters.has_key(cid):
@@ -1224,18 +1283,6 @@ class GameWidget(QtGui.QWidget):
 			return
 		
 		self.broadcastObj.showText(message.decode("utf-8"))
-	
-	def onLogButton(self):
-		self.chatlog.setVisible(not self.chatlog.isVisible())
-		self.musiclist.hide()
-		self.oocwidget.hide()
-		self.evidencedialog.hide()
-	
-	def onOOCButton(self):
-		self.oocwidget.setVisible(not self.oocwidget.isVisible())
-		self.musiclist.hide()
-		self.chatlog.hide()
-		self.evidencedialog.hide()
 	
 	def onOOCReturn(self):
 		name = str(self.oocnameinput.text().toUtf8())
@@ -1545,6 +1592,9 @@ class GameWidget(QtGui.QWidget):
 	
 	def showCharSelect(self):
 		self.IngameWidgets.setCurrentWidget(self.charselect)
+		if self.useMusicToggle: self.musiclist.hide()
+		if self.useOOCToggle: self.oocwidget.hide()
+		if self.useChatlogToggle: self.chatlog.hide()
 		self.evidencedialog.hide()
 
 	def onEmoteSound(self, contents):
@@ -1615,12 +1665,6 @@ class GameWidget(QtGui.QWidget):
 			n_real_emote = n_emote + self.current_emote_page * self.max_emotes_on_page
 			self.emotebuttons[n_emote].setPixmap(QtGui.QPixmap("data/characters/"+self.ao_app.charlist[self.player.charid]+"/buttons/"+str(n_real_emote+1)+".png"))
 			self.emotebuttons[n_emote].show()
-	
-	def toggleMusicList(self):
-		self.musiclist.setVisible(not self.musiclist.isVisible())
-		self.oocwidget.hide()
-		self.chatlog.hide()
-		self.evidencedialog.hide()
 	
 	def onMusicChange(self, msg):
 		filename, char_id, showname = msg
@@ -1819,9 +1863,18 @@ class GameWidget(QtGui.QWidget):
 		self.onExamineButton(True)
 
 	def mousePressEvent(self, event):
-		focused_widget = self.ao_app.focusWidget()
+		super(GameWidget, self).mousePressEvent(event)
+		focused_widget = self.childAt(event.pos())
 		if isinstance(focused_widget, QtGui.QLineEdit):
 			focused_widget.clearFocus()
+		elif focused_widget != self.musiclist and self.useMusicToggle and self.musiclist.isVisible():
+			self.musiclist.hide()
+		elif focused_widget != self.chatlog and self.useChatlogToggle and self.chatlog.isVisible():
+			self.chatlog.hide()
+		elif focused_widget not in (self.evidencedialog.evidence_list, self.evidencedialog.evidence_editor) and self.evidencedialog.isVisible():
+			self.evidencedialog.hide()
+		elif focused_widget not in (self.oocwidget, self.oocchat, self.oocinput, self.oocnameinput) and self.useOOCToggle and self.oocwidget.isVisible():
+			self.oocwidget.hide()
 	
 	def updateGame(self):
 		if self.ic_delay > 0:

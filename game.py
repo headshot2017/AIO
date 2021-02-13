@@ -74,9 +74,11 @@ class Broadcast(QtGui.QGraphicsItem):
 	fadeType = 0
 	def __init__(self, scene):
 		super(Broadcast, self).__init__(scene=scene)
+		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+
 		self.scene = scene
 		self.pixmap = QtGui.QGraphicsPixmapItem(self)
-		self.orig_pixmap = QtGui.QPixmap("data/misc/broadcast.png")
+		self.orig_pixmap = QtGui.QPixmap("data/themes/"+theme+"/broadcast.png")
 		self.pixmap.setPixmap(self.orig_pixmap)
 		self.text = QtGui.QGraphicsSimpleTextItem(self)
 		
@@ -212,19 +214,23 @@ class ExamineObj(QtGui.QGraphicsItem):
 class WTCEview(QtGui.QLabel):
 	def __init__(self, parent):
 		super(WTCEview, self).__init__(parent)
+		self.parent = parent
+
 		self.movie = QtGui.QMovie()
 		self.movie.frameChanged.connect(self.frame_change)
 		self.finalframe_timer = QtCore.QTimer()
 		self.finalframe_timer.setSingleShot(False)
 		self.finalframe_timer.timeout.connect(self.finished)
-		self.resize(512, 384)
+		self.viewport = self.parent.gameview.size()
+		self.resize(self.viewport)
+		self.move(self.viewport.width()/2 - (self.size().width()/2), self.viewport.height()/2 - (self.size().height()/2))
 		self.hide()
 
 	def frame_change(self, frame):
 		if self.movie.state() != QtGui.QMovie.Running:
 			return
 		img = self.movie.currentImage()
-		self.setPixmap(QtGui.QPixmap.fromImage(img.scaled(512, 384)))
+		self.setPixmap(QtGui.QPixmap.fromImage(img.scaled(self.viewport)))
 		if self.movie.currentFrameNumber() == self.movie.frameCount() - 1:
 			self.finalframe_timer.start(self.movie.nextFrameDelay())
 
@@ -642,7 +648,7 @@ class Character(BaseCharacter):
 class ChatboxWidget(QtGui.QWidget):
     def __init__(self, parent):
         super(ChatboxWidget, self).__init__(parent)
-        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents) # capture mouseMoveEvents on AIOGraphicsView below
+        self.parent = parent
 
 class AIOGraphicsView(QtGui.QGraphicsView):
     def __init__(self, scene, parent):
@@ -768,7 +774,8 @@ class GamePort(QtGui.QWidget):
 		self.gameview.scale(newScale)
 		self.resize(self.size().width(), self.size().height())
 
-	def setupUi(self, ao_app):
+	def setupUi(self, ao_app, gamewidget):
+		self.parent = gamewidget
 		self.ao_app = ao_app
 		self.gameview.setupUi(ao_app)
 		self.resize(self.size().width(), self.size().height())
@@ -935,9 +942,12 @@ class GameWidget(QtGui.QWidget):
 		self.realizationbtn_off = QtGui.QPixmap("data/themes/"+theme+"/realization.png")
 		self.realizationbtn_on = QtGui.QPixmap("data/themes/"+theme+"/realization_pressed.png")
 
+
 		self.useMusicToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "music_toggle") == "1")
 		self.useOOCToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "ooc_toggle") == "1")
 		self.useChatlogToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "chatlog_toggle") == "1")
+		self.useEmoteToggle = (ini.read_ini("data/themes/"+theme+"/theme.ini", "Theme", "emote_toggle") == "1")
+
 		if self.useMusicToggle:
 			if not hasattr(self, "musiclist"):
 				self.musiclist = QtGui.QListWidget(self)
@@ -947,6 +957,7 @@ class GameWidget(QtGui.QWidget):
 			self.musiclist.move(self.size().width()/2 - (self.musiclist.size().width()/2), self.size().height()/2 - (self.musiclist.size().height()/2))
 			self.musiclist.hide()
 			self.musicToggle.clicked.connect(self.toggleMusicList)
+
 		if self.useOOCToggle:
 			if not hasattr(self, "oocwidget"):
 				self.oocwidget = QtGui.QWidget(self)
@@ -957,6 +968,7 @@ class GameWidget(QtGui.QWidget):
 			self.oocwidget.move(self.size().width()/2 - (self.oocwidget.size().width()/2), self.size().height()/2 - (self.oocwidget.size().height()/2))
 			self.oocwidget.hide()
 			self.oocToggle.clicked.connect(self.onOOCButton)
+
 		if self.useChatlogToggle:
 			if not hasattr(self, "chatlog"):
 				self.chatlog = QtGui.QTextEdit(self)
@@ -966,6 +978,25 @@ class GameWidget(QtGui.QWidget):
 			self.chatlog.move(self.size().width()/2 - (self.chatlog.size().width()/2), self.size().height()/2 - (self.chatlog.size().height()/2))
 			self.chatlog.hide()
 			self.chatlogToggle.clicked.connect(self.onLogButton)
+		else:
+			self.chatboxwidget.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+
+		if self.useEmoteToggle:
+			pixmap = QtGui.QPixmap("data/themes/"+theme+"/emote_bar.png")
+			if not hasattr(self, "emotebar"):
+				self.emotebar = QtGui.QLabel(self)
+				self.emotebar.setPixmap(pixmap)
+
+			oldpos = (self.emotebar.x(), self.emotebar.y())
+			newpos = (self.size().width()/2 - (pixmap.size().width()/2), self.size().height()/2 - (pixmap.size().height()/2))
+			diffpos = (newpos[0] - oldpos[0], newpos[1] - oldpos[1])
+
+			self.emotebar.resize(pixmap.size().width(), pixmap.size().height())
+			self.emotebar.move(newpos[0], newpos[1])
+			self.prevemotepage.move(self.prevemotepage.x() + diffpos[0], self.prevemotepage.y() + diffpos[1])
+			self.nextemotepage.move(self.nextemotepage.x() + diffpos[0], self.nextemotepage.y() + diffpos[1])
+			self.emotebar.hide()
+			self.emoteToggle.clicked.connect(self.onEmoteToggle)
 
 		self.movemenu = QtGui.QMenu()
 		self.textcolormenu = QtGui.QMenu()
@@ -973,7 +1004,9 @@ class GameWidget(QtGui.QWidget):
 		for color in self.colors:
 			self.textcolormenu.addAction(color)
 
-		self.gameview.setupUi(_ao_app)
+		self.gameview.setupUi(_ao_app, self)
+		self.scaleslider.setValue(ini.read_ini_int("data/themes/"+theme+"/theme.ini", "Theme", "scale", 1))
+
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
 		self.broadcastObj.setPos(0, 64)
 
@@ -1248,21 +1281,44 @@ class GameWidget(QtGui.QWidget):
 		if self.useMusicToggle: self.musiclist.hide()
 		if self.useOOCToggle: self.oocwidget.hide()
 		if self.useChatlogToggle: self.chatlog.hide()
+		if self.useEmoteToggle:
+			self.emotebar.hide()
+			self.prevemotepage.hide()
+			self.nextemotepage.hide()
 
 	def toggleMusicList(self):
 		self.musiclist.setVisible(not self.musiclist.isVisible())
 		self.oocwidget.hide()
 		self.chatlog.hide()
 		self.evidencedialog.hide()
+		self.emotebar.hide()
+		self.prevemotepage.hide()
+		self.nextemotepage.hide()
 
 	def onLogButton(self):
 		self.chatlog.setVisible(not self.chatlog.isVisible())
 		self.musiclist.hide()
 		self.oocwidget.hide()
 		self.evidencedialog.hide()
+		self.emotebar.hide()
+		self.prevemotepage.hide()
+		self.nextemotepage.hide()
 	
 	def onOOCButton(self):
 		self.oocwidget.setVisible(not self.oocwidget.isVisible())
+		self.musiclist.hide()
+		self.chatlog.hide()
+		self.evidencedialog.hide()
+		self.emotebar.hide()
+		self.prevemotepage.hide()
+		self.nextemotepage.hide()
+
+	def onEmoteToggle(self):
+		vis = not self.emotebar.isVisible()
+		self.emotebar.setVisible(vis)
+		if self.showPrevEmotes: self.prevemotepage.setVisible(vis)
+		if self.showNextEmotes: self.nextemotepage.setVisible(vis)
+		self.oocwidget.hide()
 		self.musiclist.hide()
 		self.chatlog.hide()
 		self.evidencedialog.hide()
@@ -1594,7 +1650,10 @@ class GameWidget(QtGui.QWidget):
 		self.IngameWidgets.setCurrentWidget(self.charselect)
 		if self.useMusicToggle: self.musiclist.hide()
 		if self.useOOCToggle: self.oocwidget.hide()
-		if self.useChatlogToggle: self.chatlog.hide()
+		if self.useEmoteToggle:
+			self.emotebar.hide()
+			self.prevemotepage.hide()
+			self.nextemotepage.hide()
 		self.evidencedialog.hide()
 
 	def onEmoteSound(self, contents):
@@ -1640,6 +1699,10 @@ class GameWidget(QtGui.QWidget):
 		self.player.play(filename, loop)
 	
 	def set_emote_page(self):
+		# these two are for if a theme uses emote_toggle
+		self.showPrevEmotes = False
+		self.showNextEmotes = False
+
 		self.prevemotepage.hide()
 		self.nextemotepage.hide()
 		
@@ -1658,9 +1721,11 @@ class GameWidget(QtGui.QWidget):
 		else:
 			emotes_on_page = self.max_emotes_on_page
 		if total_pages > self.current_emote_page + 1:
-			self.nextemotepage.show()
+			if self.emotebar.isVisible(): self.nextemotepage.show()
+			self.showNextEmotes = True
 		if self.current_emote_page > 0:
-			self.prevemotepage.show()
+			if self.emotebar.isVisible(): self.prevemotepage.show()
+			self.showPrevEmotes = True
 		for n_emote in range(emotes_on_page):
 			n_real_emote = n_emote + self.current_emote_page * self.max_emotes_on_page
 			self.emotebuttons[n_emote].setPixmap(QtGui.QPixmap("data/characters/"+self.ao_app.charlist[self.player.charid]+"/buttons/"+str(n_real_emote+1)+".png"))
@@ -1875,6 +1940,8 @@ class GameWidget(QtGui.QWidget):
 			self.evidencedialog.hide()
 		elif focused_widget not in (self.oocwidget, self.oocchat, self.oocinput, self.oocnameinput) and self.useOOCToggle and self.oocwidget.isVisible():
 			self.oocwidget.hide()
+		elif focused_widget not in (self.emotebar,) and self.useEmoteToggle and self.emotebar.isVisible():
+			self.onEmoteToggle() # hide
 	
 	def updateGame(self):
 		if self.ic_delay > 0:

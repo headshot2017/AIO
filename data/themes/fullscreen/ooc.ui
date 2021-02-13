@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>oocwidget</class>
+ <widget class="QWidget" name="oocwidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>512</width>
+    <height>480</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QTextBrowser" name="oocchat">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>512</width>
+     <height>458</height>
+    </rect>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QTextEdit { background-color: rgb(64, 64, 64); color: white } a{ color: rgb(0, 192, 192); }</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="openExternalLinks">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="oocinput">
+   <property name="geometry">
+    <rect>
+     <x>128</x>
+     <y>458</y>
+     <width>384</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit { background-color: rgb(64, 64, 64);
+color: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}</string>
+   </property>
+   <property name="placeholderText">
+    <string>OOC chat message...</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="oocnameinput">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>458</y>
+     <width>128</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QLineEdit { background-color: rgb(64, 64, 64);
+color: white } QLineEdit:hover{border: 1px solid gray; background-color: rgb(64,64,64)}</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1288,30 +1288,33 @@ class GameWidget(QtGui.QWidget):
 
 	def toggleMusicList(self):
 		self.musiclist.setVisible(not self.musiclist.isVisible())
-		self.oocwidget.hide()
-		self.chatlog.hide()
 		self.evidencedialog.hide()
-		self.emotebar.hide()
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
+		if self.useOOCToggle: self.oocwidget.hide()
+		if self.useChatlogToggle: self.chatlog.hide()
+		if self.useEmoteToggle:
+			self.emotebar.hide()
+			self.prevemotepage.hide()
+			self.nextemotepage.hide()
 
 	def onLogButton(self):
 		self.chatlog.setVisible(not self.chatlog.isVisible())
-		self.musiclist.hide()
-		self.oocwidget.hide()
+		if self.useMusicToggle: self.musiclist.hide()
+		if self.useOOCToggle: self.oocwidget.hide()
 		self.evidencedialog.hide()
-		self.emotebar.hide()
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
+		if self.useEmoteToggle:
+			self.emotebar.hide()
+			self.prevemotepage.hide()
+			self.nextemotepage.hide()
 	
 	def onOOCButton(self):
 		self.oocwidget.setVisible(not self.oocwidget.isVisible())
-		self.musiclist.hide()
-		self.chatlog.hide()
+		if self.useMusicToggle: self.musiclist.hide()
+		if self.useChatlogToggle: self.chatlog.hide()
 		self.evidencedialog.hide()
-		self.emotebar.hide()
-		self.prevemotepage.hide()
-		self.nextemotepage.hide()
+		if self.useEmoteToggle:
+			self.emotebar.hide()
+			self.prevemotepage.hide()
+			self.nextemotepage.hide()
 
 	def onEmoteToggle(self):
 		vis = not self.emotebar.isVisible()

@@ -51,7 +51,7 @@ zip_ref.close()
 
 if os.name == 'nt':
     print "downloading pyqt4"
-    filedata = requests.get('http://raw.githubusercontent.com/dhb52/python-lib/master/PyQt4-4.11.4-cp27-cp27m-win32.whl')  
+    filedata = requests.get('https://pypi.anaconda.org/ales-erjavec/simple/pyqt4/4.11.4/PyQt4-4.11.4-cp27-none-win32.whl')
     datatowrite = filedata.content
 
     with open('PyQt4-4.11.4-cp27-cp27m-win32.whl', 'wb') as f:  

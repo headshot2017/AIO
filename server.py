@@ -1817,8 +1817,10 @@ if __name__ == "__main__":
         tracebackmsg = traceback.format_exc(e)
         atime = time.localtime()
         print tracebackmsg
-        
-        with open("server/traceback_%d.%d.%d_%d-%d-%d.txt" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
+
+        if not os.path.exists("server/crashes"):
+            os.mkdir("server/crashes")
+        with open("server/crashes/traceback_%d.%d.%d_%d-%d-%d.txt" % (atime[3], atime[4], atime[5], atime[2], atime[1], atime[0]), "w") as f:
             f.write(tracebackmsg)
         
         for i in server.clients.keys():

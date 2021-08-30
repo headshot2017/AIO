@@ -1491,6 +1491,15 @@ class AIOserver(object):
         
         self.running = True
 
+        self.tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.tcp.bind(("", self.port))
+        self.tcp.listen(5)
+        self.udp.bind(("", self.port))
+        self.Print("server", "AIO server started on port %d" % self.port)
+        
+        self.tcp.setblocking(False)
+        self.udp.settimeout(0.1)
+
         for plug in self.plugins:
             server.Print("plugins", "starting '%s' version %s" % (plug[2], plug[3].version))
             super(plug[0], plug[1]).onPluginStart(self)
@@ -1500,15 +1509,6 @@ class AIOserver(object):
                     self.Print("plugins", "Plugin '%s' failed to start." % plug[2])
                     super(plug[0], plug[1]).onPluginStop(self, False)
                     plug[1].onPluginStop(self, False)
-
-        self.tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.tcp.bind(("", self.port))
-        self.tcp.listen(5)
-        self.udp.bind(("", self.port))
-        self.Print("server", "AIO server started on port %d" % self.port)
-        
-        self.tcp.setblocking(False)
-        self.udp.settimeout(0.1)
         
         if self.econ_password:
             self.econ_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

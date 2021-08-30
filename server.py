@@ -153,6 +153,8 @@ class AIOserver(object):
         for file in os.listdir("./server/plugins"):
             if file.lower().endswith(".py"):
                 try:
+                    sys.path.append("./server/plugins/" + file[:-3])
+                    sys.path.append("./server/plugins/" + file[:-3] + "/lib")
                     pluginModule = importlib.import_module(file[:-3])
                     pluginObj = getattr(pluginModule, file[:-3])
                     self.plugins.append([pluginObj, pluginObj(), file[:-3], pluginModule])

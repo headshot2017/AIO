@@ -1807,9 +1807,10 @@ if __name__ == "__main__":
         
         for plug in server.plugins:
             server.Print("plugins", "stopping '%s' version %s" % (plug[2], plug[3].version))
-            super(plug[0], plug[1]).onPluginStop(server, False)
-            if hasattr(plug[1], "onPluginStop"):
-                plug[1].onPluginStop(server, False)
+            if plug[1].running:
+                super(plug[0], plug[1]).onPluginStop(server, False)
+                if hasattr(plug[1], "onPluginStop"):
+                    plug[1].onPluginStop(server, False)
         
         server.Print("server", "Server stopped.")
 

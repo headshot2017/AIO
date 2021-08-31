@@ -1834,10 +1834,11 @@ if __name__ == "__main__":
         if server.econ_password and server.econ_tcp: server.econ_tcp.close()
         
         for plug in server.plugins:
-            server.Print("plugins", "stopping '%s' version %s" % (plug[2], plug[3].version))
-            super(plug[0], plug[1]).onPluginStop(server, True)
-            if hasattr(plug[1], "onPluginStop"):
-                plug[1].onPluginStop(server, True)
+            if plug[1].running:
+                server.Print("plugins", "stopping '%s' version %s" % (plug[2], plug[3].version))
+                super(plug[0], plug[1]).onPluginStop(server, True)
+                if hasattr(plug[1], "onPluginStop"):
+                    plug[1].onPluginStop(server, True)
         
         server.Print("server", "Server stopped due to a crash.")
 

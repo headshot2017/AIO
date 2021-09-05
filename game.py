@@ -1767,6 +1767,10 @@ class GameWidget(QtGui.QWidget):
 			n_real_emote = n_emote + self.current_emote_page * self.max_emotes_on_page
 			self.emotebuttons[n_emote].setPixmap(QtGui.QPixmap("data/characters/"+self.ao_app.charlist[self.player.charid]+"/buttons/"+str(n_real_emote+1)+".png"))
 			self.emotebuttons[n_emote].show()
+
+		if not self.useEmoteToggle:
+			self.prevemotepage.setVisible(self.showPrevEmotes)
+			self.nextemotepage.setVisible(self.showNextEmotes)
 	
 	def onMusicChange(self, msg):
 		filename, char_id, showname = msg

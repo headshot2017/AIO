@@ -1693,7 +1693,7 @@ class GameWidget(QtGui.QWidget):
 
 	def onEmoteSound(self, contents):
 		char_id, filename, delay, zone = contents
-		self.aSound = ["data/sounds/general/"+filename+".wav", delay, zone]
+		self.aSound = ["data/sounds/general/"+filename+".wav", time.time()*1000 + delay, zone]
 
 	def onEmoteRightClicked(self, ind):
 		selection = self.emotemenu.exec_(QtGui.QCursor.pos())
@@ -2006,9 +2006,9 @@ class GameWidget(QtGui.QWidget):
 			self.examiner.show()
 		
 		if self.aSound[1] > -1 and self.aSound[2] == self.player.zone: # "An SFX, that a player makes in any area, plays everywhere, in every other and its' own area." fixed
-			if self.aSound[1] == 0:
+			if time.time()*1000 >= self.aSound[1]: # milliseconds
 				self.ao_app.playSound(self.aSound[0])
-			self.aSound[1] -= 1
+				self.aSound[1] = -1
 		
 		if self.examines:
 			for examine in self.examines:

@@ -282,17 +282,12 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", wtcetype)
 			self.sendBuffer(buf)
 	
-	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr):
+	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote):
 		if self.connected:
 			self.lastSendTime = time.time()
-			buf = struct.pack("B", AIOprotocol.MOVE)
-			buf += struct.pack("f", x)
-			buf += struct.pack("f", y)
-			buf += struct.pack("h", hspeed)
-			buf += struct.pack("h", vspeed)
+			buf = struct.pack("Bffhh", AIOprotocol.MOVE, x, y, hspeed, vspeed)
 			buf += sprite+"\0"
-			buf += struct.pack("B", emoting)
-			buf += struct.pack("B", dir_nr)
+			buf += struct.pack("BBB", emoting, dir_nr, currentemote+1)
 			self.sendBuffer(buf)
 	
 	def sendPing(self):
@@ -474,7 +469,8 @@ class ClientThread(QtCore.QThread):
 						data, sprite = buffer_read("S", data)
 						data, emoting = buffer_read("B", data)
 						data, dir_nr = buffer_read("B", data)
-						movepacket.append([client, x, y, hspeed, vspeed, sprite, emoting, dir_nr])
+						data, currentemote = buffer_read("B", data)
+						movepacket.append([client, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote-1])
 					self.movementPacket.emit(movepacket)
 			
 				elif header == AIOprotocol.SETZONE:

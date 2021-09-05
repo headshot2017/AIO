@@ -338,12 +338,12 @@ class Character(BaseCharacter):
 	blip = ""
 	scale = 1
 	walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
-	emotes = [[], [], [], [], []] #value 0 contains the emotes, value 1 contains loop values, value 2 contains directions (east, west...), value 3 contains sound names and value 4 sound delays
+	emotes = [[], [], [], [], [], []] #emotes, loop values, directions (east, west...), sound names, sound delays, offsets
 	isPlayer = False
 	maxwidth = 0
 	maxheight = 0
 	chatbubble = 0
-	playFile = ["", 0]
+	playFile = ["", 0, False, [0,0]] # filename, loop, is spin, offset
 	moonwalk = False #are you ok Annie
 	def __init__(self, scene, ao_app):
 		super(Character, self).__init__(scene=scene)
@@ -353,6 +353,7 @@ class Character(BaseCharacter):
 		self.translated = False
 		self.chatbubblepix = QtGui.QGraphicsPixmapItem(scene=scene)
 		self.setChatBubble(0)
+		self.playFile = ["", 0, False, [0,0]]
 	
 	def setChatBubble(self, value):
 		self.chatbubble = value
@@ -419,12 +420,41 @@ class Character(BaseCharacter):
 		self.emotes[2] = []
 		self.emotes[3] = []
 		self.emotes[4] = []
+		self.emotes[5] = []
 		for i in range(max_emotes):
 			self.emotes[0].append(ini.read_ini(inipath, "Emotions", str(i+1)))
 			self.emotes[1].append(ini.read_ini_int(inipath, "Emotions", str(i+1)+"_loop", 0))
 			self.emotes[2].append(ini.read_ini(inipath, "Directions", str(i+1)).split("#"))
 			self.emotes[3].append(ini.read_ini(inipath, "SoundN", str(i+1)).split("#"))
 			self.emotes[4].append(ini.read_ini_int(inipath, "SoundT", str(i+1)))
+
+			offsets = ini.read_ini(inipath, "Emotions", str(i+1)+"_offset", "0,0").split("#")
+			offsetDict = {}
+			for offsetStr in offsets:
+				i = offsets.index(offsetStr)
+				offset = offsetStr.split(",")
+				offsetDict[self.emotes[2][-1][i]] = [int(offset[0]), int(offset[1])]
+			self.emotes[5].append(offsetDict)
+
+			# explaining the confusing emote offset lists:
+			# [ all emotes
+			#     { all directions for emote 0
+			#         "west": [ x and y offset for this dir
+			#             0,0
+			#         ],
+			#         "east": [ x and y offset for this dir
+			#             0,0
+			#         ]
+			#     },
+			#     { all directions for emote 1
+			#         "west": [ x and y offset for this dir
+			#             0,0
+			#         ],
+			#         "east": [ x and y offset for this dir
+			#             0,0
+			#         ]
+			#     }
+			# ]
 		
 		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
 	
@@ -454,11 +484,11 @@ class Character(BaseCharacter):
 	def setWalls(self, image):
 		self.wallsImage = image
 	
-	def play(self, filename, loop):
-		self.playFile = [filename, loop, False]
+	def play(self, filename, loop, offset=[0,0]):
+		self.playFile = [filename, loop, False, offset]
 
 	def playSpin(self, filename, dir):
-		self.playFile = [filename, dir, True]
+		self.playFile = [filename, dir, True, [0,0]]
 		self.emoting = 0
 		self.currentemote = -1
 	
@@ -609,7 +639,7 @@ class Character(BaseCharacter):
 				if self.hspeed == 0 and self.vspeed == 0:
 					self.playSpin("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, self.dir_nr)
 				else:
-					self.play("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, True)
+					self.play("data/characters/"+self.ao_app.charlist[self.charid]+"/"+newsprite, True, [0,0])
 				
 			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
@@ -619,7 +649,8 @@ class Character(BaseCharacter):
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
-			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
+			offset = self.playFile[3]
+			self.setPos(-viewX + self.xx - (aWidth) - offset[0], -viewY + self.yy - (aHeight*2) - offset[1])
 
 			if not self.playFile[2]:
 				super(Character, self).play(self.playFile[0], self.playFile[1])
@@ -630,7 +661,8 @@ class Character(BaseCharacter):
 			aSize = self.pixmap().size()
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
-			self.setPos(-viewX + self.xx - (aWidth), -viewY + self.yy - (aHeight*2))
+			offset = self.playFile[3]
+			self.setPos(-viewX + self.xx - (aWidth) - offset[0], -viewY + self.yy - (aHeight*2) - offset[1])
 		
 		self.xprevious2 = self.xprevious
 		self.yprevious2 = self.yprevious
@@ -1681,17 +1713,19 @@ class GameWidget(QtGui.QWidget):
 		emote = self.player.emotes[0][real_ind]
 		loop = self.player.emotes[1][real_ind]
 		emotedir = self.player.emotes[2][real_ind]
-		sounds = self.player.emotes[3][real_ind]
-		sound = random.choice(sounds)
+		sound = random.choice(self.player.emotes[3][real_ind])
 		sound_delay = self.player.emotes[4][real_ind]
 		
 		found_dir = ""
 		for dir in emotedir:
 			if getDirection(self.player.dir_nr) == dir:
 				found_dir = dir
-		
 		if not found_dir:
 			found_dir = getCompactDirection(self.player.dir_nr)
+
+		self.player.dir_nr = directions.index(found_dir)
+		offset = self.player.emotes[5][real_ind][found_dir]
+
 		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
 		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
 
@@ -1699,7 +1733,7 @@ class GameWidget(QtGui.QWidget):
 			self.onEmoteSound([self.player.charid, sound, sound_delay, self.player.zone])
 			self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)
 		
-		self.player.play(filename, loop)
+		self.player.play(filename, loop, offset)
 	
 	def set_emote_page(self):
 		# these two are for if a theme uses emote_toggle
@@ -1808,7 +1842,7 @@ class GameWidget(QtGui.QWidget):
 	
 	def onMovementPacket(self, contents):
 		for move in contents:
-			client, x, y, hspeed, vspeed, sprite, emoting, dir_nr = move
+			client, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote = move
 			if not self.gameview.characters.has_key(client):
 				continue
 
@@ -1837,10 +1871,11 @@ class GameWidget(QtGui.QWidget):
 						if aSprite[1].lower() == "spin.gif":
 							char.playSpin(fullpath, dir_nr)
 						else:
+							offset = char.emotes[5][currentemote][getDirection(dir_nr)] if currentemote > 0 and currentemote < len(char.emotes[5]) else [0,0]
 							if emoting == 0 or emoting == 1:
-								char.play(fullpath, True)
+								char.play(fullpath, True, offset)
 							else:
-								char.playLastFrame(fullpath)
+								char.playLastFrame(fullpath, offset)
 	
 	def onMusicClicked(self, item):
 		self.ao_app.tcpthread.sendMusicChange(item.text().toUtf8(), str(self.showname_input.text().toUtf8()))
@@ -1922,7 +1957,7 @@ class GameWidget(QtGui.QWidget):
 		elif event.timerId() == self.tcptimer.timerId(): # networking
 			self.ticks += 1
 			if self.ticks % 10 == 0: # send movement
-				self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr)
+				self.ao_app.tcpthread.sendMovement(self.player.xx, self.player.yy, self.player.hspeed, self.player.vspeed, self.player.sprite, self.player.emoting, self.player.dir_nr, self.player.currentemote)
 			if self.ticks % (60*3) == 0: # ping
 				self.ao_app.tcpthread.sendPing()
 

@@ -546,7 +546,7 @@ Types:
     inputtype = args.pop(0).lower()
 
     if inputtype == "unpredictedshadow":
-        if server.clients[client].unpredicted_shadow < 0:
+        if not server.clients[client].unpredicted_shadow:
             idattempt = server.maxplayers
             while server.clients.has_key(idattempt):
                 idattempt += 1
@@ -562,7 +562,7 @@ Types:
             del server.clients[client].unpredicted_shadow
             server.clients[client].unpredicted_shadow = None
 
-        return "Unpredicted shadow: %r" % (server.clients[client].unpredicted_shadow != -1)
+        return "Unpredicted shadow: %r" % bool(server.clients[client].unpredicted_shadow)
 
     return _help("extras")
 

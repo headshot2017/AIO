@@ -866,6 +866,7 @@ class AIOserver(object):
         buffer += self.clients[botID].sprite+"\0"
         buffer += struct.pack("B", self.clients[botID].emoting)
         buffer += struct.pack("B", self.clients[botID].dir_nr)
+        buffer += struct.pack("B", self.clients[botID].currentemote+1)
         
         if buffer == emptybuffer:
             return
@@ -894,6 +895,7 @@ class AIOserver(object):
                     buffer += self.clients[client].sprite+"\0"
                     buffer += struct.pack("B", self.clients[client].emoting)
                     buffer += struct.pack("B", self.clients[client].dir_nr)
+                    buffer += struct.pack("B", self.clients[client].currentemote+1)
                 
                 if client == ClientID:
                     continue
@@ -906,6 +908,7 @@ class AIOserver(object):
                 buffer += self.clients[client].sprite+"\0"
                 buffer += struct.pack("B", self.clients[client].emoting)
                 buffer += struct.pack("B", self.clients[client].dir_nr)
+                buffer += struct.pack("B", self.clients[client].currentemote+1)
         
         else:
             if not self.clients.has_key(sourceID):
@@ -920,6 +923,7 @@ class AIOserver(object):
             buffer += self.clients[sourceID].sprite+"\0"
             buffer += struct.pack("B", self.clients[sourceID].emoting)
             buffer += struct.pack("B", self.clients[sourceID].dir_nr)
+            buffer += struct.pack("B", self.clients[sourceID].currentemote+1)
         
         if buffer == emptybuffer:
             return
@@ -1156,6 +1160,7 @@ class AIOserver(object):
                             self.readbuffer, sprite = buffer_read("S", self.readbuffer)
                             self.readbuffer, emoting = buffer_read("B", self.readbuffer)
                             self.readbuffer, dir_nr = buffer_read("B", self.readbuffer)
+                            self.readbuffer, currentemote = buffer_read("B", self.readbuffer)
                         except struct.error:
                             continue
                         if not self.clients[client].ready:
@@ -1168,6 +1173,7 @@ class AIOserver(object):
                         old_sprite = self.clients[client].sprite
                         old_emoting = self.clients[client].emoting
                         old_dir_nr = self.clients[client].dir_nr
+                        old_currentemote = self.clients[client].currentemote
 
                         self.clients[client].x = x
                         self.clients[client].y = y
@@ -1176,10 +1182,11 @@ class AIOserver(object):
                         self.clients[client].sprite = sprite
                         self.clients[client].emoting = emoting
                         self.clients[client].dir_nr = dir_nr
+                        self.clients[client].currentemote = currentemote-1
 
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientMovement"):
-                                plug[1].onClientMovement(self, self.clients[client], x, y, hspeed,vspeed, sprite, emoting, dir_nr)
+                                plug[1].onClientMovement(self, self.clients[client], x, y, hspeed,vspeed, sprite, emoting, dir_nr, currentemote)
 
                     elif header == AIOprotocol.SETZONE: # change player zone
                         try:

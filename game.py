@@ -1879,7 +1879,7 @@ class GameWidget(QtGui.QWidget):
 						if aSprite[1].lower() == "spin.gif":
 							char.playSpin(fullpath, dir_nr)
 						else:
-							print currentemote, char.sprite, len(char.emotes[5]), len(char.emotes[2])
+							#print currentemote, char.sprite, len(char.emotes[5]), len(char.emotes[2])
 							offset = char.emotes[5][currentemote][getDirection(dir_nr)] if currentemote >= 0 and currentemote < len(char.emotes[5]) and getDirection(dir_nr) in char.emotes[5][currentemote] else [0,0]
 							if emoting == 0 or emoting == 1:
 								char.play(fullpath, True, offset)

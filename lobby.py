@@ -239,8 +239,7 @@ class lobby(QtGui.QWidget):
 			return
 		
 		self.tab = 0
-		self.newstext.hide()
-		self.newslabel.hide()
+		self.newswidget.hide()
 		self.refresh()
 
 	def on_lan_servers(self):
@@ -248,8 +247,7 @@ class lobby(QtGui.QWidget):
 			return
 		
 		self.tab = 1
-		self.newstext.hide()
-		self.newslabel.hide()
+		self.newswidget.hide()
 		self.refresh()
 	
 	def on_favorites_list(self):
@@ -257,8 +255,7 @@ class lobby(QtGui.QWidget):
 			return
 		
 		self.tab = 2
-		self.newstext.hide()
-		self.newslabel.hide()
+		self.newswidget.hide()
 		self.refresh()
 	
 	def on_news_tab(self):
@@ -267,8 +264,7 @@ class lobby(QtGui.QWidget):
 		
 		self.tab = 3
 		self.refreshbtn.show()
-		self.newstext.show()
-		self.newslabel.show()
+		self.newswidget.show()
 	
 	def on_settings_button(self):
 		self.optionsgui.showSettings()

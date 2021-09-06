@@ -20,6 +20,28 @@ def buffer_read(format, buffer):
 	else:
 		return string_unpack(buffer)
 
+def packString8(string):
+    string = string[:255]
+    l = len(string)
+    buf = struct.pack("B%ds"%l, l, string)
+    return buf
+
+def packString16(string):
+    string = string[:65535]
+    l = len(string)
+    buf = struct.pack("H%ds"%l, l, string)
+    return buf
+
+def unpackString8(data):
+    data, l = struct.unpack_from("B", data)
+    data, string = struct.unpack_from("%ds"%l, data)
+    return data[struct.calcsize("B%ds"%l):], string
+
+def unpackString16(data):
+    data, l = struct.unpack_from("H", data)
+    data, string = struct.unpack_from("%ds"%l, data)
+    return data[struct.calcsize("H%ds"%l):], string
+
 def versionToInt(ver):
     v = ver.split(".")
     major = v[0]

@@ -316,35 +316,6 @@ class BaseCharacter(QtGui.QGraphicsPixmapItem):
 			self.finalframe_timer.start(self.movie.nextFrameDelay())
 
 class Character(BaseCharacter):
-	dir_nr = 0
-	emoting = 0
-	currentemote = -1
-	xx = 0.0
-	yy = 0.0
-	xprevious = 0
-	yprevious = 0
-	xprevious2 = 0
-	yprevious2 = 0
-	hspeed = 0
-	vspeed = 0
-	walkspd = 6
-	runspd = 12
-	run = False
-	smoothmoves = 0 #remote player smooth movement
-	charid = -1
-	zone = -1
-	charprefix = ""
-	sprite = ""
-	blip = ""
-	scale = 1
-	walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
-	emotes = [[], [], [], [], [], []] #emotes, loop values, directions (east, west...), sound names, sound delays, offsets
-	isPlayer = False
-	maxwidth = 0
-	maxheight = 0
-	chatbubble = 0
-	playFile = ["", 0, False, [0,0]] # filename, loop, is spin, offset
-	moonwalk = False #are you ok Annie
 	def __init__(self, scene, ao_app):
 		super(Character, self).__init__(scene=scene)
 		self.ao_app = ao_app
@@ -353,7 +324,36 @@ class Character(BaseCharacter):
 		self.translated = False
 		self.chatbubblepix = QtGui.QGraphicsPixmapItem(scene=scene)
 		self.setChatBubble(0)
-		self.playFile = ["", 0, False, [0,0]]
+
+		self.dir_nr = 0
+		self.emoting = 0
+		self.currentemote = -1
+		self.xx = 0.0
+		self.yy = 0.0
+		self.xprevious = 0
+		self.yprevious = 0
+		self.xprevious2 = 0
+		self.yprevious2 = 0
+		self.hspeed = 0
+		self.vspeed = 0
+		self.walkspd = 6
+		self.runspd = 12
+		self.run = False
+		self.smoothmoves = 0 #remote player smooth movement
+		self.charid = -1
+		self.zone = -1
+		self.charprefix = ""
+		self.sprite = ""
+		self.blip = ""
+		self.scale = 1
+		self.walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
+		self.emotes = [[], [], [], [], [], []] #emotes, loop values, directions (east, west...), sound names, sound delays, offsets
+		self.isPlayer = False
+		self.maxwidth = 0
+		self.maxheight = 0
+		self.chatbubble = 0
+		self.playFile = ["", 0, False, [0,0]] # filename, loop, is spin, offset
+		self.moonwalk = False #are you ok Annie
 	
 	def setChatBubble(self, value):
 		self.chatbubble = value
@@ -398,22 +398,7 @@ class Character(BaseCharacter):
 		self.translate(0, -self.maxheight/4)
 		self.translated = True
 		self.setSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif")
-		
-		if not self.isPlayer:
-			return
-		
-		self.emoting = 0
-		self.currentemote = -1
-		self.blip = ini.read_ini(inipath, "Options", "blip", "male")
-		
-		self.walkspd = ini.read_ini_int(inipath, "Options", "walkspeed", 6)
-		self.runspd = ini.read_ini_int(inipath, "Options", "runspeed", 12)
-		
-		self.walkanims[0] = []
-		for i in range(ini.read_ini_int(inipath, "WalkAnims", "total", 1)):
-			self.walkanims[0].append(ini.read_ini(inipath, "WalkAnims", str(i+1), "walk"))
-		self.walkanims[1] = ini.read_ini_int(inipath, "WalkAnims", "runanim", 1)-1
-		
+
 		max_emotes = ini.read_ini_int(inipath, "Emotions", "total")
 		self.emotes[0] = []
 		self.emotes[1] = []
@@ -455,6 +440,21 @@ class Character(BaseCharacter):
 			#         ]
 			#     }
 			# ]
+
+		if not self.isPlayer:
+			return
+		
+		self.emoting = 0
+		self.currentemote = -1
+		self.blip = ini.read_ini(inipath, "Options", "blip", "male")
+		
+		self.walkspd = ini.read_ini_int(inipath, "Options", "walkspeed", 6)
+		self.runspd = ini.read_ini_int(inipath, "Options", "runspeed", 12)
+		
+		self.walkanims[0] = []
+		for i in range(ini.read_ini_int(inipath, "WalkAnims", "total", 1)):
+			self.walkanims[0].append(ini.read_ini(inipath, "WalkAnims", str(i+1), "walk"))
+		self.walkanims[1] = ini.read_ini_int(inipath, "WalkAnims", "runanim", 1)-1
 		
 		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
 	
@@ -491,7 +491,11 @@ class Character(BaseCharacter):
 		self.playFile = [filename, dir, True, [0,0]]
 		self.emoting = 0
 		self.currentemote = -1
-	
+
+	def playLastFrame(self, filename, offset=[0,0]):
+		super(Character, self).playLastFrame(filename)
+		self.playFile[3] = offset
+
 	def update(self, viewX, viewY):
 		if self.isPlayer and self.charid != -1:
 			newsprite = ""
@@ -1724,7 +1728,7 @@ class GameWidget(QtGui.QWidget):
 			found_dir = getCompactDirection(self.player.dir_nr)
 
 		self.player.dir_nr = directions.index(found_dir)
-		offset = self.player.emotes[5][real_ind][found_dir]
+		offset = self.player.emotes[5][real_ind][found_dir] if found_dir in self.player.emotes[5][real_ind] else [0,0]
 
 		filename = "data/characters/"+self.ao_app.charlist[self.player.charid]+"/"+self.player.charprefix+emote+found_dir+".gif"
 		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
@@ -1791,7 +1795,7 @@ class GameWidget(QtGui.QWidget):
 		player, char, zone = contents
 		if self.gameview.characters.has_key(player):
 			return
-		
+
 		self.gameview.initCharacter(player)
 		self.gameview.characters[player].changeChar(char)
 		self.gameview.characters[player].zone = zone
@@ -1875,7 +1879,8 @@ class GameWidget(QtGui.QWidget):
 						if aSprite[1].lower() == "spin.gif":
 							char.playSpin(fullpath, dir_nr)
 						else:
-							offset = char.emotes[5][currentemote][getDirection(dir_nr)] if currentemote > 0 and currentemote < len(char.emotes[5]) else [0,0]
+							print currentemote, char.sprite, len(char.emotes[5]), len(char.emotes[2])
+							offset = char.emotes[5][currentemote][getDirection(dir_nr)] if currentemote >= 0 and currentemote < len(char.emotes[5]) and getDirection(dir_nr) in char.emotes[5][currentemote] else [0,0]
 							if emoting == 0 or emoting == 1:
 								char.play(fullpath, True, offset)
 							else:

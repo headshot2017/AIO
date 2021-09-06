@@ -857,7 +857,8 @@ class AIOserver(object):
     def sendBotMovement(self, botID):
         buffer = struct.pack("B", AIOprotocol.MOVE)
         emptybuffer = buffer
-        
+
+        buffer += struct.pack("H", 1) # one player
         buffer += struct.pack("I", botID)
         buffer += struct.pack("f", self.clients[botID].x)
         buffer += struct.pack("f", self.clients[botID].y)
@@ -876,17 +877,19 @@ class AIOserver(object):
                 self.sendBuffer(client, buffer)
     
     def sendMovement(self, ClientID, sourceID=-1):
-        buffer = struct.pack("B", AIOprotocol.MOVE)
-        emptybuffer = buffer
+        buffer = ""
+        total = 0
+        tempbuffer = struct.pack("B", AIOprotocol.MOVE)
         
-        if sourceID == -1:
+        if sourceID == -1: # send all clients' movements to ClientID
             for client in self.clients.keys():
-                if not self.clients[client].ready or not self.clients[client].first_picked or not self.clients[client].sprite:
+                if not self.clients[client].ready:
                     continue
 
                 if self.clients[client].unpredicted_shadow:
                     shadow_id = self.clients[client].unpredicted_shadow.id
-                    
+
+                    total += 1
                     buffer += struct.pack("I", shadow_id)
                     buffer += struct.pack("f", self.clients[client].x)
                     buffer += struct.pack("f", self.clients[client].y)
@@ -899,7 +902,8 @@ class AIOserver(object):
                 
                 if client == ClientID:
                     continue
-                
+
+                total += 1
                 buffer += struct.pack("I", client)
                 buffer += struct.pack("f", self.clients[client].x)
                 buffer += struct.pack("f", self.clients[client].y)
@@ -914,7 +918,8 @@ class AIOserver(object):
             if not self.clients.has_key(sourceID):
                 print "[warning]", "tried to sendMovement() to client %d from source client %d, but the source client ID doesn't exist" % (ClientID, source)
                 return
-            
+
+            total += 1
             buffer += struct.pack("I", sourceID)
             buffer += struct.pack("f", self.clients[sourceID].x)
             buffer += struct.pack("f", self.clients[sourceID].y)
@@ -924,11 +929,13 @@ class AIOserver(object):
             buffer += struct.pack("B", self.clients[sourceID].emoting)
             buffer += struct.pack("B", self.clients[sourceID].dir_nr)
             buffer += struct.pack("B", self.clients[sourceID].currentemote+1)
-        
-        if buffer == emptybuffer:
+
+        if total == 0:
             return
-        
-        self.sendBuffer(ClientID, buffer)
+
+        tempbuffer += struct.pack("H", total) # amount of clients moving
+        tempbuffer += buffer
+        self.sendBuffer(ClientID, tempbuffer)
     
     def sendPong(self, ClientID):
         if not self.running:

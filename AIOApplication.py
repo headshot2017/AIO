@@ -285,9 +285,15 @@ class ClientThread(QtCore.QThread):
 	def sendMovement(self, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote):
 		if self.connected:
 			self.lastSendTime = time.time()
-			buf = struct.pack("Bffhh", AIOprotocol.MOVE, x, y, hspeed, vspeed)
+			buf = struct.pack("B", AIOprotocol.MOVE)
+			buf += struct.pack("f", x)
+			buf += struct.pack("f", y)
+			buf += struct.pack("h", hspeed)
+			buf += struct.pack("h", vspeed)
 			buf += sprite+"\0"
-			buf += struct.pack("BBB", emoting, dir_nr, currentemote+1)
+			buf += struct.pack("B", emoting)
+			buf += struct.pack("B", dir_nr)
+			buf += struct.pack("B", currentemote+1)
 			self.sendBuffer(buf)
 	
 	def sendPing(self):
@@ -322,7 +328,7 @@ class ClientThread(QtCore.QThread):
 				continue
 
 			try:
-				data = self.tcp.recv(4)
+				data = ready[0][0].recv(4)
 			except socket.error, err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
@@ -342,7 +348,7 @@ class ClientThread(QtCore.QThread):
 					ready = select.select([self.tcp], [], [], 3)
 					if not ready[0]:
 						continue
-					recvd = self.tcp.recv(bufflength)
+					recvd = ready[0][0].recv(bufflength)
 					data += recvd
 					#print len(data), bufflength
 			except socket.error as err:
@@ -460,7 +466,9 @@ class ClientThread(QtCore.QThread):
 				
 				elif header == AIOprotocol.MOVE: #player movements
 					movepacket = []
-					while not data.startswith("\r") and len(data) >= 22:
+					data, clients = buffer_read("H", data)
+					#print clients
+					for i in range(clients):
 						data, client = buffer_read("I", data)
 						data, x = buffer_read("f", data)
 						data, y = buffer_read("f", data)
@@ -470,6 +478,7 @@ class ClientThread(QtCore.QThread):
 						data, emoting = buffer_read("B", data)
 						data, dir_nr = buffer_read("B", data)
 						data, currentemote = buffer_read("B", data)
+						#print "client %d: %.2f %.2f %d %d %r %d %d %d" % (client, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote-1)
 						movepacket.append([client, x, y, hspeed, vspeed, sprite, emoting, dir_nr, currentemote-1])
 					self.movementPacket.emit(movepacket)
 			

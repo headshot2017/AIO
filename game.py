@@ -354,6 +354,7 @@ class Character(BaseCharacter):
 		self.chatbubble = 0
 		self.playFile = ["", 0, False, [0,0]] # filename, loop, is spin, offset
 		self.moonwalk = False #are you ok Annie
+		self.animTranslate = [0,0]
 	
 	def setChatBubble(self, value):
 		self.chatbubble = value
@@ -369,8 +370,19 @@ class Character(BaseCharacter):
 	def collidesWithItem(self, other): # finally no one will get stuck on that fountain while spazzing erratically
 		self.setPos(self.x() + self.hspeed, self.y() + self.vspeed)
 		collides = super(Character, self).collidesWithItem(other)
+		#print self.width
 		self.setPos(self.x() - self.hspeed, self.y() - self.vspeed)
 		return collides
+
+	def shape(self):
+		jm = QtGui.QPainterPath()
+		nouis = self.boundingRect()
+		nouis.setX(0)
+		nouis.setY(nouis.height()-2)
+		nouis.setWidth(1)
+		nouis.setHeight(2)
+		jm.addRect(nouis)
+		return jm
 
 	def changeChar(self, newcharid):
 		self.charid = newcharid
@@ -648,13 +660,17 @@ class Character(BaseCharacter):
 			if (self.hspeed != 0 or self.vspeed != 0) and self.chatbubble == 1:
 				self.chatbubble = 0
 				self.ao_app.tcpthread.sendChatBubble(0)
-			
+
 		if self.playFile[0]:
 			aSize = QtGui.QPixmap(self.playFile[0]).size()
+			self.animTranslate = [aSize.width()*self.scale, aSize.height()*self.scale]
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
+			#aWidth = self.maxwidth/2
+			#aHeight = self.maxheight/2
 			offset = self.playFile[3]
 			self.setPos(-viewX + self.xx - (aWidth) - offset[0], -viewY + self.yy - (aHeight*2) - offset[1])
+			#self.setOffset(-self.animTranslate[0]/2, 0)
 
 			if not self.playFile[2]:
 				super(Character, self).play(self.playFile[0], self.playFile[1])
@@ -663,10 +679,14 @@ class Character(BaseCharacter):
 			self.playFile[0] = ""
 		else:
 			aSize = self.pixmap().size()
+			self.animTranslate = [aSize.width()*self.scale, aSize.height()*self.scale]
 			aWidth = aSize.width()*self.scale
 			aHeight = aSize.height()*self.scale
+			#aWidth = self.maxwidth/2
+			#aHeight = self.maxheight/2
 			offset = self.playFile[3]
 			self.setPos(-viewX + self.xx - (aWidth) - offset[0], -viewY + self.yy - (aHeight*2) - offset[1])
+			#self.setOffset(-self.animTranslate[0]/2, 0)
 		
 		self.xprevious2 = self.xprevious
 		self.yprevious2 = self.yprevious
@@ -1024,7 +1044,7 @@ class GameWidget(QtGui.QWidget):
 				self.emotebar.setPixmap(pixmap)
 
 			oldpos = (self.emotebar.x(), self.emotebar.y())
-			newpos = (self.size().width()/2 - (pixmap.size().width()/2), self.size().height()/2 - (pixmap.size().height()/2))
+			newpos = (self.size().width()/2 - (pixmap.size().width()/2), 0)
 			diffpos = (newpos[0] - oldpos[0], newpos[1] - oldpos[1])
 
 			self.emotebar.resize(pixmap.size().width(), pixmap.size().height())

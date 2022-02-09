@@ -35,12 +35,12 @@ def packString16(string):
 def unpackString8(data):
     data, l = struct.unpack_from("B", data)
     data, string = struct.unpack_from("%ds"%l, data)
-    return data[struct.calcsize("B%ds"%l):], string
+    return data[struct.calcsize("B%ds"%l):], string[:l] # remove \x00 from unpacked string
 
 def unpackString16(data):
     data, l = struct.unpack_from("H", data)
     data, string = struct.unpack_from("%ds"%l, data)
-    return data[struct.calcsize("H%ds"%l):], string
+    return data[struct.calcsize("B%ds"%l):], string[:l] # remove \x00 from unpacked string
 
 def versionToInt(ver):
     v = ver.split(".")

@@ -445,8 +445,9 @@ class MasterServerThread(QtCore.QThread):
 
 		elif header == AIOprotocol.MS_LIST: # server list
 			servers = []
-			while data:
-				data, ip = buffer_read("S", data)
+			data, amount = buffer_read("H", data)
+			for i in range(amount):
+				data, ip = packing.unpackString8(data)
 				data, port = buffer_read("H", data)
 
 				servers.append(["%s:%d"%(ip,port), "", "", "pinging", "", ip, str(port)])
@@ -458,7 +459,7 @@ class MasterServerThread(QtCore.QThread):
 				self.got_news = True
 
 		elif header == AIOprotocol.MS_NEWS:
-			data, big_wall_of_text = buffer_read("S", data)
+			data, big_wall_of_text = packing.unpackString16(data)
 			self.gotNews.emit(big_wall_of_text)
 
 	def run(self):

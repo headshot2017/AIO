@@ -962,7 +962,7 @@ class AIOserver(object):
     
     def sendToMasterServer(self, msg):
         try:
-            self.ms_tcp.send(struct.pack("I", len(msg)) + msg)
+            self.ms_tcp.send(struct.pack("I", len(msg)) + zlib.compress(msg))
         except:
             pass
     
@@ -1054,7 +1054,7 @@ class AIOserver(object):
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                                 plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                        self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+                        #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                         self.clients[client].close = True
                         del self.clients[client]
                         try: sock.close()
@@ -1068,7 +1068,7 @@ class AIOserver(object):
                     for plug in self.plugins:
                         if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                             plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                    self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+                    #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                     self.clients[client].close = True
                     del self.clients[client]
                     try: sock.close()
@@ -1093,7 +1093,7 @@ class AIOserver(object):
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
                                 plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                        self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+                        #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
                         self.clients[client].close = True
                         del self.clients[client]
                         break

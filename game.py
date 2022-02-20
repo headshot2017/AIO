@@ -2124,8 +2124,10 @@ class EvidenceDialog(QtGui.QWidget):
 		theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
 		uic.loadUi("data/themes/"+theme+"/court_record.ui", self)
 
+		self.myevidencefolder = os.path.abspath("data/evidence").replace("\\", "/")
+		self.evidencepicture.setStyleSheet("color: black")
 		self.evidenceeditor_name.textChanged.connect(self.changesMade)
-		self.evidencepicdropdown.currentIndexChanged.connect(self.changeDropdown)
+		self.evidencepicture.clicked.connect(self.changePicture)
 		self.evidencedesc.textChanged.connect(self.changesMade)
 		self.evidenceclose.clicked.connect(self.closeDialog)
 		self.savechanges.clicked.connect(self.saveChanges)
@@ -2137,7 +2139,6 @@ class EvidenceDialog(QtGui.QWidget):
 		for file in imgfiles:
 			if file.lower().endswith(".png") and file.lower() != "unknown.png":
 				self.imgfiles.append(file)
-				self.evidencepicdropdown.addItem(file)
 
 		self.savechanges.hide()
 		self.hide()
@@ -2159,20 +2160,23 @@ class EvidenceDialog(QtGui.QWidget):
 		self.deletebtn.hide()
 		self.stackedWidget.setCurrentWidget(self.evidence_list)
 	
-	def changeDropdown(self, ind):
+	def changePicture(self):
 		if not self.isVisible():
 			return
-		
-		self.changesMade()
-		image = self.imgfiles[ind]
-		
-		if os.path.exists("data/evidence/"+image):
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/"+image))
-		else:
-			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
+
+		file = str(QtGui.QFileDialog.getOpenFileName(self, "Select evidence image", "data/evidence", "Images (*.jpg *.png *.gif *.bmp)").toUtf8())
+		if file:
+			folder, filename = os.path.split(file)
+			folder = folder.replace("\\", "/")
+			if not folder.startswith(self.myevidencefolder):
+				QtGui.QMessageBox.critical(self, "Evidence image", "You can't select evidence images outside of the evidence folder.")
+				return
+			self.evidencepicname.setText(filename)
+			self.evidencepicture.setPixmap(QtGui.QPixmap(file))
+			self.changesMade()
 	
 	def saveChanges(self):
-		name, desc, image = str(self.evidenceeditor_name.text().toUtf8()), str(self.evidencedesc.toPlainText().toUtf8()), self.imgfiles[self.evidencepicdropdown.currentIndex()]
+		name, desc, image = str(self.evidenceeditor_name.text().toUtf8()), str(self.evidencedesc.toPlainText().toUtf8()), str(self.evidencepicname.text().toUtf8())
 		if not name: return
 
 		if not self.creatingEvidence:
@@ -2192,18 +2196,12 @@ class EvidenceDialog(QtGui.QWidget):
 		self.ind, name, desc, image = ev
 		self.evidenceeditor_name.setText(name)
 		self.evidencedesc.setPlainText(desc)
-		
+
+		self.evidencepicname.setText(image)
 		if os.path.exists("data/evidence/"+image):
 			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/"+image))
 		else:
 			self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/unknown.png"))
-		
-		if image in self.imgfiles:
-			self.evidencepicdropdown.setCurrentIndex(self.imgfiles.index(image))
-		else:
-			self.imgfiles.append(image)
-			self.evidencepicdropdown.addItem(image)
-			self.evidencepicdropdown.setCurrentIndex(len(self.imgfiles)-1)
 		
 		self.creatingEvidence = False
 		self.deletebtn.show()
@@ -2214,8 +2212,8 @@ class EvidenceDialog(QtGui.QWidget):
 	def createEvidence(self):
 		self.evidenceeditor_name.clear()
 		self.evidencedesc.clear()
+		self.evidencepicname.setText("empty.png")
 		self.evidencepicture.setPixmap(QtGui.QPixmap("data/evidence/empty.png"))
-		self.evidencepicdropdown.setCurrentIndex(self.imgfiles.index("empty.png"))
 		self.creatingEvidence = True
 		self.presentbtn.hide()
 		self.deletebtn.hide()

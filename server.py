@@ -1425,7 +1425,12 @@ class AIOserver(object):
                                 self.Print("evidence", "%s id=%d addr=%s zone=%d tried to add a piece of evidence but exceeded the limit" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone))
                                 self.sendWarning(client, "You cannot add more than %d pieces of evidence at a time." % self.evidence_limit)
                                 continue
-                            
+
+                            if "../" in image or "..\\" in image:
+                                self.Print("evidence", "%s id=%d addr=%s zone=%d tried to add evidence but the image isn't from evidence folder" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone))
+                                self.sendWarning(client, "You can't select evidence images outside of the evidence folder.")
+                                continue
+
                             self.Print("evidence", "%s id=%d addr=%s zone=%d added a piece of evidence: %s" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, name))
                             self.addEvidence(self.clients[client].zone, name, desc, image)
                             

@@ -26,7 +26,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="evidence_list">
     <property name="styleSheet">
@@ -168,7 +168,7 @@ QLineEdit:hover{border: 0px; background-color: rgba(0, 0, 0, 0)}</string>
       </property>
      </widget>
     </widget>
-    <widget class="QLabel" name="evidencepicture">
+    <widget class="AIOButton" name="evidencepicture">
      <property name="geometry">
       <rect>
        <x>48</x>
@@ -183,16 +183,6 @@ image</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-    <widget class="QComboBox" name="evidencepicdropdown">
-     <property name="geometry">
-      <rect>
-       <x>208</x>
-       <y>73</y>
-       <width>192</width>
-       <height>20</height>
-      </rect>
      </property>
     </widget>
     <widget class="AIOButton" name="evidenceclose">
@@ -267,6 +257,19 @@ image</string>
      </property>
      <property name="pixmap">
       <pixmap>present_button.png</pixmap>
+     </property>
+    </widget>
+    <widget class="QLabel" name="evidencepicname">
+     <property name="geometry">
+      <rect>
+       <x>128</x>
+       <y>72</y>
+       <width>273</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>No file selected</string>
      </property>
     </widget>
    </widget>

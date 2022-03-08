@@ -1419,7 +1419,11 @@ class AIOserver(object):
                         
                         if not self.clients[client].ready or self.clients[client].CharID == -1:
                             continue
-                        
+
+                        name = name[:200]
+                        desc = desc[:2000]
+                        image = image[:100]
+
                         if type == AIOprotocol.EV_ADD:
                             if len(self.evidencelist[self.clients[client].zone]) == self.evidence_limit:
                                 self.Print("evidence", "%s id=%d addr=%s zone=%d tried to add a piece of evidence but exceeded the limit" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone))

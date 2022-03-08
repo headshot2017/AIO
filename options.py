@@ -229,11 +229,8 @@ class Options(QtGui.QWidget):
         audio_layout.setWidget(4, QtGui.QFormLayout.LabelRole, bliplabel)
         audio_layout.setWidget(4, QtGui.QFormLayout.FieldRole, self.blipslider)
 
-        info = BASS_DEVICEINFO()
-        ind = 0
-        while BASS_GetDeviceInfo(ind, info):
-            self.device_list.addItem(info.name)
-            ind += 1
+        for device in audio.getdevices():
+            self.device_list.addItem(device)
 
         ###### Advanced tab ######
         ms_layout = QtGui.QHBoxLayout()
@@ -288,7 +285,7 @@ class Options(QtGui.QWidget):
                     break
             
             self.ms_lineedit.setText(ini.read_ini("aaio.ini", "MasterServer", "IP"))
-            self.device_list.setCurrentIndex(ini.read_ini_int("aaio.ini", "Audio", "Device", BASS_GetDevice()))
+            self.device_list.setCurrentIndex(ini.read_ini_int("aaio.ini", "Audio", "Device", audio.getcurrdevice()))
             self.musicslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Music volume", 100))
             self.soundslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Sound volume", 100))
             self.blipslider.setValue(ini.read_ini_int("aaio.ini", "Audio", "Blip volume", 100))
@@ -317,7 +314,7 @@ class Options(QtGui.QWidget):
                     break
 
             self.ms_lineedit.setText("aaio-ms.aceattorneyonline.com:27011")
-            self.device_list.setCurrentIndex(BASS_GetDevice())
+            self.device_list.setCurrentIndex(audio.getcurrdevice())
             self.musicslider.setValue(100)
             self.soundslider.setValue(100)
             self.blipslider.setValue(100)

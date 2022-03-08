@@ -1187,8 +1187,8 @@ class GameWidget(QtGui.QWidget):
 		self.examines = []
 		self.examining = False
 		self.spawned_once = False
-		self.realizationsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-realization.wav", 0, 0, 0)
-		self.lightbulbsnd = BASS_StreamCreateFile(False, "data/sounds/general/sfx-lightbulb.wav", 0, 0, 0)
+		self.realizationsnd = audio.loadhandle(False, "data/sounds/general/sfx-realization.wav", 0, 0, 0)
+		self.lightbulbsnd = audio.loadhandle(False, "data/sounds/general/sfx-lightbulb.wav", 0, 0, 0)
 
 	def onOOCLoginBtn(self):
 		password, ok = QtGui.QInputDialog.getText(self, "Login as moderator", "Enter password.")
@@ -1208,23 +1208,23 @@ class GameWidget(QtGui.QWidget):
 		#print "new music volume"
 		self.ao_app.musicvol = value
 		if self.ao_app.music:
-			BASS_ChannelSetAttribute(self.ao_app.music, BASS_ATTRIB_VOL, value / 100.0)
+			audio.sethandleattr(self.ao_app.music, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeSoundVolume(self, value):
 		#print "new sound volume"
 		self.ao_app.sndvol = value
 		if self.ao_app.sound:
-			BASS_ChannelSetAttribute(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
+			audio.sethandleattr(self.ao_app.sound, BASS_ATTRIB_VOL, value / 100.0)
 		if self.ao_app.GUIsound:
-			BASS_ChannelSetAttribute(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
+			audio.sethandleattr(self.ao_app.GUIsound, BASS_ATTRIB_VOL, value / 100.0)
 		if self.ao_app.WTCEsound:
-			BASS_ChannelSetAttribute(self.ao_app.WTCEsound, BASS_ATTRIB_VOL, value / 100.0)
+			audio.sethandleattr(self.ao_app.WTCEsound, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def changeBlipVolume(self, value):
 		#print "new blip volume"
 		self.ao_app.blipvol = value
 		if self.blip:
-			BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, value / 100.0)
+			audio.sethandleattr(self.blip, BASS_ATTRIB_VOL, value / 100.0)
 	
 	def onPresentButton(self, ind):
 		self.ao_app.playGUISound("data/sounds/general/sfx-selectblip2.wav")
@@ -1475,9 +1475,9 @@ class GameWidget(QtGui.QWidget):
 		self.chatlog.append(msg)
 		
 		if self.blip:
-			BASS_StreamFree(self.blip)
-		self.blip = BASS_StreamCreateFile(False, "data/sounds/general/sfx-blip"+blip+".wav", 0, 0, 0)
-		BASS_ChannelSetAttribute(self.blip, BASS_ATTRIB_VOL, self.ao_app.blipvol / 100.0)
+			audio.freehandle(self.blip)
+		self.blip = audio.loadhandle(False, "data/sounds/general/sfx-blip"+blip+".wav", 0, 0, 0)
+		audio.sethandleattr(self.blip, BASS_ATTRIB_VOL, self.ao_app.blipvol / 100.0)
 		
 		self.chattext.clear()
 		self.chatname.setText(name)
@@ -1489,9 +1489,9 @@ class GameWidget(QtGui.QWidget):
 			self.chattext.setAlignment(QtCore.Qt.AlignLeft)
 		
 		if realization == 1:
-			BASS_ChannelPlay(self.realizationsnd, True)
+			audio.playhandle(self.realizationsnd, True)
 		elif realization == 2:
-			BASS_ChannelPlay(self.lightbulbsnd, True)
+			audio.playhandle(self.lightbulbsnd, True)
 		
 		self.inline_color_stack = []
 		self.tick_pos = 0
@@ -1623,7 +1623,7 @@ class GameWidget(QtGui.QWidget):
 			if self.m_chatmsg[self.tick_pos] != " ":
 				if self.blip_pos % self.blip_rate == 0 and not formatting_char:
 					self.blip_pos = 0
-					BASS_ChannelPlay(self.blip, True)
+					audio.playhandle(self.blip, True)
 					
 				self.blip_pos += 1
 			

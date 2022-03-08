@@ -69,50 +69,50 @@ class AIOApplication(QtGui.QApplication):
 			filename, extension = os.path.splitext(file)
 			extension = extension.lower()
 			if extension == ".mod" or extension == ".xm" or extension == ".s3m" or extension == ".it":
-				self.music = BASS_MusicLoad(False, "data/sounds/music/"+file, 0, 0, 0, 0)
+				self.music = audio.loadmusic(False, "data/sounds/music/"+file)
 			else:
-				self.music = BASS_StreamCreateFile(False, "data/sounds/music/"+file, 0, 0, BASS_SAMPLE_LOOP)
+				self.music = audio.loadhandle(False, "data/sounds/music/"+file, 0, 0, BASS_SAMPLE_LOOP)
 
 		elif file.lower().startswith("http") or file.lower().startswith("ftp"): # stream from internet
-			self.music = BASS_StreamCreateURL(file, 0, 0, DOWNLOADPROC(), 0)
+			self.music = audio.loadURLhandle(file)
 
 		if self.music:
-			BASS_ChannelSetAttribute(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
-			BASS_ChannelPlay(self.music, True)
+			audio.sethandleattr(self.music, BASS_ATTRIB_VOL, self.musicvol / 100.0)
+			audio.playhandle(self.music, True)
 		
 	def playSound(self, file):
 		if self.sound:
-			if BASS_ChannelIsActive(self.sound):
-				BASS_StreamFree(self.sound)
+			if audio.handleisactive(self.sound):
+				audio.freehandle(self.sound)
 		
 		if os.path.exists(file):
-			self.sound = BASS_StreamCreateFile(False, file, 0, 0, 0)
-			BASS_ChannelSetAttribute(self.sound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
-			BASS_ChannelPlay(self.sound, True)
+			self.sound = audio.loadhandle(False, file, 0, 0, 0)
+			audio.sethandleattr(self.sound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
+			audio.playhandle(self.sound, True)
 	
 	def playGUISound(self, file):
 		if self.GUIsound:
-			if BASS_ChannelIsActive(self.GUIsound):
-				BASS_StreamFree(self.GUIsound)
+			if audio.handleisactive(self.GUIsound):
+				audio.freehandle(self.GUIsound)
 		
-		self.GUIsound = BASS_StreamCreateFile(False, file, 0, 0, 0)
-		BASS_ChannelSetAttribute(self.GUIsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
-		BASS_ChannelPlay(self.GUIsound, True)
+		self.GUIsound = audio.loadhandle(False, file, 0, 0, 0)
+		audio.sethandleattr(self.GUIsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
+		audio.playhandle(self.GUIsound, True)
 
 	def playWTCESound(self, file):
 		if self.WTCEsound:
-			if BASS_ChannelIsActive(self.WTCEsound):
-				BASS_StreamFree(self.WTCEsound)
+			if audio.handleisactive(self.WTCEsound):
+				audio.freehandle(self.WTCEsound)
 		
-		self.WTCEsound = BASS_StreamCreateFile(False, file, 0, 0, 0)
-		BASS_ChannelSetAttribute(self.WTCEsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
-		BASS_ChannelPlay(self.WTCEsound, True)
+		self.WTCEsound = audio.loadhandle(False, file, 0, 0, 0)
+		audio.sethandleattr(self.WTCEsound, BASS_ATTRIB_VOL, self.sndvol / 100.0)
+		audio.playhandle(self.WTCEsound, True)
 	
 	def stopMusic(self):
 		if self.music:
-			if BASS_ChannelIsActive(self.music):
-				BASS_StreamFree(self.music)
-				BASS_MusicFree(self.music)
+			if audio.handleisactive(self.music):
+				audio.freehandle(self.music)
+				audio.freemusic(self.music)
 			self.music = None
 	
 	def connect(self, ip, port):

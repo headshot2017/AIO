@@ -3,6 +3,7 @@ import zipfile
 import subprocess
 import sys
 import os
+import platform
 
 def pip_install(package):
     subprocess.call([sys.executable, "-m", "pip", "install", package])
@@ -18,7 +19,7 @@ pip_install('requests')
 import requests
 
 print "downloading pybass"
-filedata = urllib2.urlopen('http://master.dl.sourceforge.net/project/pybass/pybass_055.zip')  
+filedata = urllib2.urlopen('http://master.dl.sourceforge.net/project/pybass/pybass_055.zip')
 datatowrite = filedata.read()
 
 with open('pybass_055.zip', 'wb') as f:  
@@ -31,22 +32,48 @@ zip_ref.extractall()
 zip_ref.close()
 
 print "renaming pybass.py"
-if os.path.exists('pybass/__init__.py'):
-    os.remove('pybass/__init__.py')
+if os.path.exists("pybass/__init__.py"): os.remove('pybass/__init__.py')
 os.rename('pybass/pybass.py', 'pybass/__init__.py')
 
+BASSZIP = "bass24.zip"
+BASSDLL = "bass.dll"
+BASSOPUSZIP = "bassopus24.zip"
+BASSOPUSDLL = "bassopus.dll"
+if platform.system() == "Darwin":
+    BASSZIP = "bass24-osx.zip"
+    BASSDLL = "libbass.dylib"
+    BASSOPUSZIP = "bassopus24-osx.zip"
+    BASSOPUSDLL = "libbassopus.dylib"
+elif platform.system() == "Linux":
+    BASSZIP = "bass24-linux.zip"
+    BASSDLL = "libbass.so"
+    BASSOPUSZIP = "bassopus24-linux.zip"
+    BASSOPUSDLL = "libbassopus.so"
 
-print "downloading bass"
-filedata = urllib2.urlopen('http://us.un4seen.com/files/bass24.zip')  
+print "downloading", BASSZIP
+filedata = urllib2.urlopen('http://us.un4seen.com/files/'+BASSZIP)
 datatowrite = filedata.read()
 
-with open('bass24.zip', 'wb') as f:  
+with open(BASSZIP, 'wb') as f:  
     f.write(datatowrite)
     f.close()
 
-print "extracting bass"
-zip_ref = zipfile.ZipFile('bass24.zip', 'r')
-zip_ref.extract('bass.dll')
+print "extracting "+BASSDLL+" from "+BASSZIP
+zip_ref = zipfile.ZipFile(BASSZIP, 'r')
+zip_ref.extract(BASSDLL)
+zip_ref.close()
+
+print "downloading", BASSOPUSZIP
+filedata = urllib2.urlopen('http://us.un4seen.com/files/'+BASSOPUSZIP)
+datatowrite = filedata.read()
+
+with open(BASSOPUSZIP, 'wb') as f:
+    f.write(datatowrite)
+    f.close()
+
+print "extracting "+BASSOPUSDLL+" from "+BASSOPUSZIP
+zip_ref = zipfile.ZipFile(BASSOPUSZIP, 'r')
+zip_ref.extract(BASSOPUSDLL)
 zip_ref.close()
 
 if os.name == 'nt':
@@ -54,29 +81,15 @@ if os.name == 'nt':
     filedata = requests.get('https://pypi.anaconda.org/ales-erjavec/simple/pyqt4/4.11.4/PyQt4-4.11.4-cp27-none-win32.whl')
     datatowrite = filedata.content
 
-    with open('PyQt4-4.11.4-cp27-cp27m-win32.whl', 'wb') as f:  
+    with open('PyQt4-4.11.4-cp27-none-win32.whl', 'wb') as f:  
         f.write(datatowrite)
         f.close()
     
 
     print "installing pyqt4"
-    pip_install('PyQt4-4.11.4-cp27-cp27m-win32.whl')
+    pip_install('PyQt4-4.11.4-cp27-none-win32.whl')
+
 else:
-    
-    print "downloading bass-linux"
-    filedata = urllib2.urlopen('http://www.un4seen.com/files/bass24-linux.zip')  
-    datatowrite = filedata.read()
-
-    with open('bass24-linux.zip', 'wb') as f:  
-        f.write(datatowrite)
-        f.close()
-
-    print "extracting bass"
-    zip_ref = zipfile.ZipFile('bass24-linux.zip', 'r')
-    zip_ref.extract('libbass.so')
-    zip_ref.close()
-    
-    
     print "downloading sip"
     filedata = urllib2.urlopen('http://www.riverbankcomputing.com/static/Downloads/sip/4.19.15/sip-4.19.15.tar.gz')  
     datatowrite = filedata.read()

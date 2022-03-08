@@ -7,11 +7,12 @@ server/*.txt
 server/*.pyc
 server/_commands/*.pyc
 *.exe
-bass.dll
-bass24.zip
-PyQt4-4.11.4-cp27-cp27m-win32.whl
+bass*.dll
+bass*.zip
+PyQt4*.whl
 *.pyc
 pybass_055.zip
 *.zip
 qt.conf
 Thumbs.db
+.DS_Store

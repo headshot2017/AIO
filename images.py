@@ -25,6 +25,7 @@ def load_apng(file): # this one was hell to implement compared to the three func
     frames = []
     pilframes = []
     dispose_op = 0
+    dur = 0
     
     width, height = img.frames[0][0].width, img.frames[0][0].height
     outputbuf = Image.new("RGBA", (width, height), (255,255,255,0))
@@ -55,42 +56,25 @@ def load_apng(file): # this one was hell to implement compared to the three func
         final_frame = outputbuf.copy()
         pilframes.append(final_frame)
         if frame_info:
+            dur += frame_info.delay*10 # convert delay from centiseconds to milliseconds
             frames.append([final_frame.toqimage(), frame_info.delay*10]) # convert delay from centiseconds to milliseconds
             dispose_op = frame_info.depose_op
         else:
             frames.append([final_frame.toqimage(), 0])
 
     for frame in pilframes: frame.close()
-    return frames
+    return frames, dur
     #return pilframes
 
 def load_webp(file):
     img = Image.open(file)
     frames = []
+    dur = 0
 
     for i in range(img.n_frames):
         img.seek(i)
         img.load() # strange thing with Pillow and animated webp's is that the img.info dictionary attr doesn't update unless you call a function like this
         frames.append([img.toqimage(), img.info["duration"]])
-
-    return frames, img.info["loop"]
-
-def get_apng_duration(file):
-    img = APNG.open(file)
-    dur = 0
-
-    for frame, frame_info in img.frames:
-        if frame_info: dur += frame_info.delay*10 # convert delay from centiseconds to milliseconds
-
-    return dur
-
-def get_webp_duration(file):
-    img = Image.open(file)
-    dur = 0
-
-    for i in range(img.n_frames):
-        img.seek(i)
-        img.load() # strange thing with Pillow and animated webp's is that the img.info dictionary attr doesn't update unless you call a function like this
         dur += img.info["duration"]
 
-    return dur
+    return frames, img.info["loop"], dur

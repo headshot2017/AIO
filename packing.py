@@ -33,14 +33,14 @@ def packString16(string):
     return buf
 
 def unpackString8(data):
-    data, l = struct.unpack_from("B", data)
-    data, string = struct.unpack_from("%ds"%l, data)
-    return data[struct.calcsize("B%ds"%l):], string[:l] # remove \x00 from unpacked string
+    l, = struct.unpack_from("B", data)
+    string, = struct.unpack_from("%ds"%l, data[1:])
+    return data[struct.calcsize("B%ds"%l):], string[:l]
 
 def unpackString16(data):
-    data, l = struct.unpack_from("H", data)
-    data, string = struct.unpack_from("%ds"%l, data)
-    return data[struct.calcsize("B%ds"%l):], string[:l] # remove \x00 from unpacked string
+    l, = struct.unpack_from("H", data)
+    string, = struct.unpack_from("%ds"%l, data[2:])
+    return data[struct.calcsize("H%ds"%l):], string[:l]
 
 def versionToInt(ver):
     v = ver.split(".")

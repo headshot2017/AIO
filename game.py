@@ -4,7 +4,7 @@ from functools import partial
 from PyQt4 import QtCore, QtGui, QtOpenGL, uic
 from pybass import *
 
-import AIOprotocol, buttons, charselect, ini, vmath
+import AIOprotocol, buttons, charselect, ini, vmath, images
 
 INLINE_BLUE = 0
 INLINE_GREEN = 1

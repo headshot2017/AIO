@@ -76,6 +76,23 @@ zip_ref = zipfile.ZipFile(BASSOPUSZIP, 'r')
 zip_ref.extract(BASSOPUSDLL)
 zip_ref.close()
 
+print "installing apng"
+pip_install("apng")
+
+try:
+    from PIL import Image
+    if Image.__version__ != "5.3.0":
+        jm = raw_input("Pillow version 5.3.0 is recommended; You have version %s\nReplace with version 5.3.0? (Y/N) > " % Image.__version__).lower()
+        if jm == "y":
+            print "installing Pillow 5.3.0"
+            pip_install("Pillow==5.3.0")
+    else:
+        print "Pillow 5.3.0 already exists, skipping"
+
+except ImportError:
+    print "installing Pillow 5.3.0"
+    pip_install("Pillow==5.3.0")
+
 if os.name == 'nt':
     print "downloading pyqt4"
     filedata = requests.get('https://pypi.anaconda.org/ales-erjavec/simple/pyqt4/4.11.4/PyQt4-4.11.4-cp27-none-win32.whl')

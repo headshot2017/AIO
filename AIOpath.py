@@ -1,7 +1,7 @@
 import os
 
 def getThemeFile(theme, file):
-	if os.path.exists("data/themes/%s/%s" % (theme, file)): return "data/themes/%s/%s" % (theme, file)
+    if os.path.exists("data/themes/%s/%s" % (theme, file)): return "data/themes/%s/%s" % (theme, file)
     return "data/themes/default/%s" % file
 
 def getImage(file):

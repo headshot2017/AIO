@@ -1,24 +1,9 @@
 import struct
 
-# taken from AIO python server code, it'll make my life easier.
-def string_unpack(buf):
-	unpacked = buf.split("\0")[0]
-	gay = list(buf)
-	for l in range(len(unpacked+"\0")):
-		del gay[0]
-	return "".join(gay), unpacked
-
-def buffer_read(format, buffer):
-	if format != "S":
-		unpacked = struct.unpack_from(format, buffer)
-		size = struct.calcsize(format)
-		liss = list(buffer)
-		for l in range(size):
-			del liss[0]
-		returnbuffer = "".join(liss)
-		return returnbuffer, unpacked[0]
-	else:
-		return string_unpack(buffer)
+def buffer_read(format, data):
+    unpacked = struct.unpack_from(format, data)
+    size = struct.calcsize(format)
+    return data[size:], unpacked[0] # [size:] means skip ahead size amount of bytes
 
 def packString8(string):
     string = string[:255]

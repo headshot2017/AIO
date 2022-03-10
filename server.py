@@ -68,7 +68,7 @@ class AIOserver(object):
                 f.write(";through the command line. leave the password empty to disable.\n")
                 f.write("\n")
                 f.write("[Advanced]\n")
-                f.write("TickRate=10\n")
+                #f.write("TickRate=10\n")
                 f.write("ServerOOCName = $SERVER\n")
                 f.write("AllowBots=0\n")
 
@@ -105,7 +105,8 @@ class AIOserver(object):
         self.econ_password = ini.get("ECON", "password", "")
         self.econ_tcp = None
 
-        self.tickspeed = ini.get("Advanced", "TickRate", 10, int)
+        #self.tickspeed = ini.get("Advanced", "TickRate", 10, int)
+        self.tickspeed = 6
         self.ServerOOCName = ini.get("Advanced", "ServerOOCName", "$SERVER")
         self.allow_bots = ini.get("Advanced", "AllowBots", "0") == "1"
         if self.allow_bots and not os.path.exists("data/characters"):
@@ -246,7 +247,7 @@ class AIOserver(object):
                 client.settimeout(0.1)
                 self.clients[i].is_authed = ipaddr[0].startswith("127.") # automatically make localhost an admin
                 #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                self.clients[i].pingpong = ClientPingTime * (self.tickspeed / (1 if os.name == "nt" else 2))
+                self.clients[i].pingpong = ClientPingTime * self.tickspeed
                 thread.start_new_thread(self.clientLoop, (i,))
                 return
         
@@ -1286,7 +1287,7 @@ class AIOserver(object):
                         if not self.clients[client].OOCname:
                             self.sendOOC(self.ServerOOCName, "You must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
                         else:
-                            self.clients[client].ratelimits[3] = OOCRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
+                            self.clients[client].ratelimits[3] = OOCRateLimit * self.tickspeed
                             if chatmsg[0] != "/": # normal chat
                                 if self.rcon and self.rcon in chatmsg: continue # NO LEAK PASSWORD
 
@@ -1320,7 +1321,7 @@ class AIOserver(object):
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
-                        self.clients[client].ratelimits[2] = ExamineRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
+                        self.clients[client].ratelimits[2] = ExamineRateLimit * self.tickspeed
 
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientExamine"):
@@ -1364,7 +1365,7 @@ class AIOserver(object):
                                 if plug[1].running and hasattr(plug[1], "onClientMusic"):
                                     plug[1].onClientMusic(self, self.clients[client], songname, showname, False)
 
-                        self.clients[client].ratelimits[0] = MusicRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
+                        self.clients[client].ratelimits[0] = MusicRateLimit * self.tickspeed
                     
                     elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
                         try:
@@ -1394,7 +1395,7 @@ class AIOserver(object):
                             continue
                         
                         self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
-                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
+                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * self.tickspeed
                         
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientEmoteSound"):
@@ -1495,7 +1496,7 @@ class AIOserver(object):
                         if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
                             continue
 
-                        self.clients[client].ratelimits[4] = WTCERateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
+                        self.clients[client].ratelimits[4] = WTCERateLimit * self.tickspeed
                         self.sendWTCE(wtcetype, self.clients[client].zone)
                         
                         for plug in self.plugins:
@@ -1503,7 +1504,7 @@ class AIOserver(object):
                                 plug[1].onClientWTCE(self, self.clients[client], self.clients[client].zone, wtcetype)
 
                     elif header == AIOprotocol.PING: #pong
-                        self.clients[client].pingpong = ClientPingTime * (self.tickspeed / (1 if os.name == "nt" else 2))
+                        self.clients[client].pingpong = ClientPingTime * self.tickspeed
                         self.sendPong(client)
         
         except Exception as e: # an error occurred on this client

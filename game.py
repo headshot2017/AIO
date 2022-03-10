@@ -355,6 +355,7 @@ class Character(BaseCharacter):
 		self.playFile = ["", 0, False, [0,0]] # filename, loop, is spin, offset
 		self.moonwalk = False #are you ok Annie
 		self.animTranslate = [0,0]
+		self.interpAmount = 3 if (self.ao_app.fps == 30) else 8
 	
 	def setChatBubble(self, value):
 		self.chatbubble = value
@@ -697,7 +698,7 @@ class Character(BaseCharacter):
 		
 		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
-			if self.smoothmoves >= 3 * (self.ao_app.fps / 30.):
+			if self.smoothmoves >= self.interpAmount:
 				self.hspeed = self.vspeed = 0
 				self.smoothmoves = 0
 
@@ -1876,8 +1877,8 @@ class GameWidget(QtGui.QWidget):
 
 			char = self.gameview.characters[client]
 			if not char.isPlayer and char.smoothmoves <= 0:
-				char.hspeed = (x - char.xx) / (3 * (self.ao_app.fps / 30.))
-				char.vspeed = (y - char.yy) / (3 * (self.ao_app.fps / 30.))
+				char.hspeed = (x - char.xx) / (char.interpAmount)
+				char.vspeed = (y - char.yy) / (char.interpAmount)
 			char.sprite = sprite
 
 			if self.player:

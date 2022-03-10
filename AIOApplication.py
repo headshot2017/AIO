@@ -209,8 +209,8 @@ class ClientThread(QtCore.QThread):
 	def sendMusicChange(self, filename, showname):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MUSIC)
-			buf += packString16(str(filename))
-			buf += packString8(str(showname))
+			buf += packString16(filename)
+			buf += packString8(showname)
 			self.sendBuffer(buf)
 	
 	def sendExamine(self, x, y, showname):

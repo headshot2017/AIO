@@ -1194,7 +1194,7 @@ class GameWidget(QtGui.QWidget):
 		password, ok = QtGui.QInputDialog.getText(self, "Login as moderator", "Enter password.")
 		if password and ok:
 			name = str(self.oocnameinput.text().toUtf8())
-			self.ao_app.tcpthread.sendOOC(name, "/login "+password.toUtf8())
+			self.ao_app.tcpthread.sendOOC(name, "/login "+str(password.toUtf8()))
 	
 	def changeWalkAnim(self, ind):
 		self.player.walkanims[2] = ind
@@ -1907,7 +1907,7 @@ class GameWidget(QtGui.QWidget):
 								char.playLastFrame(fullpath, offset)
 	
 	def onMusicClicked(self, item):
-		self.ao_app.tcpthread.sendMusicChange(item.text().toUtf8(), str(self.showname_input.text().toUtf8()))
+		self.ao_app.tcpthread.sendMusicChange(str(item.text().toUtf8()), str(self.showname_input.text().toUtf8()))
 	
 	def setZone(self, ind):
 		if self.player.zone != ind:

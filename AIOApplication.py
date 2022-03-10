@@ -178,7 +178,7 @@ class ClientThread(QtCore.QThread):
 	def sendWelcome(self):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.CONNECT)
-			buf += GAME_VERSION+"\0"
+			buf += packString8(GAME_VERSION)
 			self.sendBuffer(buf)
 	
 	def sendRequest(self, type):
@@ -190,27 +190,27 @@ class ClientThread(QtCore.QThread):
 	def sendIC(self, chatmsg, blip, color, realization, evidence, showname, message_id):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MSCHAT)
-			buf += chatmsg+"\0"
-			buf += blip+"\0"
+			buf += packString8(chatmsg)
+			buf += packString8(blip)
 			buf += struct.pack("I", color)
 			buf += struct.pack("B", realization)
 			buf += struct.pack("B", evidence)
-			buf += showname+"\0"
+			buf += packString8(showname)
 			buf += struct.pack("I", message_id)
 			self.sendBuffer(buf)
 	
 	def sendOOC(self, name, chatmsg):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.OOC)
-			buf += name+"\0"
-			buf += chatmsg+"\0"
+			buf += packString8(name)
+			buf += packString16(chatmsg)
 			self.sendBuffer(buf)
 	
 	def sendMusicChange(self, filename, showname):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.MUSIC)
-			buf += filename+"\0"
-			buf += showname+"\0"
+			buf += packString16(str(filename))
+			buf += packString8(str(showname))
 			self.sendBuffer(buf)
 	
 	def sendExamine(self, x, y, showname):
@@ -218,7 +218,7 @@ class ClientThread(QtCore.QThread):
 			buf = struct.pack("B", AIOprotocol.EXAMINE)
 			buf += struct.pack("f", x)
 			buf += struct.pack("f", y)
-			buf += showname+"\0"
+			buf += packString8(showname)
 			self.sendBuffer(buf)
 	
 	def sendChatBubble(self, on):
@@ -230,7 +230,7 @@ class ClientThread(QtCore.QThread):
 	def sendEmoteSound(self, soundname, delay):
 		if self.connected:
 			buf = struct.pack("B", AIOprotocol.EMOTESOUND)
-			buf += soundname+"\0"
+			buf += packString8(soundname)
 			buf += struct.pack("I", delay)
 			self.sendBuffer(buf)
 	
@@ -252,15 +252,15 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("B", type)
 			if type == AIOprotocol.EV_ADD:
 				name, desc, image = args
-				buf += name+"\0"
-				buf += desc+"\0"
-				buf += image+"\0"
+				buf += packString8(name)
+				buf += packString16(desc)
+				buf += packString8(image)
 			elif type == AIOprotocol.EV_EDIT:
 				ind, name, desc, image = args
 				buf += struct.pack("B", ind)
-				buf += name+"\0"
-				buf += desc+"\0"
-				buf += image+"\0"
+				buf += packString8(name)
+				buf += packString16(desc)
+				buf += packString8(image)
 			elif type == AIOprotocol.EV_DELETE:
 				ind, = args
 				buf += struct.pack("B", ind)
@@ -290,7 +290,7 @@ class ClientThread(QtCore.QThread):
 			buf += struct.pack("f", y)
 			buf += struct.pack("h", hspeed)
 			buf += struct.pack("h", vspeed)
-			buf += sprite+"\0"
+			buf += packString16(sprite)
 			buf += struct.pack("B", emoting)
 			buf += struct.pack("B", dir_nr)
 			buf += struct.pack("B", currentemote+1)
@@ -370,10 +370,10 @@ class ClientThread(QtCore.QThread):
 				if header == AIOprotocol.CONNECT and connection_phase == 0: #server default zone, maximum characters, MOTD...
 					data, player_id = buffer_read("I", data)
 					data, maxchars = buffer_read("I", data)
-					data, defaultzone = buffer_read("S", data)
+					data, defaultzone = unpackString8(data)
 					data, maxmusic = buffer_read("I", data)
 					data, maxzones = buffer_read("I", data)
-					data, motd = buffer_read("S", data)
+					data, motd = unpackString16(data)
 
 					self.gotWelcome.emit([player_id, maxchars, defaultzone, maxmusic, maxzones, motd.replace("#", "\n").replace("\\#", "#")])
 					connection_phase += 1
@@ -385,7 +385,7 @@ class ClientThread(QtCore.QThread):
 					if type == 0: #characters
 						charlist = []
 						for i in range(maxchars):
-							data, char = buffer_read("S", data)
+							data, char = unpackString16(data)
 							charlist.append(char)
 						if connection_phase == 1:
 							connection_phase += 1
@@ -395,7 +395,7 @@ class ClientThread(QtCore.QThread):
 					elif type == 1: #music
 						musiclist = []
 						for i in range(maxmusic):
-							data, music = buffer_read("S", data)
+							data, music = unpackString16(data)
 							musiclist.append(music)
 						if connection_phase == 2:
 							connection_phase += 1
@@ -405,8 +405,8 @@ class ClientThread(QtCore.QThread):
 					elif type == 2: #zones
 						zonelist = []
 						for i in range(maxzones):
-							data, zone = buffer_read("S", data)
-							data, zonename = buffer_read("S", data)
+							data, zone = unpackString8(data)
+							data, zonename = unpackString16(data)
 							zonelist.append([zone, zonename])
 						if connection_phase == 3:
 							connection_phase += 1
@@ -417,23 +417,23 @@ class ClientThread(QtCore.QThread):
 						data, length = buffer_read("B", data)
 						evidencelist = []
 						for i in range(length):
-							data, name = buffer_read("S", data)
-							data, desc = buffer_read("S", data)
-							data, image = buffer_read("S", data)
+							data, name = unpackString8(data)
+							data, desc = unpackString16(data)
+							data, image = unpackString8(data)
 							evidencelist.append([name.decode("utf-8"), desc.decode("utf-8"), image.decode("utf-8")])
 						if connection_phase == 4:
 							connection_phase += 1
 							self.gotEvidence.emit(evidencelist)
 						
 				elif header == AIOprotocol.KICK: #kicked.
-					data, reason = buffer_read("S", data)
+					data, reason = unpackString16(data)
 					self.kicked.emit(reason.replace("#", "\n").replace("\\#", "#")) #AIO was made in Game Maker 8, so it used hashes as newlines
 					self.disconnect()
 				
 				elif header == AIOprotocol.MUSIC: #music change
-					data, filename = buffer_read("S", data)
+					data, filename = unpackString16(data)
 					data, char_id = buffer_read("I", data)
-					data, showname = buffer_read("S", data)
+					data, showname = unpackString8(data)
 					
 					self.musicChange.emit([filename, char_id, showname])
 					
@@ -458,7 +458,7 @@ class ClientThread(QtCore.QThread):
 				
 				elif header == AIOprotocol.EMOTESOUND:
 					data, char_id = buffer_read("i", data)
-					data, filename = buffer_read("S", data)
+					data, filename = unpackString8(data)
 					data, sfx_delay = buffer_read("I", data)
 					data, zone = buffer_read("H", data)
 					
@@ -467,14 +467,13 @@ class ClientThread(QtCore.QThread):
 				elif header == AIOprotocol.MOVE: #player movements
 					movepacket = []
 					data, clients = buffer_read("H", data)
-					#print clients
 					for i in range(clients):
 						data, client = buffer_read("I", data)
 						data, x = buffer_read("f", data)
 						data, y = buffer_read("f", data)
 						data, hspeed = buffer_read("h", data)
 						data, vspeed = buffer_read("h", data)
-						data, sprite = buffer_read("S", data)
+						data, sprite = unpackString16(data)
 						data, emoting = buffer_read("B", data)
 						data, dir_nr = buffer_read("B", data)
 						data, currentemote = buffer_read("B", data)
@@ -497,18 +496,18 @@ class ClientThread(QtCore.QThread):
 					data, zone = buffer_read("H", data)
 					data, x = buffer_read("f", data)
 					data, y = buffer_read("f", data)
-					data, showname = buffer_read("S", data)
+					data, showname = unpackString8(data)
 					self.examinePacket.emit([char_id, zone, x, y, showname])
 				
 				elif header == AIOprotocol.OOC:
-					data, name = buffer_read("S", data)
-					data, message = buffer_read("S", data)
+					data, name = unpackString8(data)
+					data, message = unpackString16(data)
 					self.OOCMessage.emit([name.decode("utf-8"), message.decode("utf-8")])
 				
 				elif header == AIOprotocol.MSCHAT:
-					data, name = buffer_read("S", data)
-					data, chatmsg = buffer_read("S", data)
-					data, blip = buffer_read("S", data)
+					data, name = unpackString8(data)
+					data, chatmsg = unpackString8(data)
+					data, blip = unpackString8(data)
 					data, zone = buffer_read("I", data)
 					data, color = buffer_read("I", data)
 					data, realization = buffer_read("B", data)
@@ -519,7 +518,7 @@ class ClientThread(QtCore.QThread):
 				
 				elif header == AIOprotocol.BROADCAST:
 					data, zone = buffer_read("h", data)
-					data, message = buffer_read("S", data)
+					data, message = unpackString16(data)
 					self.broadcastMessage.emit([zone, message])
 				
 				elif header == AIOprotocol.CHATBUBBLE:
@@ -533,15 +532,15 @@ class ClientThread(QtCore.QThread):
 					ev_msg = [type, zone]
 					
 					if type == AIOprotocol.EV_ADD:
-						data, name = buffer_read("S", data)
-						data, desc = buffer_read("S", data)
-						data, image = buffer_read("S", data)
+						data, name = unpackString8(data)
+						data, desc = unpackString16(data)
+						data, image = unpackString8(data)
 						ev_msg.extend([name.decode("utf-8"), desc.decode("utf-8"), image.decode("utf-8")])
 					elif type == AIOprotocol.EV_EDIT:
 						data, ind = buffer_read("B", data)
-						data, name = buffer_read("S", data)
-						data, desc = buffer_read("S", data)
-						data, image = buffer_read("S", data)
+						data, name = unpackString8(data)
+						data, desc = unpackString16(data)
+						data, image = unpackString8(data)
 						ev_msg.extend([ind, name.decode("utf-8"), desc.decode("utf-8"), image.decode("utf-8")])
 					elif type == AIOprotocol.EV_DELETE:
 						data, ind = buffer_read("B", data)
@@ -549,15 +548,15 @@ class ClientThread(QtCore.QThread):
 					elif type == AIOprotocol.EV_FULL_LIST:
 						data, length = buffer_read("B", data)
 						for i in range(length):
-							data, name = buffer_read("S", data)
-							data, desc = buffer_read("S", data)
-							data, image = buffer_read("S", data)
+							data, name = unpackString8(data)
+							data, desc = unpackString16(data)
+							data, image = unpackString8(data)
 							ev_msg.append([name.decode("utf-8"), desc.decode("utf-8"), image.decode("utf-8")])
 					
 					self.evidenceChanged.emit(ev_msg)
 				
 				elif header == AIOprotocol.WARN:
-					data, message = buffer_read("S", data)
+					data, message = unpackString16(data)
 					self.serverWarning.emit(message.decode("utf-8"))
 				
 				elif header == AIOprotocol.BARS:
@@ -622,8 +621,8 @@ class UDPThread(QtCore.QThread):
 			data, header = buffer_read("B", data)
 
 			if header == AIOprotocol.UDP_REQUEST:
-				data, name = buffer_read("S", data)
-				data, desc = buffer_read("S", data)
+				data, name = unpackString16(data)
+				data, desc = unpackString16(data)
 				data, players = buffer_read("I", data)
 				data, maxplayers = buffer_read("I", data)
 				data, version = buffer_read("H", data)

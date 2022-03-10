@@ -246,7 +246,7 @@ class AIOserver(object):
                 client.settimeout(0.1)
                 self.clients[i].is_authed = ipaddr[0].startswith("127.") # automatically make localhost an admin
                 #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys()))+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                self.clients[i].pingpong = ClientPingTime * self.tickspeed
+                self.clients[i].pingpong = ClientPingTime * (self.tickspeed / (1 if os.name == "nt" else 2))
                 thread.start_new_thread(self.clientLoop, (i,))
                 return
         
@@ -273,10 +273,10 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.CONNECT)
         buffer += struct.pack("I", ClientID)
         buffer += struct.pack("I", self.maxchars)
-        buffer += self.zonelist[self.defaultzone][0]+"\0"
+        buffer += packString8(self.zonelist[self.defaultzone][0])
         buffer += struct.pack("I", len(self.musiclist))
         buffer += struct.pack("I", len(self.zonelist))
-        buffer += self.motd+"\0"
+        buffer += packString16(self.motd)
         
         return self.sendBuffer(ClientID, buffer)
     
@@ -291,9 +291,9 @@ class AIOserver(object):
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.MSCHAT)
-        buffer += name+"\0"
-        buffer += chatmsg+"\0"
-        buffer += blip+"\0"
+        buffer += packString8(name)
+        buffer += packString8(chatmsg)
+        buffer += packString8(blip)
         buffer += struct.pack("I", zone)
         buffer += struct.pack("I", color)
         buffer += struct.pack("B", realization)
@@ -375,7 +375,7 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.REQUEST)
         buffer += struct.pack("B", 0)
         for char in self.charlist:
-            buffer += char+"\0"
+            buffer += packString16(char)
         self.sendBuffer(ClientID, buffer)
     
     def sendMusicList(self, ClientID):
@@ -387,7 +387,7 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.REQUEST)
         buffer += struct.pack("B", 1)
         for song in self.musiclist:
-            buffer += song+"\0"
+            buffer += packString16(song)
         
         self.sendBuffer(ClientID, buffer)
     
@@ -400,8 +400,8 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.REQUEST)
         buffer += struct.pack("B", 2)
         for zone in self.zonelist:
-            buffer += zone[0]+"\0"
-            buffer += zone[1]+"\0"
+            buffer += packString8(zone[0])
+            buffer += packString16(zone[1])
         buffer += struct.pack("H", self.defaultzone)
         
         self.sendBuffer(ClientID, buffer)
@@ -416,9 +416,9 @@ class AIOserver(object):
         buffer += struct.pack("B", 3)
         buffer += struct.pack("B", len(self.evidencelist[self.defaultzone]))
         for evidence in self.evidencelist[self.defaultzone]:
-            buffer += evidence[0]+"\0"
-            buffer += evidence[1]+"\0"
-            buffer += evidence[2]+"\0"
+            buffer += packString8(evidence[0])
+            buffer += packString16(evidence[1])
+            buffer += packString8(evidence[2])
 
         self.sendBuffer(ClientID, buffer)
     
@@ -432,9 +432,9 @@ class AIOserver(object):
         buffer += struct.pack("B", zone)
         buffer += struct.pack("B", len(self.evidencelist[zone]))
         for evidence in self.evidencelist[zone]:
-            buffer += evidence[0]+"\0"
-            buffer += evidence[1]+"\0"
-            buffer += evidence[2]+"\0"
+            buffer += packString8(evidence[0])
+            buffer += packString16(evidence[1])
+            buffer += packString8(evidence[2])
         
         self.sendBuffer(ClientID, buffer)
     
@@ -448,9 +448,9 @@ class AIOserver(object):
         buffer = struct.pack("B", AIOprotocol.EVIDENCE)
         buffer += struct.pack("B", AIOprotocol.EV_ADD)
         buffer += struct.pack("B", zone)
-        buffer += name+"\0"
-        buffer += desc+"\0"
-        buffer += image+"\0"
+        buffer += packString8(name)
+        buffer += packString16(desc)
+        buffer += packString8(image)
         
         for client in self.clients:
             if self.clients[client].isBot() or self.clients[client].zone != zone:
@@ -472,9 +472,9 @@ class AIOserver(object):
         buffer += struct.pack("B", AIOprotocol.EV_EDIT)
         buffer += struct.pack("B", zone)
         buffer += struct.pack("B", ind)
-        buffer += name+"\0"
-        buffer += desc+"\0"
-        buffer += image+"\0"
+        buffer += packString8(name)
+        buffer += packString16(desc)
+        buffer += packString8(image)
         
         for client in self.clients:
             if self.clients[client].isBot() or self.clients[client].zone != zone:
@@ -510,7 +510,7 @@ class AIOserver(object):
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.EMOTESOUND)
         buffer += struct.pack("i", charid)
-        buffer += filename+"\0"
+        buffer += packString8(filename)
         buffer += struct.pack("I", delay)
         buffer += struct.pack("H", zone)
         
@@ -530,7 +530,7 @@ class AIOserver(object):
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.EMOTESOUND)
         buffer += struct.pack("i", charid)
-        buffer += filename+"\0"
+        buffer += packString8(filename)
         buffer += struct.pack("I", delay)
         buffer += struct.pack("H", zone)
         
@@ -577,8 +577,8 @@ class AIOserver(object):
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.OOC)
-        buffer += name+"\0"
-        buffer += chatmsg+"\0"
+        buffer += packString8(name)
+        buffer += packString16(chatmsg)
         
         if ClientID == -2:
             for client in self.clients:
@@ -594,7 +594,7 @@ class AIOserver(object):
             return
         
         buffer = struct.pack("B", AIOprotocol.WARN)
-        buffer += reason+"\0"
+        buffer += packString16(reason)
         
         self.sendBuffer(client, buffer)
         
@@ -606,7 +606,7 @@ class AIOserver(object):
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.BROADCAST)
         buffer += struct.pack("h", zone)
-        buffer += message+"\0"
+        buffer += packString16(message)
         
         if ClientID == -1:
             for client in self.clients:
@@ -633,7 +633,7 @@ class AIOserver(object):
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.KICK)
-        buffer += reason+"\0"
+        buffer += packString16(reason)
         
         if isinstance(ClientID, socket.socket):
             ClientID.sendall(buffer)
@@ -755,9 +755,9 @@ class AIOserver(object):
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.MUSIC)
-        buffer += filename+"\0"
+        buffer += packString16(filename)
         buffer += struct.pack("I", charid)
-        buffer += showname+"\0"
+        buffer += packString8(showname)
         
         if ClientID == -1:
             for client in self.clients:
@@ -844,7 +844,7 @@ class AIOserver(object):
         buffer += struct.pack("H", zone)
         buffer += struct.pack("f", x)
         buffer += struct.pack("f", y)
-        buffer += showname+"\0"
+        buffer += packString8(showname)
         
         if ClientID != -1:
             self.sendBuffer(ClientID, buffer)
@@ -864,7 +864,7 @@ class AIOserver(object):
         buffer += struct.pack("f", self.clients[botID].y)
         buffer += struct.pack("h", self.clients[botID].hspeed)
         buffer += struct.pack("h", self.clients[botID].vspeed)
-        buffer += self.clients[botID].sprite+"\0"
+        buffer += packString16(self.clients[botID].sprite)
         buffer += struct.pack("B", self.clients[botID].emoting)
         buffer += struct.pack("B", self.clients[botID].dir_nr)
         buffer += struct.pack("B", self.clients[botID].currentemote+1)
@@ -895,7 +895,7 @@ class AIOserver(object):
                     buffer += struct.pack("f", self.clients[client].y)
                     buffer += struct.pack("h", self.clients[client].hspeed)
                     buffer += struct.pack("h", self.clients[client].vspeed)
-                    buffer += self.clients[client].sprite+"\0"
+                    buffer += packString16(self.clients[client].sprite)
                     buffer += struct.pack("B", self.clients[client].emoting)
                     buffer += struct.pack("B", self.clients[client].dir_nr)
                     buffer += struct.pack("B", self.clients[client].currentemote+1)
@@ -909,7 +909,7 @@ class AIOserver(object):
                 buffer += struct.pack("f", self.clients[client].y)
                 buffer += struct.pack("h", self.clients[client].hspeed)
                 buffer += struct.pack("h", self.clients[client].vspeed)
-                buffer += self.clients[client].sprite+"\0"
+                buffer += packString16(self.clients[client].sprite)
                 buffer += struct.pack("B", self.clients[client].emoting)
                 buffer += struct.pack("B", self.clients[client].dir_nr)
                 buffer += struct.pack("B", self.clients[client].currentemote+1)
@@ -925,7 +925,7 @@ class AIOserver(object):
             buffer += struct.pack("f", self.clients[sourceID].y)
             buffer += struct.pack("h", self.clients[sourceID].hspeed)
             buffer += struct.pack("h", self.clients[sourceID].vspeed)
-            buffer += self.clients[sourceID].sprite+"\0"
+            buffer += packString16(self.clients[client].sprite)
             buffer += struct.pack("B", self.clients[sourceID].emoting)
             buffer += struct.pack("B", self.clients[sourceID].dir_nr)
             buffer += struct.pack("B", self.clients[sourceID].currentemote+1)
@@ -1112,7 +1112,7 @@ class AIOserver(object):
                         mismatch = False
                         
                         try:
-                            self.readbuffer, version = buffer_read("S", self.readbuffer)
+                            self.readbuffer, version = unpackString8(self.readbuffer)
                         except struct.error:
                             continue
                             
@@ -1164,7 +1164,7 @@ class AIOserver(object):
                             self.readbuffer, y = buffer_read("f", self.readbuffer)
                             self.readbuffer, hspeed = buffer_read("h", self.readbuffer)
                             self.readbuffer, vspeed = buffer_read("h", self.readbuffer)
-                            self.readbuffer, sprite = buffer_read("S", self.readbuffer)
+                            self.readbuffer, sprite = unpackString16(self.readbuffer)
                             self.readbuffer, emoting = buffer_read("B", self.readbuffer)
                             self.readbuffer, dir_nr = buffer_read("B", self.readbuffer)
                             self.readbuffer, currentemote = buffer_read("B", self.readbuffer)
@@ -1224,12 +1224,12 @@ class AIOserver(object):
                     
                     elif header == AIOprotocol.MSCHAT: #IC chat.
                         try:
-                            self.readbuffer, chatmsg = buffer_read("S", self.readbuffer)
-                            self.readbuffer, blip = buffer_read("S", self.readbuffer)
+                            self.readbuffer, chatmsg = unpackString8(self.readbuffer)
+                            self.readbuffer, blip = unpackString8(self.readbuffer)
                             self.readbuffer, color = buffer_read("I", self.readbuffer)
                             self.readbuffer, realization = buffer_read("B", self.readbuffer)
                             self.readbuffer, evidence = buffer_read("B", self.readbuffer)
-                            self.readbuffer, showname = buffer_read("S", self.readbuffer)
+                            self.readbuffer, showname = unpackString8(self.readbuffer)
                         except struct.error:
                             continue
 
@@ -1254,15 +1254,15 @@ class AIOserver(object):
                         if not showname or self.ServerOOCName in showname or "ECON USER" in showname: # fuck fakers
                             showname = self.getCharName(self.clients[client].CharID)
 
-                        self.sendChat(showname, chatmsg[:255], blip, self.clients[client].zone, color, realization, client, evidence)
+                        self.sendChat(showname, chatmsg, blip, self.clients[client].zone, color, realization, client, evidence)
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientChat"):
                                 plug[1].onClientChat(self, self.clients[client], chatmsg, showname, color, realization, evidence)
                     
                     elif header == AIOprotocol.OOC:
                         try:
-                            self.readbuffer, name = buffer_read("S", self.readbuffer)
-                            self.readbuffer, chatmsg = buffer_read("S", self.readbuffer)
+                            self.readbuffer, name = unpackString8(self.readbuffer)
+                            self.readbuffer, chatmsg = unpackString16(self.readbuffer)
                         except struct.error:
                             continue
                         
@@ -1284,9 +1284,9 @@ class AIOserver(object):
                             self.clients[client].OOCname = name
                         
                         if not self.clients[client].OOCname:
-                            self.sendOOC(self.ServerOOCName, "you must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
+                            self.sendOOC(self.ServerOOCName, "You must enter a name with at least one character, and make sure it doesn't conflict with someone else's name.", client)
                         else:
-                            self.clients[client].ratelimits[3] = OOCRateLimit * self.tickspeed
+                            self.clients[client].ratelimits[3] = OOCRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
                             if chatmsg[0] != "/": # normal chat
                                 if self.rcon and self.rcon in chatmsg: continue # NO LEAK PASSWORD
 
@@ -1305,7 +1305,7 @@ class AIOserver(object):
                         try:
                             self.readbuffer, x = buffer_read("f", self.readbuffer)
                             self.readbuffer, y = buffer_read("f", self.readbuffer)
-                            self.readbuffer, showname = buffer_read("S", self.readbuffer)
+                            self.readbuffer, showname = unpackString8(self.readbuffer)
                         except struct.error:
                             continue
                         
@@ -1320,7 +1320,7 @@ class AIOserver(object):
                             showname = self.getCharName(self.clients[client].CharID)
 
                         self.sendExamine(self.clients[client].CharID, self.clients[client].zone, x, y, showname)
-                        self.clients[client].ratelimits[2] = ExamineRateLimit * self.tickspeed
+                        self.clients[client].ratelimits[2] = ExamineRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
 
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientExamine"):
@@ -1328,8 +1328,8 @@ class AIOserver(object):
                     
                     elif header == AIOprotocol.MUSIC: #music change
                         try:
-                            self.readbuffer, songname = buffer_read("S", self.readbuffer)
-                            self.readbuffer, showname = buffer_read("S", self.readbuffer)
+                            self.readbuffer, songname = unpackString16(self.readbuffer)
+                            self.readbuffer, showname = unpackString8(self.readbuffer)
                         except:
                             continue
 
@@ -1364,7 +1364,7 @@ class AIOserver(object):
                                 if plug[1].running and hasattr(plug[1], "onClientMusic"):
                                     plug[1].onClientMusic(self, self.clients[client], songname, showname, False)
 
-                        self.clients[client].ratelimits[0] = MusicRateLimit * self.tickspeed
+                        self.clients[client].ratelimits[0] = MusicRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
                     
                     elif header == AIOprotocol.CHATBUBBLE: #chat bubble above the player's head to indicate if they're typing
                         try:
@@ -1381,7 +1381,7 @@ class AIOserver(object):
                     
                     elif header == AIOprotocol.EMOTESOUND:
                         try:
-                            self.readbuffer, soundname = buffer_read("S", self.readbuffer)
+                            self.readbuffer, soundname = unpackString8(self.readbuffer)
                             self.readbuffer, delay = buffer_read("I", self.readbuffer)
                         except struct.error:
                             continue
@@ -1394,7 +1394,7 @@ class AIOserver(object):
                             continue
                         
                         self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
-                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * self.tickspeed
+                        self.clients[client].ratelimits[1] = EmoteSoundRateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
                         
                         for plug in self.plugins:
                             if plug[1].running and hasattr(plug[1], "onClientEmoteSound"):
@@ -1404,14 +1404,14 @@ class AIOserver(object):
                         try:
                             self.readbuffer, type = buffer_read("B", self.readbuffer)
                             if type == AIOprotocol.EV_ADD:
-                                self.readbuffer, name = buffer_read("S", self.readbuffer)
-                                self.readbuffer, desc = buffer_read("S", self.readbuffer)
-                                self.readbuffer, image = buffer_read("S", self.readbuffer)
+                                self.readbuffer, name = unpackString8(self.readbuffer)
+                                self.readbuffer, desc = unpackString16(self.readbuffer)
+                                self.readbuffer, image = unpackString8(self.readbuffer)
                             elif type == AIOprotocol.EV_EDIT:
                                 self.readbuffer, ind = buffer_read("B", self.readbuffer)
-                                self.readbuffer, name = buffer_read("S", self.readbuffer)
-                                self.readbuffer, desc = buffer_read("S", self.readbuffer)
-                                self.readbuffer, image = buffer_read("S", self.readbuffer)
+                                self.readbuffer, name = unpackString8(self.readbuffer)
+                                self.readbuffer, desc = unpackString16(self.readbuffer)
+                                self.readbuffer, image = unpackString8(self.readbuffer)
                             elif type == AIOprotocol.EV_DELETE:
                                 self.readbuffer, ind = buffer_read("B", self.readbuffer)
                         except struct.error:
@@ -1443,6 +1443,11 @@ class AIOserver(object):
                                     plug[1].onClientEvidenceAdd(self, self.clients[client], self.clients[client].zone, name, desc, image)
 
                         elif type == AIOprotocol.EV_EDIT:
+                            if "../" in image or "..\\" in image:
+                                self.Print("evidence", "%s id=%d addr=%s zone=%d tried to edit evidence %d but the image isn't from evidence folder" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind))
+                                self.sendWarning(client, "You can't select evidence images outside of the evidence folder.")
+                                continue
+                            
                             self.Print("evidence", "%s id=%d addr=%s zone=%d edited piece of evidence %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, ind))
                             self.editEvidence(self.clients[client].zone, ind, name, desc, image)
 
@@ -1490,7 +1495,7 @@ class AIOserver(object):
                         if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
                             continue
 
-                        self.clients[client].ratelimits[4] = WTCERateLimit * self.tickspeed
+                        self.clients[client].ratelimits[4] = WTCERateLimit * (self.tickspeed / (1 if os.name == "nt" else 2))
                         self.sendWTCE(wtcetype, self.clients[client].zone)
                         
                         for plug in self.plugins:
@@ -1498,7 +1503,7 @@ class AIOserver(object):
                                 plug[1].onClientWTCE(self, self.clients[client], self.clients[client].zone, wtcetype)
 
                     elif header == AIOprotocol.PING: #pong
-                        self.clients[client].pingpong = ClientPingTime * self.tickspeed
+                        self.clients[client].pingpong = ClientPingTime * (self.tickspeed / (1 if os.name == "nt" else 2))
                         self.sendPong(client)
         
         except Exception as e: # an error occurred on this client
@@ -1603,7 +1608,7 @@ class AIOserver(object):
 
         if header == AIOprotocol.UDP_REQUEST:
             response = struct.pack("B", header)
-            response += self.servername+"\0" + self.serverdesc+"\0"
+            response += packString16(self.servername) + packString16(self.serverdesc)
             response += struct.pack("IIH", len(self.clients), self.maxplayers, versionToInt(GameVersion))
 
         self.udp.sendto(zlib.compress(response), addr)

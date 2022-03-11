@@ -587,18 +587,14 @@ class AIOserver(object):
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.BROADCAST)
-        buffer += struct.pack("h", zone)
         buffer += packString16(message)
         
         if ClientID == -1:
             for client in self.clients:
                 if self.clients[client].isBot():
                     continue
-                if zone == -1:
+                if zone == -1 or self.clients[client].zone == zone:
                     self.sendBuffer(client, buffer)
-                else:
-                    if self.clients[client].zone == zone:
-                        self.sendBuffer(client, buffer)
         else:
             if zone == -1:
                 return self.sendBuffer(ClientID, buffer)

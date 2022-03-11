@@ -1393,11 +1393,7 @@ class GameWidget(QtGui.QWidget):
 		
 		self.gameview.characters[cid].setChatBubble(on)
 	
-	def onBroadcast(self, contents):
-		zone, message = contents
-		if zone != -1 and self.player.zone != zone:
-			return
-		
+	def onBroadcast(self, message):
 		self.broadcastObj.showText(message.decode("utf-8"))
 	
 	def onOOCReturn(self):

@@ -139,7 +139,7 @@ class ClientThread(QtCore.QThread):
 	emoteSound = QtCore.pyqtSignal(list)
 	OOCMessage = QtCore.pyqtSignal(list)
 	ICMessage = QtCore.pyqtSignal(list)
-	broadcastMessage = QtCore.pyqtSignal(list)
+	broadcastMessage = QtCore.pyqtSignal(str)
 	chatBubble = QtCore.pyqtSignal(list)
 	zoneChange = QtCore.pyqtSignal(list)
 	charChange = QtCore.pyqtSignal(list)
@@ -518,9 +518,8 @@ class ClientThread(QtCore.QThread):
 					self.ICMessage.emit([name, chatmsg, blip, zone, color, realization, clientid, evidence])
 				
 				elif header == AIOprotocol.BROADCAST:
-					data, zone = buffer_read("h", data)
 					data, message = unpackString16(data)
-					self.broadcastMessage.emit([zone, message])
+					self.broadcastMessage.emit(message)
 				
 				elif header == AIOprotocol.CHATBUBBLE:
 					data, cid = buffer_read("I", data)

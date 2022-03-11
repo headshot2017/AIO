@@ -1468,9 +1468,6 @@ class AIOserver(object):
                             self.readbuffer, wtcetype = buffer_read("B", self.readbuffer)
                         except struct.error: continue
 
-                        if wtcetype > 3: # must be between 0 and 3
-                            self.Print("game", "%s id=%d addr=%s zone=%d tried to use WT/CE %d" % (self.getCharName(self.clients[client].CharID), client, self.clients[client].ip, self.clients[client].zone, wtcetype))
-                            continue
                         if self.clients[client].ratelimits[4] > 0: # WTCE ratelimit
                             continue
 

@@ -44,10 +44,7 @@ def versionToInt(ver):
     v = ver.split(".")
     major = v[0]
     minor = v[1]
-    if len(v) > 2:
-        patch = v[2]
-    else:
-        patch = "0"
+    patch = v[2] if len(v) > 2 else "0"
     
     try:
         return int(major+minor+patch)

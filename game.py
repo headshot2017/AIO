@@ -1717,7 +1717,8 @@ class GameWidget(QtGui.QWidget):
 		self.evidencedialog.hide()
 
 	def onEmoteSound(self, contents):
-		char_id, filename, delay, zone = contents
+		client_id, filename, delay = contents
+		zone = 0 if not self.gameview.characters[player] else self.gameview.characters[player].zone
 		self.aSound = ["data/sounds/general/"+filename+".wav", time.time()*1000 + delay, zone]
 
 	def onEmoteRightClicked(self, ind):

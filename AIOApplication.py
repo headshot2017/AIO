@@ -459,12 +459,11 @@ class ClientThread(QtCore.QThread):
 					self.playerDestroy.emit(otherplayer)
 				
 				elif header == AIOprotocol.EMOTESOUND:
-					data, char_id = buffer_read("i", data)
+					data, client_id = buffer_read("I", data)
 					data, filename = unpackString8(data)
 					data, sfx_delay = buffer_read("I", data)
-					data, zone = buffer_read("H", data)
 					
-					self.emoteSound.emit([char_id, filename, sfx_delay, zone])
+					self.emoteSound.emit([client_id, filename, sfx_delay])
 				
 				elif header == AIOprotocol.MOVE: #player movements
 					movepacket = []

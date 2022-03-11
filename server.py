@@ -502,42 +502,24 @@ class AIOserver(object):
                 continue
             self.sendBuffer(client, buffer)
     
-    def sendEmoteSound(self, charid, filename, delay, zone, ClientID=-1):
+    def sendEmoteSound(self, clientid, filename, delay, ClientID=-1):
         if not self.running:
             print "[error]", "tried to use sendEmoteSound() without server running"
             return
         
         buffer = ""
         buffer += struct.pack("B", AIOprotocol.EMOTESOUND)
-        buffer += struct.pack("i", charid)
+        buffer += struct.pack("I", clientid)
         buffer += packString8(filename)
         buffer += struct.pack("I", delay)
-        buffer += struct.pack("H", zone)
         
-        if ClientID == -1:
+        if ClientID == -1: # send to everyone
             for client in self.clients:
-                if self.clients[client].isBot():
+                if self.clients[client].isBot() or clientid == client:
                     continue
                 self.sendBuffer(client, buffer)
-        else:
+        else: # send to this target
             return self.sendBuffer(ClientID, buffer)
-    
-    def sendEmoteSoundOwner(self, charid, filename, delay, zone, owner):
-        if not self.running:
-            print "[error]", "tried to use sendEmoteSoundOwner() without server running"
-            return
-        
-        buffer = ""
-        buffer += struct.pack("B", AIOprotocol.EMOTESOUND)
-        buffer += struct.pack("i", charid)
-        buffer += packString8(filename)
-        buffer += struct.pack("I", delay)
-        buffer += struct.pack("H", zone)
-        
-        for client in self.clients:
-            if self.clients[client].isBot() or owner == client:
-                continue
-            self.sendBuffer(client, buffer)
 
     def setChatBubble(self, ClientID, on):
         if not self.running:
@@ -1394,7 +1376,7 @@ class AIOserver(object):
                             #print "[game]", "ratelimited emotesound on client %d (%s, %s)" % (client, self.clients[client].ip, self.getCharName(self.clients[client].CharID))
                             continue
                         
-                        self.sendEmoteSoundOwner(self.clients[client].CharID, soundname, delay, self.clients[client].zone, client)
+                        self.sendEmoteSound(client, soundname, delay)
                         self.clients[client].ratelimits[1] = EmoteSoundRateLimit * self.tickspeed
                         
                         for plug in self.plugins:

@@ -254,8 +254,7 @@ class AIOserver(object):
         self.kick(client, "Server is full.")
     
     def sendBuffer(self, clientID, buffer):
-        actualbuf = struct.pack("I", len(buffer))
-        actualbuf += buffer
+        actualbuf = makeAIOPacket(buffer) # packing.py
 
         try:
             if isinstance(clientID, AIOplayer):
@@ -963,7 +962,7 @@ class AIOserver(object):
     
     def sendToMasterServer(self, msg):
         try:
-            self.ms_tcp.send(struct.pack("I", len(msg)) + zlib.compress(msg))
+            self.ms_tcp.send(makeAIOPacket(msg))
         except:
             pass
     
@@ -984,8 +983,10 @@ class AIOserver(object):
         if len(data) < 4: # we need these 4 bytes to read the packet length
             return True
 
+        bufflength = 0
+        compression = 0
         try:
-            data, bufflength = buffer_read("I", data)
+            bufflength, compression = readAIOHeader(data)
             data = self.ms_tcp.recv(bufflength)
         except socket.error as e:
             if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
@@ -996,7 +997,9 @@ class AIOserver(object):
         except (MemoryError, OverflowError, struct.error):
             return True
 
-        data = zlib.decompress(data)
+        if compression == 1:
+            data = zlib.decompress(data)
+
         data, header = buffer_read("B", data)
 
         if header == AIOprotocol.MS_CONNECTED:
@@ -1004,14 +1007,22 @@ class AIOserver(object):
             resp += struct.pack("H", self.port)
             self.sendToMasterServer(resp)
 
-        elif header == AIOprotocol.MS_PUBLISH: # success
-            if self.MSstate == MASTER_WAITINGSUCCESS:
+        elif header == AIOprotocol.MS_SUCCESS: # success
+            data, success = buffer_read("B", data)
+            if success == AIOprotocol.MS_PUBLISH and self.MSstate == MASTER_WAITINGSUCCESS:
                 self.MSstate = MASTER_PUBLISHED
                 self.MStick = 200
                 self.Print("masterserver", "server published.")
+            elif success == AIOprotocol.MS_KEEPALIVE:
+                self.MStick = 200
 
-        elif header == AIOprotocol.MS_KEEPALIVE:
-            self.MStick = 200
+        elif header == AIOprotocol.MS_OKNOBO: # failure
+            data, error = buffer_read("B", data)
+            data, reason = unpackString16(data)
+            for msvalue in dir(AIOprotocol):
+                if msvalue.startswith("MS_") and error == getattr(AIOprotocol, msvalue):
+                    self.Print("masterserver", "Masterserver error on %s: %s" % (msvalue, reason))
+                    break
         
         return True
     
@@ -1033,6 +1044,20 @@ class AIOserver(object):
             for ban in self.banlist:
                 f.write("%s:%d:%s\n" % (ban[0], ban[1], ban[2]))
 
+    def dropClient(self, client):
+        sock = self.clients[client].sock
+        if self.clients[client].ready:
+            self.sendDestroy(client)
+        self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
+        for plug in self.plugins:
+            if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
+                plug[1].onClientDisconnect(self, client, self.clients[client].ip)
+        #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
+        self.clients[client].close = True
+        del self.clients[client]
+        try: sock.close()
+        except: pass
+
     def clientLoop(self, client):
         try:
             while True:
@@ -1044,63 +1069,38 @@ class AIOserver(object):
 
                 sock = self.clients[client].sock
                 try:
-                    self.readbuffer = sock.recv(4)
+                    self.readbuffer = sock.recv(4) # read the header to get packet size and compression
                 except socket.error as e:
                     if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
                         continue
                     else:
-                        if self.clients[client].ready:
-                            self.sendDestroy(client)
-                        self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
-                        for plug in self.plugins:
-                            if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
-                                plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                        #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                        self.clients[client].close = True
-                        del self.clients[client]
-                        try: sock.close()
-                        except: pass
+                        self.dropClient(client)
                         break
                 
                 if not self.readbuffer or self.clients[client].pingpong <= 0:
-                    if self.clients[client].ready:
-                        self.sendDestroy(client)
-                    self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
-                    for plug in self.plugins:
-                        if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
-                            plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                    #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                    self.clients[client].close = True
-                    del self.clients[client]
-                    try: sock.close()
-                    except: pass
+                    self.dropClient(client)
                     break
                 
                 if len(self.readbuffer) < 4: # we need these 4 bytes to read the packet length
                     continue
-                    
+
+                bufflength = 0
+                compression = 0
                 try:
-                    self.readbuffer, bufflength = buffer_read("I", self.readbuffer)
+                    bufflength, compression = readAIOHeader(self.readbuffer) # packing.py
                     self.readbuffer = sock.recv(bufflength)
                 except socket.error as e:
                     if e.args[0] == 10035 or e.errno == 11 or e.args[0] == "timed out":
                         continue
                     else:
-                        if self.clients[client].ready:
-                            self.sendDestroy(client)
-                        try: sock.close()
-                        except: pass
-                        self.Print("server", "client %d (%s) disconnected." % (client, self.clients[client].ip))
-                        for plug in self.plugins:
-                            if plug[1].running and hasattr(plug[1], "onClientDisconnect"):
-                                plug[1].onClientDisconnect(self, client, self.clients[client].ip)
-                        #self.sendToMasterServer("13#"+self.servername.replace("#", "<num>")+" ["+str(len(self.clients.keys())-1)+"/"+str(self.maxplayers)+"]#"+self.serverdesc.replace("#", "<num>")+"#"+str(self.port)+"#%")
-                        self.clients[client].close = True
-                        del self.clients[client]
+                        self.dropClient(client)
                         break
                 except (MemoryError, OverflowError, struct.error):
                     continue
-                
+
+                if compression == 1:
+                    self.readbuffer = zlib.decompress(self.readbuffer)
+
                 while self.readbuffer:
                     try:
                         self.readbuffer, header = buffer_read("B", self.readbuffer)

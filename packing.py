@@ -1,9 +1,22 @@
 import struct
+import zlib
 
 def buffer_read(format, data):
     unpacked = struct.unpack_from(format, data)
     size = struct.calcsize(format)
     return data[size:], unpacked[0] # [size:] means skip ahead size amount of bytes
+
+def readAIOHeader(data):
+    packetsize, = struct.unpack("I", data[:3]+"\x00") # read first 3 bytes. this is the packet size
+    compression, = struct.unpack("B", data[3]) # the last byte is the compression type. 0=none, 1=zlib
+    return packetsize, compression # after that you do tcp.recv(packetsize) and check if decompression is needed
+
+def makeAIOPacket(data, compression=0):
+    if compression == 1:
+        data = zlib.compress(data)
+    finaldata = struct.pack("I", len(data))[:3] # strip the 4th byte off of it
+    finaldata += struct.pack("B", compression) # compression type
+    return finaldata + data
 
 def packString8(string):
     string = string[:255]

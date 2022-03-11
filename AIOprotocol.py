@@ -36,6 +36,9 @@ MS_NEWS = 1
 MS_LIST = 2
 MS_PUBLISH = 3
 MS_KEEPALIVE = 4
+# so that salanto doesn't go brain-nobo:
+MS_SUCCESS = 5
+MS_OKNOBO = 6 # failure
 
 SOUTH=0
 SOUTHWEST=1

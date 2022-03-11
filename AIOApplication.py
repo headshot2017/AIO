@@ -171,9 +171,7 @@ class ClientThread(QtCore.QThread):
 			self.forceDisconnect(error)
 	
 	def sendBuffer(self, buf):
-		actualbuf = struct.pack("I", len(buf))
-		actualbuf += buf
-		self.tcp.sendall(str(actualbuf))
+		self.tcp.sendall(makeAIOPacket(buf))
 	
 	def sendWelcome(self):
 		if self.connected:
@@ -341,16 +339,17 @@ class ClientThread(QtCore.QThread):
 			if len(data) < 4: # we need these 4 bytes to read the packet length
 				continue
 
+			bufflength = 0
+			compression = 0
 			try:
-				#print "get new bufflength"
-				data, bufflength = buffer_read("I", data)
+				bufflength, compression = readAIOHeader(data)
+				data = ""
 				while len(data) < bufflength:
 					ready = select.select([self.tcp], [], [], 3)
 					if not ready[0]:
 						continue
 					recvd = ready[0][0].recv(bufflength)
 					data += recvd
-					#print len(data), bufflength
 			except socket.error as err:
 				if err.errno in (10035, 11) or err.args[0] == "timed out":
 					continue
@@ -361,6 +360,9 @@ class ClientThread(QtCore.QThread):
 						break
 			except (MemoryError, OverflowError, struct.error):
 				continue
+
+			if compression == 1:
+				data = zlib.decompress(data)
 
 			while data:
 				data, header = buffer_read("B", data)

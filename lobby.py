@@ -378,8 +378,7 @@ class MasterServerThread(QtCore.QThread):
 		self.terminate()
 
 	def sendBuffer(self, data):
-		data = struct.pack("I", len(data)) + data
-		self.tcp.send(data)
+		self.tcp.send(makeAIOPacket(data))
 
 	def sendRefresh(self):
 		if not self.newPackets:
@@ -435,8 +434,11 @@ class MasterServerThread(QtCore.QThread):
 		if len(data) < 4:
 			return
 
-		data, length = buffer_read("I", data)
-		data = zlib.decompress(self.tcp.recv(length+1))
+		length, compression = readAIOHeader(data)
+		data = self.tcp.recv(length)
+
+		if compression == 1:
+			data = zlib.decompress(data)
 
 		data, header = buffer_read("B", data)
 

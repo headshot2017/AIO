@@ -714,7 +714,7 @@ class AIOGraphicsView(QtGui.QGraphicsView):
         self.scene = scene
         self.setMouseTracking(True)
         if ini.read_ini_int("aaio.ini", "Advanced", "opengl", 0): # render with OpenGL (experimental)
-            self.gameview.setViewport(QtOpenGL.QGLWidget())
+            self.setViewport(QtOpenGL.QGLWidget())
 
         theme = ini.read_ini("aaio.ini", "General", "Theme", "default")
         self.gameScale = ini.read_ini_float("data/themes/"+theme+"/theme.ini", "Theme", "scale", 1.0)

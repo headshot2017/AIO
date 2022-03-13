@@ -1714,7 +1714,7 @@ class GameWidget(QtGui.QWidget):
 
 	def onEmoteSound(self, contents):
 		client_id, filename, delay = contents
-		zone = 0 if not self.gameview.characters[player] else self.gameview.characters[player].zone
+		zone = 0 if not self.gameview.characters[client_id] else self.gameview.characters[client_id].zone
 		self.aSound = ["data/sounds/general/"+filename+".wav", time.time()*1000 + delay, zone]
 
 	def onEmoteRightClicked(self, ind):
@@ -1752,7 +1752,7 @@ class GameWidget(QtGui.QWidget):
 		self.player.sprite = self.ao_app.charlist[self.player.charid]+"/"+emote+found_dir+".gif"
 
 		if sound:
-			self.onEmoteSound([self.player.charid, sound, sound_delay, self.player.zone])
+			self.onEmoteSound([self.ao_app.player_id, sound, sound_delay])
 			self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)
 		
 		self.player.play(filename, loop, offset)

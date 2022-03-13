@@ -139,9 +139,7 @@ class lobby(QtGui.QWidget):
 		except:
 			port = 27011
 
-		self.newPackets = ini.read_ini("aaio.ini", "Advanced", "0.5 packets", "0") == "1"
-
-		self.msthread = MasterServerThread(ip, port, self.newPackets)
+		self.msthread = MasterServerThread(ip, port)
 		self.msthread.gotServers.connect(self.gotServerList)
 		self.msthread.gotNews.connect(self.gotNews)
 		self.msthread.error.connect(self.MSError)
@@ -362,12 +360,12 @@ class MasterServerThread(QtCore.QThread):
 	gotNews = QtCore.pyqtSignal(str)
 	error = QtCore.pyqtSignal(str)
 
-	def __init__(self, ip, port, newPackets=False):
+	def __init__(self, ip, port):
 		super(MasterServerThread, self).__init__()
 		self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.ip = ip
 		self.port = port
-		self.newPackets = newPackets
+		self.ping = 2700 # keepalive in 4:30 min
 	
 	def __del__(self):
 		self.closeConnection()
@@ -381,54 +379,13 @@ class MasterServerThread(QtCore.QThread):
 		self.tcp.send(makeAIOPacket(data))
 
 	def sendRefresh(self):
-		if not self.newPackets:
-			self.tcp.send("12#%\n")
-		else:
-			self.sendBuffer(struct.pack("B", AIOprotocol.MS_LIST))
+		self.sendBuffer(struct.pack("B", AIOprotocol.MS_LIST))
+
+	def sendKeepAlive(self):
+		self.sendBuffer(struct.pack("B", AIOprotocol.MS_KEEPALIVE))
 	
 	def getNews(self):
-		if not self.newPackets:
-			self.tcp.send("NEWS#%\n")
-		else:
-			self.sendBuffer(struct.pack("B", AIOprotocol.MS_NEWS))
-
-	def oldPacketLoop(self, data):
-		if not data.endswith("%"):
-			self.tempdata += data
-			return
-		else:
-			if self.tempdata:
-				data = self.tempdata+data
-				self.tempdata = ""
-
-		totals = data.split("%")
-		for moredata in totals:
-			network = moredata.split("#")
-			header = network.pop(0)
-
-			if header == "1": #connected, contains client ID (not that useful anyway)
-				player_id = int(network[0])
-				self.sendRefresh() #request servers
-
-			elif header == "12": #server list
-				total_servers = len(network) / 4
-				if total_servers <= 0:
-					print "warning: received server list packet, but total_servers is %d" % total_servers
-					return
-
-				servers = []
-				for i in range(0, total_servers*4, 4):
-					servers.append((network[i], network[i+1].replace("<num>", "\n"), network[i+2], int(network[i+3])))
-					#servers.append([network[i+2], network[i+3]])
-
-				self.gotServers.emit(servers)
-
-				if not self.got_news:
-					self.getNews() #get news tab
-					self.got_news = True
-
-			elif header == "NEWS": #news tab
-				self.gotNews.emit(network[0].replace("<num>", "#").replace("<percent>", "%"))
+		self.sendBuffer(struct.pack("B", AIOprotocol.MS_NEWS))
 
 	def newPacketLoop(self, data):
 		if len(data) < 4:
@@ -464,6 +421,12 @@ class MasterServerThread(QtCore.QThread):
 			data, big_wall_of_text = unpackString16(data)
 			self.gotNews.emit(big_wall_of_text)
 
+		elif header == AIOprotocol.MS_OKNOBO:
+			data, msgtype = buffer_read("B", data)
+			data, reason = unpackString16(data)
+			if msgtype == AIOprotocol.MS_KEEPALIVE:
+				self.ping = 2700
+
 	def run(self):
 		self.got_news = False
 		
@@ -475,11 +438,14 @@ class MasterServerThread(QtCore.QThread):
 			self.closeConnection()
 		
 		self.tcp.settimeout(0.1)
-		self.tempdata = ""
-		
+
 		while True:
+			self.ping -= 1
+			if self.ping == 0:
+				self.sendKeepAlive()
+
 			try:
-				data = self.tcp.recv(8192 if not self.newPackets else 4)
+				data = self.tcp.recv(4)
 				
 			except socket.timeout, err:
 				error = err.args[0]
@@ -498,10 +464,4 @@ class MasterServerThread(QtCore.QThread):
 				self.closeConnection()
 
 
-			try:
-				if not self.newPackets:
-					self.oldPacketLoop(data)
-				else:
-					self.newPacketLoop(data)
-			except:
-				continue
+			self.newPacketLoop(data)

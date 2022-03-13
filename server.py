@@ -989,10 +989,10 @@ class AIOserver(object):
             data, success = buffer_read("B", data)
             if success == AIOprotocol.MS_PUBLISH and self.MSstate == MASTER_WAITINGSUCCESS:
                 self.MSstate = MASTER_PUBLISHED
-                self.MStick = 200
+                self.MStick = 400
                 self.Print("masterserver", "server published.")
             elif success == AIOprotocol.MS_KEEPALIVE:
-                self.MStick = 200
+                self.MStick = 400
 
         elif header == AIOprotocol.MS_OKNOBO: # failure
             data, error = buffer_read("B", data)
@@ -1582,12 +1582,14 @@ class AIOserver(object):
 
         self.Print("udp", "message from %s: %d" % (addr, header))
 
+        response = ""
         if header == AIOprotocol.UDP_REQUEST:
             response = struct.pack("B", header)
             response += packString16(self.servername) + packString16(self.serverdesc)
             response += struct.pack("IIH", len(self.clients), self.maxplayers, versionToInt(GameVersion))
 
-        self.udp.sendto(zlib.compress(response), addr)
+        if response:
+            self.udp.sendto(zlib.compress(response), addr)
 
     def parseOOCcommand(self, client, cmd, cmdargs):
         isConsole = client == -1

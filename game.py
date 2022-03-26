@@ -323,6 +323,11 @@ class Character(BaseCharacter):
 		self.pressed_keys = set()
 		self.translated = False
 		self.chatbubblepix = QtGui.QGraphicsPixmapItem(scene=scene)
+		self.playerShadow = QtGui.QGraphicsEllipseItem(0, 0, 64, 32, scene=scene)
+		self.playerShadow.setBrush(QtGui.QBrush(QtCore.Qt.black))
+		self.playerShadow.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+		#self.playerShadow.hide()
+		self.playerShadow.setOpacity(0.5)
 		self.setChatBubble(0)
 
 		self.dir_nr = 0
@@ -695,7 +700,7 @@ class Character(BaseCharacter):
 		self.yprevious = self.yy
 		self.xx += self.hspeed
 		self.yy += self.vspeed
-		
+
 		if not self.isPlayer and (self.hspeed or self.vspeed):
 			self.smoothmoves += 1
 			if self.smoothmoves >= self.interpAmount:
@@ -914,7 +919,9 @@ class GamePort(QtGui.QWidget):
 		for char in self.characters.values():
 			char.setZValue(char.yy  - (char.pixmap().size().height()*2) + (char.maxheight*0.75))
 			char.chatbubblepix.setZValue(char.zValue())
-			char.chatbubblepix.setPos(-viewX + char.xx + - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
+			char.playerShadow.setZValue(char.zValue()-1)
+			char.chatbubblepix.setPos(-viewX + char.xx - (char.chatbubblepix.pixmap().size().width()/2), -viewY + char.yy - (char.pixmap().size().height()*char.scale+char.maxheight))
+			char.playerShadow.setPos(-viewX + char.xx - 32, -viewY + char.yy - 64)
 			if char.chatbubble:
 				char.chatbubblepix.show()
 			else:

@@ -868,6 +868,7 @@ class GamePort(QtGui.QWidget):
 		self.characters[ind].stop()
 		self.gamescene.removeItem(self.characters[ind].chatbubblepix)
 		self.gamescene.removeItem(self.characters[ind])
+		self.gamescene.removeItem(self.characters[ind].playerShadow)
 		del self.characters[ind]
 	
 	def getViewCoords(self, outOfBounds=False):

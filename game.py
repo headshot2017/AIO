@@ -390,6 +390,14 @@ class Character(BaseCharacter):
 		jm.addRect(nouis)
 		return jm
 
+	def hide(self):
+		super(Character, self).hide()
+		self.playerShadow.hide()
+
+	def show(self):
+		super(Character, self).show()
+		self.playerShadow.show()
+
 	def changeChar(self, newcharid):
 		self.charid = newcharid
 		if newcharid == -1:
@@ -1917,7 +1925,11 @@ class GameWidget(QtGui.QWidget):
 		self.gameview.initCharacter(player)
 		self.gameview.characters[player].changeChar(char)
 		self.gameview.characters[player].zone = zone
-	
+
+		# hide players immediately if they are in a different zone than the local player
+		if self.player and zone != self.player.zone:
+				self.gameview.characters[player].hide()
+			
 	def onPlayerDestroy(self, player):
 		if player in self.gameview.characters: self.gameview.deleteCharacter(player)
 

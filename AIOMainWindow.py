@@ -10,7 +10,9 @@ class AIOMainWindow(QtGui.QMainWindow):
 		
 		self.stackwidget = QtGui.QStackedWidget(self)
 		self.lobbywidget = lobby.lobby(_ao_app)
+		self.lobbywidget.themeSize = self.lobbywidget.size()
 		self.gamewidget = game.GameWidget(_ao_app)
+		self.gamewidget.themeSize = self.gamewidget.size()
 
 		self.setCentralWidget(self.stackwidget)
 		self.stackwidget.addWidget(self.lobbywidget)
@@ -20,10 +22,12 @@ class AIOMainWindow(QtGui.QMainWindow):
 		self.showServers()
 	
 	def startGame(self):
-		size = self.gamewidget.size()
+		size = self.gamewidget.themeSize
 		self.gamewidget.startGame()
 		self.stackwidget.setCurrentWidget(self.gamewidget)
 		self.setFixedSize(size)
+		# without this the game becomes lobby sized for whatever reason
+		self.gamewidget.resize(size)
 		self.center()
 	
 	def stopGame(self):
@@ -31,11 +35,34 @@ class AIOMainWindow(QtGui.QMainWindow):
 		self.showServers()
 	
 	def showServers(self):
-		size = self.lobbywidget.size()
+		size = self.lobbywidget.themeSize
+		self.setFixedSize(size)
+		# without this the lobby stays game sized
+		self.lobbywidget.resize(size)
 		self.lobbywidget.showServers()
 		self.stackwidget.setCurrentWidget(self.lobbywidget)
-		self.setFixedSize(size)
 		self.center()
+
+	# reloads the lobby and replaces the game with a new widget
+	# essentialy soft restarting the game when a theme is changed.
+	def reloadLobby(self):
+		old_game = self.gamewidget
+		old_game.stopGame()
+		self.stackwidget.removeWidget(old_game)
+		old_game.deleteLater()
+		self.gamewidget = game.GameWidget(self.ao_app)
+		self.gamewidget.themeSize = self.gamewidget.size()
+		self.stackwidget.addWidget(self.gamewidget)
+
+		old_lobby = self.lobbywidget
+		old_lobby.shutdown()
+		self.stackwidget.removeWidget(old_lobby)
+		old_lobby.deleteLater()
+
+		self.lobbywidget = lobby.lobby(self.ao_app)
+		self.lobbywidget.themeSize = self.lobbywidget.size()
+		self.stackwidget.insertWidget(0, self.lobbywidget)
+		self.showServers()
 	
 	def center(self):
 		frameGm = self.frameGeometry()

@@ -26,9 +26,6 @@ class AIOIndexButton(QLabel):
 		super(AIOIndexButton, self).__init__(parent)
 		self.ind = ind
 	
-	def __del__(self):
-		self.deleteLater()
-	
 	def event(self, event):
 		if event.type() == QEvent.Enter:
 			self.mouseEnter.emit(self.ind)
@@ -83,10 +80,6 @@ class AIOCharButton(AIOIndexButton):
 		
 		self.charpic.show()
 	
-	def __del__(self):
-		self.charpic.deleteLater()
-		super(AIOCharButton, self).__del__()
-
 class PenaltyBar(QLabel):
 	minusClicked = pyqtSignal(int)
 	plusClicked = pyqtSignal(int)

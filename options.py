@@ -52,6 +52,7 @@ class HTMLDelegate(QtGui.QStyledItemDelegate): # https://stackoverflow.com/quest
 
 class Options(QtGui.QWidget):
     fileSaved = QtCore.pyqtSignal()
+    themeChanged = QtCore.pyqtSignal()
     
     def __init__(self, ao_app):
         super(Options, self).__init__()
@@ -341,7 +342,9 @@ class Options(QtGui.QWidget):
         if not self.inifile.has_section("MasterServer"): self.inifile.add_section("MasterServer")
         self.inifile.set("General", "OOC name", self.defaultoocname.text().toUtf8())
         self.inifile.set("General", "Showname", self.defaultshowname.text().toUtf8())
-        self.inifile.set("General", "Theme", self.themes[self.themeview.currentRow()][0])
+        selectedtheme = self.themes[self.themeview.currentRow()][0]
+        currenttheme = ini.read_ini("aaio.ini", "General", "Theme", "default")
+        self.inifile.set("General", "Theme", selectedtheme)
         self.inifile.set("General", "High FPS", str(self.fps_checkbox.isChecked()))
         self.ao_app.fps = 60 if self.fps_checkbox.isChecked() else 30
         for i in range(len(self.up_buttons)): self.inifile.set("Controls", "up%d" % (i+1), self.ao_app.controls["up"][i])
@@ -356,6 +359,8 @@ class Options(QtGui.QWidget):
         self.inifile.set("MasterServer", "IP", self.ms_lineedit.text())
         self.inifile.write(open("aaio.ini", "w"))
         self.fileSaved.emit()
+        if selectedtheme != currenttheme:
+            self.themeChanged.emit()
         
         self.hide()
     

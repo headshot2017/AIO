@@ -130,7 +130,7 @@ class lobby(QtGui.QWidget):
 		self.newswidget.hide()
 		
 		self.optionsgui = options.Options(_ao_app)
-		#self.optionsgui.fileSaved.connect(self.onOptionsSave)
+		self.optionsgui.themeChanged.connect(self.onOptionsSave)
 		
 		a = ini.read_ini("aaio.ini", "MasterServer", "IP", "aaio-ms.aceattorneyonline.com:27011").split(":")
 		ip = a[0]
@@ -269,6 +269,15 @@ class lobby(QtGui.QWidget):
 	
 	def on_settings_button(self):
 		self.optionsgui.showSettings()
+
+	def onOptionsSave(self):
+		QtCore.QTimer.singleShot(0, self.ao_app.mainwindow.reloadLobby)
+
+	# kill msthread on close
+	def shutdown(self):
+		self.optionsgui.hide()
+		self.msthread.closeConnection()
+		self.msthread.wait()
 	
 	def add_to_favorites(self):
 		if self.tab in (2, 3): # can't add in favs tab or news tab
@@ -369,14 +378,20 @@ class MasterServerThread(QtCore.QThread):
 		self.ip = ip
 		self.port = port
 		self.ping = 2700 # keepalive in 4:30 min
+		self.running = False
 	
 	def __del__(self):
 		self.closeConnection()
 		self.wait()
 	
+	# self.terminate was causing the program to hang when reloading theme.
 	def closeConnection(self):
+		self.running = False
+		try:
+			self.tcp.shutdown(socket.SHUT_RDWR)
+		except socket.error:
+			pass
 		self.tcp.close()
-		self.terminate()
 
 	def sendBuffer(self, data):
 		self.tcp.send(makeAIOPacket(data))
@@ -432,6 +447,7 @@ class MasterServerThread(QtCore.QThread):
 
 	def run(self):
 		self.got_news = False
+		self.running = True
 		
 		try:
 			self.tcp.connect((self.ip, self.port))
@@ -442,7 +458,7 @@ class MasterServerThread(QtCore.QThread):
 		
 		self.tcp.settimeout(0.1)
 
-		while True:
+		while self.running:
 			self.ping -= 1
 			if self.ping == 0:
 				self.sendKeepAlive()

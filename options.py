@@ -375,7 +375,10 @@ class Options(QtGui.QWidget):
         button.setText("Press any key or ESC to cancel...")
 
     def eventFilter(self, source, event):
-        if self.tabs.currentIndex() == 2 and self.changingBind and event.type() == QtCore.QEvent.KeyPress:
+        tabs = getattr(self, "tabs", None)
+        if (tabs is not None and self.isVisible() and
+                tabs.currentIndex() == 2 and self.changingBind and
+                event.type() == QtCore.QEvent.KeyPress):
             key = event.key()
             if key != QtCore.Qt.Key_Escape:
                 self.ao_app.controls[self.changingBind[1]][self.changingBind[2]] = key

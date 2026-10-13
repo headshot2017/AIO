@@ -538,6 +538,8 @@ class Character(BaseCharacter):
 		for i in range(ini.read_ini_int(inipath, "WalkAnims", "total", 1)):
 			self.walkanims[0].append(ini.read_ini(inipath, "WalkAnims", str(i+1), "walk"))
 		self.walkanims[1] = ini.read_ini_int(inipath, "WalkAnims", "runanim", 1)-1
+		# reset walk animation selection when switching characters
+		self.walkanims[2] = 0
 		
 		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.spins[self.spin][1], self.dir_nr) # "switching character while emote is playing" bug fixed
 

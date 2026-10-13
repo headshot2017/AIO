@@ -285,6 +285,9 @@ class BaseCharacter(QtGui.QGraphicsPixmapItem):
 	
 	def playSpin(self, filename, dir):
 		self.stop()
+		# refresh cached spin.gif frames when it changes
+		if not self.spinframes or str(self.spinframe.fileName()) != filename:
+			self.setSpin(filename)
 		if self.spinframes:
 			self.movie.setFileName(filename)
 			self.setPixmap(self.spinframes[dir])
@@ -349,6 +352,8 @@ class Character(BaseCharacter):
 		self.zone = -1
 		self.charprefix = ""
 		self.sprite = ""
+		self.spins = []
+		self.spin = 0
 		self.blip = ""
 		self.scale = 1
 		self.walkanims = [[], 0, 0] #value 0 contains the animations, value 1 is the run animation, value 2 is the walk animation
@@ -411,8 +416,22 @@ class Character(BaseCharacter):
 		self.charprefix = ini.read_ini(inipath, "Options", "imgprefix")
 		if self.charprefix:
 			self.charprefix += "-"
-		
-		imgsize = QtGui.QPixmap("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif").size()
+
+		# read spin files from ini, keep only those that exist
+		self.spins = []
+		spin_total = ini.read_ini_int(inipath, "Spin", "total", 0)
+		for spin_id in range(1, spin_total + 1):
+			spin_name = ini.read_ini(inipath, "Spin", str(spin_id), "")
+			spin_file = self.charprefix + "spin.gif" if spin_id == 1 else self.charprefix + "spin" + str(spin_id) + ".gif"
+			spin_path = "data/characters/" + self.ao_app.charlist[newcharid] + "/" + spin_file
+			if spin_name and os.path.exists(spin_path):
+				self.spins.append((spin_name, spin_file))
+		if not self.spins:
+			self.spins = [("Default", self.charprefix + "spin.gif")]
+		self.spin = min(max(ini.read_ini_int(inipath, "Spin", "default", 1) - 1, 0), len(self.spins) - 1)
+		spin_file = self.spins[self.spin][1]
+
+		imgsize = QtGui.QPixmap("data/characters/"+self.ao_app.charlist[newcharid]+"/"+spin_file).size()
 		self.scale = ini.read_ini_float(inipath, "Options", "scale", 1.0)
 		self.setScale(self.scale*2)
 		
@@ -423,7 +442,7 @@ class Character(BaseCharacter):
 		self.maxheight = imgsize.height()*(self.scale*2)
 		self.translate(0, -self.maxheight/4)
 		self.translated = True
-		self.setSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.charprefix+"spin.gif")
+		self.setSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+spin_file)
 
 		max_emotes = ini.read_ini_int(inipath, "Emotions", "total")
 		self.emotes[0] = []
@@ -520,7 +539,25 @@ class Character(BaseCharacter):
 			self.walkanims[0].append(ini.read_ini(inipath, "WalkAnims", str(i+1), "walk"))
 		self.walkanims[1] = ini.read_ini_int(inipath, "WalkAnims", "runanim", 1)-1
 		
-		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/spin.gif", self.dir_nr) # "switching character while emote is playing" bug fixed
+		self.playSpin("data/characters/"+self.ao_app.charlist[newcharid]+"/"+self.spins[self.spin][1], self.dir_nr) # "switching character while emote is playing" bug fixed
+
+	def spinPath(self):
+		return "data/characters/" + self.ao_app.charlist[self.charid] + "/" + self.spins[self.spin][1]
+
+	def networkSpinFilename(self):
+		# prefix-less spin filename for network transmission
+		spin_file = self.spins[self.spin][1]
+		if self.charprefix and spin_file.startswith(self.charprefix):
+			return spin_file[len(self.charprefix):]
+		return spin_file
+
+	def changeSpin(self, ind):
+		if ind < 0 or ind >= len(self.spins):
+			return
+		self.spin = ind
+		self.setSpin(self.spinPath())
+		if self.hspeed == 0 and self.vspeed == 0 and self.emoting == 0 and self.currentemote == -1:
+			self.playSpin(self.spinPath(), self.dir_nr)
 	
 	def keyPressEvent(self, event):
 		if self.isPlayer:
@@ -693,11 +730,12 @@ class Character(BaseCharacter):
 				self.sprite = self.ao_app.charlist[self.charid]+"/"+self.walkanims[0][anim]+dirname+".gif"
 			
 			else:
+				# keep selected spin.gif as idle sprite for network
 				self.hspeed = 0
 				self.vspeed = 0
-				newsprite = self.charprefix+"spin.gif"
+				newsprite = self.spins[self.spin][1]
 				if self.emoting == 0 and self.currentemote == -1:
-					self.sprite = self.ao_app.charlist[self.charid]+"/spin.gif"
+					self.sprite = self.ao_app.charlist[self.charid]+"/"+self.networkSpinFilename()
 
 			is30 = (self.ao_app.fps == 30)
 			self.hspeed /= self.ao_app.fps / 30. * (1 if is30 else 1.4)
@@ -806,7 +844,7 @@ class AIOGraphicsView(QtGui.QGraphicsView):
             player.dir_nr = AIOprotocol.SOUTH
         elif y2 < y1 and x2 > x1-64 and x2 < x1+64:
             player.dir_nr = AIOprotocol.NORTH
-        player.playSpin("data/characters/"+self.ao_app.charlist[player.charid]+"/"+player.charprefix+"spin.gif", player.dir_nr)
+        player.playSpin(player.spinPath(), player.dir_nr)
 
     def mouseMoveEvent(self, event):
         player = self.parent.characters[self.ao_app.player_id]
@@ -1117,6 +1155,8 @@ class GameWidget(QtGui.QWidget):
 
 		self.gameview.setupUi(_ao_app, self)
 		self.scaleslider.setValue(ini.read_ini_int("data/themes/"+theme+"/theme.ini", "Theme", "scale", 1))
+		self.setupSpriteSettingsDialog()
+		self.ao_app.installEventFilter(self)
 
 		self.broadcastObj = Broadcast(self.gameview.gamescene)
 		self.broadcastObj.setPos(0, 64)
@@ -1142,8 +1182,10 @@ class GameWidget(QtGui.QWidget):
 		self.soundslider.valueChanged.connect(self.changeSoundVolume)
 		self.blipslider.valueChanged.connect(self.changeBlipVolume)
 		self.scaleslider.valueChanged.connect(self.gameview.scale)
-		self.walkanim_dropdown.currentIndexChanged.connect(self.changeWalkAnim)
-		self.runanim_dropdown.currentIndexChanged.connect(self.changeRunAnim)
+		self.sprite_settings_walk.currentIndexChanged.connect(self.changeWalkAnim)
+		self.sprite_settings_run.currentIndexChanged.connect(self.changeRunAnim)
+		self.sprite_settings_spin.currentIndexChanged.connect(self.changeSpin)
+		self.sprite_settings_button.clicked.connect(self.openSpriteSettings)
 		self.wt_button.clicked.connect(self.onWTCEButton)
 		self.ce_button.clicked.connect(self.onWTCEButton)
 		self.notguilty_button.clicked.connect(self.onWTCEButton)
@@ -1245,6 +1287,83 @@ class GameWidget(QtGui.QWidget):
 		self.realizationsnd = audio.loadhandle(False, "data/sounds/general/sfx-realization.wav", 0, 0, 0)
 		self.lightbulbsnd = audio.loadhandle(False, "data/sounds/general/sfx-lightbulb.wav", 0, 0, 0)
 
+	def setupSpriteSettingsDialog(self):
+		# qt popover shoo-in 
+		self.sprite_settings_dialog = QtGui.QFrame(None, QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint)
+		self.sprite_settings_dialog.setFixedSize(250, 116)
+		self.sprite_settings_dialog.setObjectName("spriteSettingsDialog")
+		self.sprite_settings_dialog.setStyleSheet(
+			"QFrame#spriteSettingsDialog { background-color: palette(window); border: 1px solid palette(dark); }"
+		)
+
+		layout = QtGui.QGridLayout(self.sprite_settings_dialog)
+		layout.setContentsMargins(8, 6, 8, 6)
+		layout.setHorizontalSpacing(8)
+		layout.setVerticalSpacing(3)
+
+		self.sprite_settings_walk = QtGui.QComboBox(self.sprite_settings_dialog)
+		self.sprite_settings_run = QtGui.QComboBox(self.sprite_settings_dialog)
+		self.sprite_settings_spin = QtGui.QComboBox(self.sprite_settings_dialog)
+		layout.addWidget(QtGui.QLabel("Walk animation", self.sprite_settings_dialog), 0, 0)
+		layout.addWidget(self.sprite_settings_walk, 0, 1)
+		layout.addWidget(QtGui.QLabel("Run animation", self.sprite_settings_dialog), 1, 0)
+		layout.addWidget(self.sprite_settings_run, 1, 1)
+
+		separator = QtGui.QFrame(self.sprite_settings_dialog)
+		separator.setFrameShape(QtGui.QFrame.HLine)
+		separator.setFrameShadow(QtGui.QFrame.Sunken)
+		layout.addWidget(separator, 2, 0, 1, 2)
+
+		layout.addWidget(QtGui.QLabel("Directional sprite", self.sprite_settings_dialog), 3, 0)
+		layout.addWidget(self.sprite_settings_spin, 3, 1)
+
+	def openSpriteSettings(self):
+		# open or close the popover and refresh
+		if self.sprite_settings_dialog.isVisible():
+			self.sprite_settings_dialog.hide()
+			return
+
+		self.sprite_settings_walk.blockSignals(True)
+		self.sprite_settings_run.blockSignals(True)
+		self.sprite_settings_spin.blockSignals(True)
+		self.sprite_settings_walk.clear()
+		self.sprite_settings_run.clear()
+		self.sprite_settings_spin.clear()
+		self.sprite_settings_walk.addItems(self.player.walkanims[0])
+		self.sprite_settings_run.addItems(self.player.walkanims[0])
+		self.sprite_settings_spin.addItems([spin[0] for spin in self.player.spins])
+		self.sprite_settings_walk.setCurrentIndex(self.player.walkanims[2])
+		self.sprite_settings_run.setCurrentIndex(self.player.walkanims[1])
+		self.sprite_settings_spin.setCurrentIndex(self.player.spin)
+		self.sprite_settings_walk.blockSignals(False)
+		self.sprite_settings_run.blockSignals(False)
+		self.sprite_settings_spin.blockSignals(False)
+		button_pos = self.sprite_settings_button.mapToGlobal(QtCore.QPoint(0, self.sprite_settings_button.height()))
+		available = QtGui.QApplication.desktop().availableGeometry(self.sprite_settings_button)
+		if button_pos.y() + self.sprite_settings_dialog.height() > available.bottom():
+			button_pos.setY(self.sprite_settings_button.mapToGlobal(QtCore.QPoint(0, 0)).y() - self.sprite_settings_dialog.height())
+		if button_pos.x() + self.sprite_settings_dialog.width() > available.right():
+			button_pos.setX(available.right() - self.sprite_settings_dialog.width())
+		self.sprite_settings_dialog.move(button_pos)
+		self.sprite_settings_dialog.show()
+
+	def hideSpriteSettings(self):
+		if not self.sprite_settings_dialog.isVisible():
+			return
+		self.sprite_settings_dialog.hide()
+
+	def eventFilter(self, source, event):
+		if event.type() == QtCore.QEvent.MouseButtonPress and self.sprite_settings_dialog.isVisible():
+			global_pos = event.globalPos()
+			popup = QtGui.QApplication.activePopupWidget()
+			if popup and popup.isVisible() and popup.geometry().contains(global_pos):
+				return super(GameWidget, self).eventFilter(source, event)
+			popup_rect = self.sprite_settings_dialog.geometry()
+			button_rect = QtCore.QRect(self.sprite_settings_button.mapToGlobal(QtCore.QPoint(0, 0)), self.sprite_settings_button.size())
+			if not popup_rect.contains(global_pos) and not button_rect.contains(global_pos):
+				self.hideSpriteSettings()
+		return super(GameWidget, self).eventFilter(source, event)
+
 	def onOOCLoginBtn(self):
 		password, ok = QtGui.QInputDialog.getText(self, "Login as moderator", "Enter password.")
 		if password and ok:
@@ -1255,6 +1374,9 @@ class GameWidget(QtGui.QWidget):
 		self.player.walkanims[2] = ind
 	def changeRunAnim(self, ind):
 		self.player.walkanims[1] = ind
+	def changeSpin(self, ind):
+		# apply immediately
+		self.player.changeSpin(ind)
     
 	def onGotPing(self, ping):
 		self.pinglabel.setText("Ping: %d" % ping)
@@ -1959,12 +2081,15 @@ class GameWidget(QtGui.QWidget):
 			else:
 				walk = self.player.walkanims[2]
 				run = self.player.walkanims[1]
-				self.walkanim_dropdown.clear()
-				self.runanim_dropdown.clear()
-				self.walkanim_dropdown.addItems(self.player.walkanims[0])
-				self.runanim_dropdown.addItems(self.player.walkanims[0])
-				self.walkanim_dropdown.setCurrentIndex(walk)
-				self.runanim_dropdown.setCurrentIndex(run)
+				self.sprite_settings_walk.clear()
+				self.sprite_settings_run.clear()
+				self.sprite_settings_spin.clear()
+				self.sprite_settings_walk.addItems(self.player.walkanims[0])
+				self.sprite_settings_run.addItems(self.player.walkanims[0])
+				self.sprite_settings_spin.addItems([spin[0] for spin in self.player.spins])
+				self.sprite_settings_walk.setCurrentIndex(walk)
+				self.sprite_settings_run.setCurrentIndex(run)
+				self.sprite_settings_spin.setCurrentIndex(self.player.spin)
 				self.current_emote_page = 0
 				self.set_emote_page()
 				self.hideCharSelect()
@@ -1998,15 +2123,25 @@ class GameWidget(QtGui.QWidget):
 					aSprite = sprite.split("\\" if "\\" in sprite else "/")
 					if len(aSprite) < 2:
 						continue
+					sprite_file = aSprite[1]
+					if char.charprefix and sprite_file.lower().startswith(char.charprefix.lower()):
+						sprite_file = sprite_file[len(char.charprefix):]
 					oldpath = char.movie.fileName()
-					fullpath = "data/characters/"+aSprite[0]+"/"+char.charprefix+aSprite[1]
+					fullpath = "data/characters/"+aSprite[0]+"/"+char.charprefix+sprite_file
+					# designate spin files as sprites instead of looping animations
+					spin_basename = sprite_file[:-4].lower() if sprite_file.lower().endswith(".gif") else ""
+					is_spin = spin_basename == "spin" or (spin_basename.startswith("spin") and spin_basename[4:].isdigit())
 					if not os.path.exists(fullpath):
-						fullpath = "data/misc/error.gif"
+						# will use spin.gif if spin1.gif is missing and so on
+						if is_spin:
+							fullpath = "data/characters/"+aSprite[0]+"/"+char.charprefix+"spin.gif"
+						if not os.path.exists(fullpath):
+							fullpath = "data/misc/error.gif"
 
 					if oldpath != fullpath or char.dir_nr != dir_nr or char.emoting != emoting: # "The other player's game sometimes fails to show the right direction the character's looking at." fixed
 						char.dir_nr = dir_nr
 						char.emoting = emoting
-						if aSprite[1].lower() == "spin.gif":
+						if is_spin:
 							char.playSpin(fullpath, dir_nr)
 						else:
 							#print currentemote, char.sprite, len(char.emotes[5]), len(char.emotes[2])

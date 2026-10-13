@@ -1203,7 +1203,7 @@ class GameWidget(QtGui.QWidget):
 			self.realizationmenu.addAction(typ)
 		
 		self.emotemenu = QtGui.QMenu()
-		self.emotemenuActions = [self.emotemenu.addAction("Play"), self.emotemenu.addAction("Play on chat")]
+		self.emotemenuActions = [self.emotemenu.addAction("Play"), self.emotemenu.addAction("Play on chat"), self.emotemenu.addAction("Play w/o sound")]
 		self.emote_on_chat = -1
 		self.evidence_page = 0
 
@@ -1915,8 +1915,11 @@ class GameWidget(QtGui.QWidget):
 		if selection:
 			if selection == self.emotemenu.actions()[0]: # play normally
 				self.onEmoteClicked(ind)
-			else: # play on chat
+			elif selection == self.emotemenu.actions()[1]: # play on chat
 				self.emote_on_chat = ind
+			elif selection == self.emotemenu.actions()[2]: # play without sound
+				self.emote_without_sound = True
+				self.onEmoteClicked(ind)
 	
 	def onEmoteClicked(self, ind):
 		self.emote_on_chat = -1
@@ -1954,34 +1957,37 @@ class GameWidget(QtGui.QWidget):
 
 		filename = "data/characters/" + self.ao_app.charlist[self.player.charid] + "/" + self.player.charprefix + emote + found_dir + ".gif"
 		self.player.sprite = self.ao_app.charlist[self.player.charid] + "/" + emote + found_dir + ".gif"
+	
+		if not getattr(self, "emote_without_sound", False):
+			for step_index in range(len(sfx_steps)):
+				choices = sfx_steps[step_index]
 
-		for step_index in range(len(sfx_steps)):
-			choices = sfx_steps[step_index]
+				if isinstance(choices, basestring):
+					choices = [choices]
+				elif not isinstance(choices, list):
+					continue
 
-			if isinstance(choices, basestring):
-				choices = [choices]
-			elif not isinstance(choices, list):
-				continue
+				clean_choices = [s.strip() for s in choices if s and s.strip()]
+				if not clean_choices:
+					continue
 
-			clean_choices = [s.strip() for s in choices if s and s.strip()]
-			if not clean_choices:
-				continue
+				sound = random.choice(clean_choices)
 
-			sound = random.choice(clean_choices)
-
-			if step_index < len(timing_steps):
-				try:
-					sound_delay = int(timing_steps[step_index])
-				except:
+				if step_index < len(timing_steps):
+					try:
+						sound_delay = int(timing_steps[step_index])
+					except:
+						sound_delay = 0
+				else:
 					sound_delay = 0
-			else:
-				sound_delay = 0
 
-			if sound_delay < 0:
-				sound_delay = 0
+				if sound_delay < 0:
+					sound_delay = 0
 
-			self.onEmoteSound([self.ao_app.player_id, sound, sound_delay])
-			self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)
+				self.onEmoteSound([self.ao_app.player_id, sound, sound_delay])
+				self.ao_app.tcpthread.sendEmoteSound(sound, sound_delay)
+		else:
+			self.emote_without_sound = False # reset the flag
 
 		self.player.play(filename, loop, offset)
 
